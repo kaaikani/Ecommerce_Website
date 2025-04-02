@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../app/utils/class-names.ts"],
-  "sourcesContent": ["// REMIX HMR BEGIN\nimport * as __hmr__ from \"remix:hmr\";\nif (import.meta) {\nimport.meta.hot = __hmr__.createHotContext(\n//@ts-expect-error\n\"app/utils/class-names.ts\"\n);\nimport.meta.hot.lastModified = \"1742363235112.9072\";\n}\n// REMIX HMR END\n\nimport React from 'react';\n\nexport function classNames(...classes: string[]) {\n  return classes.filter(Boolean).join(' ');\n}\n\nexport function mergeClassName(\n  props: React.HTMLAttributes<any>,\n  className: string,\n) {\n  if (props.className !== undefined) {\n    return {\n      ...props,\n      className: `${props.className} ${className}`,\n    };\n  }\n\n  return {\n    ...props,\n    className: className,\n  };\n}\n"],
-  "mappings": ";;;;;;AACA;AACA,IAAI,aAAa;AACjB,cAAY,MAAc;AAAA;AAAA,IAE1B;AAAA,EACA;AACA,cAAY,IAAI,eAAe;AAC/B;AAKO,SAAS,cAAc,SAAmB;AAC/C,SAAO,QAAQ,OAAO,OAAO,EAAE,KAAK,GAAG;AACzC;",
-  "names": []
-}

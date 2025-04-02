@@ -1375,68 +1375,37 @@ function Header({
         "bg-gradient-to-r from-zinc-700 to-gray-900 shadow-lg transform shadow-xl"
       ),
       children: [
-        /* @__PURE__ */ jsxDEV3("div", { className: "bg-zinc-100 text-gray-600 shadow-inner text-center text-sm py-2 px-2 xl:px-0", children: /* @__PURE__ */ jsxDEV3("div", { className: "max-w-6xl mx-2 md:mx-auto flex items-center justify-between", children: [
-          /* @__PURE__ */ jsxDEV3("div", { children: /* @__PURE__ */ jsxDEV3("p", { className: "hidden sm:block", children: [
-            t("vendure.exclusive"),
-            " ",
-            /* @__PURE__ */ jsxDEV3(
-              "a",
-              {
-                href: "https://github.com/vendure-ecommerce/storefront-remix-starter",
-                target: "_blank",
-                className: "underline",
-                children: t("vendure.repoLinkLabel")
-              },
-              void 0,
-              !1,
-              {
+        /* @__PURE__ */ jsxDEV3("div", { className: "bg-zinc-100 text-gray-600 shadow-inner text-center text-sm py-2 px-2 xl:px-0", children: /* @__PURE__ */ jsxDEV3("div", { className: "max-w-6xl mx-2 md:mx-auto flex items-center justify-between", children: /* @__PURE__ */ jsxDEV3("div", { children: /* @__PURE__ */ jsxDEV3(
+          Link,
+          {
+            to: isSignedIn ? "/account" : "/sign-in",
+            className: "flex space-x-1",
+            children: [
+              /* @__PURE__ */ jsxDEV3(UserIcon, { className: "w-4 h-4" }, void 0, !1, {
                 fileName: "app/components/header/Header.tsx",
-                lineNumber: 34,
+                lineNumber: 48,
                 columnNumber: 15
-              },
-              this
-            )
-          ] }, void 0, !0, {
+              }, this),
+              /* @__PURE__ */ jsxDEV3("span", { children: t(isSignedIn ? "account.myAccount" : "account.signIn") }, void 0, !1, {
+                fileName: "app/components/header/Header.tsx",
+                lineNumber: 49,
+                columnNumber: 15
+              }, this)
+            ]
+          },
+          void 0,
+          !0,
+          {
             fileName: "app/components/header/Header.tsx",
-            lineNumber: 32,
+            lineNumber: 44,
             columnNumber: 13
-          }, this) }, void 0, !1, {
-            fileName: "app/components/header/Header.tsx",
-            lineNumber: 31,
-            columnNumber: 11
-          }, this),
-          /* @__PURE__ */ jsxDEV3("div", { children: /* @__PURE__ */ jsxDEV3(
-            Link,
-            {
-              to: isSignedIn ? "/account" : "/sign-in",
-              className: "flex space-x-1",
-              children: [
-                /* @__PURE__ */ jsxDEV3(UserIcon, { className: "w-4 h-4" }, void 0, !1, {
-                  fileName: "app/components/header/Header.tsx",
-                  lineNumber: 48,
-                  columnNumber: 15
-                }, this),
-                /* @__PURE__ */ jsxDEV3("span", { children: t(isSignedIn ? "account.myAccount" : "account.signIn") }, void 0, !1, {
-                  fileName: "app/components/header/Header.tsx",
-                  lineNumber: 49,
-                  columnNumber: 15
-                }, this)
-              ]
-            },
-            void 0,
-            !0,
-            {
-              fileName: "app/components/header/Header.tsx",
-              lineNumber: 44,
-              columnNumber: 13
-            },
-            this
-          ) }, void 0, !1, {
-            fileName: "app/components/header/Header.tsx",
-            lineNumber: 43,
-            columnNumber: 11
-          }, this)
-        ] }, void 0, !0, {
+          },
+          this
+        ) }, void 0, !1, {
+          fileName: "app/components/header/Header.tsx",
+          lineNumber: 43,
+          columnNumber: 11
+        }, this) }, void 0, !1, {
           fileName: "app/components/header/Header.tsx",
           lineNumber: 30,
           columnNumber: 9
@@ -1568,854 +1537,688 @@ var APP_META_TITLE = "Vendure Remix Storefront", APP_META_DESCRIPTION = "A headl
 // app/generated/graphql.ts
 import gql from "graphql-tag";
 var OrderDetailFragmentDoc = gql`
-  fragment OrderDetail on Order {
-    __typename
-    id
-    code
-    active
-    createdAt
-    state
-    currencyCode
-    totalQuantity
-    subTotal
-    subTotalWithTax
-    taxSummary {
-      description
-      taxRate
-      taxTotal
-    }
-    shippingWithTax
-    totalWithTax
-    customer {
-      id
-      firstName
-      lastName
-      emailAddress
-    }
-    shippingAddress {
-      fullName
-      streetLine1
-      streetLine2
-      company
-      city
-      province
-      postalCode
-      countryCode
-      phoneNumber
-    }
-    shippingLines {
-      shippingMethod {
-        id
-        name
-      }
-      priceWithTax
-    }
-    lines {
-      id
-      unitPriceWithTax
-      linePriceWithTax
-      quantity
-      featuredAsset {
-        id
-        preview
-      }
-      productVariant {
-        id
-        name
-        price
-        product {
-          id
-          slug
-        }
-      }
-    }
-    payments {
-      id
-      state
-      method
-      amount
-      metadata
-    }
-  }
-`, DetailedProductFragmentDoc = gql`
-  fragment DetailedProduct on Product {
-    id
-    name
+    fragment OrderDetail on Order {
+  __typename
+  id
+  code
+  active
+  createdAt
+  state
+  currencyCode
+  totalQuantity
+  subTotal
+  subTotalWithTax
+  taxSummary {
     description
-    collections {
+    taxRate
+    taxTotal
+  }
+  shippingWithTax
+  totalWithTax
+  customer {
+    id
+    firstName
+    lastName
+    emailAddress
+  }
+  shippingAddress {
+    fullName
+    streetLine1
+    streetLine2
+    company
+    city
+    province
+    postalCode
+    countryCode
+    phoneNumber
+  }
+  shippingLines {
+    shippingMethod {
       id
-      slug
-      name
-      breadcrumbs {
-        id
-        name
-        slug
-      }
-    }
-    facetValues {
-      facet {
-        id
-        code
-        name
-      }
-      id
-      code
       name
     }
+    priceWithTax
+  }
+  lines {
+    id
+    unitPriceWithTax
+    linePriceWithTax
+    quantity
     featuredAsset {
       id
       preview
     }
-    assets {
+    productVariant {
+      id
+      name
+      price
+      product {
+        id
+        slug
+      }
+    }
+  }
+  payments {
+    id
+    state
+    method
+    amount
+    metadata
+  }
+}
+    `, DetailedProductFragmentDoc = gql`
+    fragment DetailedProduct on Product {
+  id
+  name
+  description
+  collections {
+    id
+    slug
+    name
+    breadcrumbs {
+      id
+      name
+      slug
+    }
+  }
+  facetValues {
+    facet {
+      id
+      code
+      name
+    }
+    id
+    code
+    name
+  }
+  featuredAsset {
+    id
+    preview
+  }
+  assets {
+    id
+    preview
+  }
+  variants {
+    id
+    name
+    priceWithTax
+    currencyCode
+    sku
+    stockLevel
+    featuredAsset {
       id
       preview
     }
-    variants {
+  }
+}
+    `, ListedProductFragmentDoc = gql`
+    fragment ListedProduct on SearchResult {
+  productId
+  productName
+  slug
+  productAsset {
+    id
+    preview
+  }
+  currencyCode
+  priceWithTax {
+    ... on PriceRange {
+      min
+      max
+    }
+    ... on SinglePrice {
+      value
+    }
+  }
+}
+    `, LoginDocument = gql`
+    mutation login($email: String!, $password: String!, $rememberMe: Boolean) {
+  login(username: $email, password: $password, rememberMe: $rememberMe) {
+    __typename
+    ... on CurrentUser {
+      id
+      identifier
+    }
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+    `, LogoutDocument = gql`
+    mutation logout {
+  logout {
+    success
+  }
+}
+    `, RegisterCustomerAccountDocument = gql`
+    mutation registerCustomerAccount($input: RegisterCustomerInput!) {
+  registerCustomerAccount(input: $input) {
+    __typename
+    ... on Success {
+      success
+    }
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+    `, VerifyCustomerAccountDocument = gql`
+    mutation verifyCustomerAccount($token: String!, $password: String) {
+  verifyCustomerAccount(token: $token, password: $password) {
+    __typename
+    ... on CurrentUser {
+      id
+      identifier
+    }
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+    `, UpdateCustomerDocument = gql`
+    mutation updateCustomer($input: UpdateCustomerInput!) {
+  updateCustomer(input: $input) {
+    __typename
+  }
+}
+    `, RequestUpdateCustomerEmailAddressDocument = gql`
+    mutation requestUpdateCustomerEmailAddress($password: String!, $newEmailAddress: String!) {
+  requestUpdateCustomerEmailAddress(
+    password: $password
+    newEmailAddress: $newEmailAddress
+  ) {
+    __typename
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+    `, UpdateCustomerEmailAddressDocument = gql`
+    mutation updateCustomerEmailAddress($token: String!) {
+  updateCustomerEmailAddress(token: $token) {
+    __typename
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+    `, UpdateCustomerAddressDocument = gql`
+    mutation updateCustomerAddress($input: UpdateAddressInput!) {
+  updateCustomerAddress(input: $input) {
+    __typename
+  }
+}
+    `, CreateCustomerAddressDocument = gql`
+    mutation createCustomerAddress($input: CreateAddressInput!) {
+  createCustomerAddress(input: $input) {
+    __typename
+  }
+}
+    `, DeleteCustomerAddressDocument = gql`
+    mutation deleteCustomerAddress($id: ID!) {
+  deleteCustomerAddress(id: $id) {
+    success
+  }
+}
+    `, UpdateCustomerPasswordDocument = gql`
+    mutation updateCustomerPassword($currentPassword: String!, $newPassword: String!) {
+  updateCustomerPassword(
+    currentPassword: $currentPassword
+    newPassword: $newPassword
+  ) {
+    __typename
+    ... on Success {
+      success
+    }
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+    `, ActiveChannelDocument = gql`
+    query activeChannel {
+  activeChannel {
+    id
+    currencyCode
+  }
+}
+    `, EligibleShippingMethodsDocument = gql`
+    query eligibleShippingMethods {
+  eligibleShippingMethods {
+    id
+    name
+    description
+    metadata
+    price
+    priceWithTax
+  }
+}
+    `, EligiblePaymentMethodsDocument = gql`
+    query eligiblePaymentMethods {
+  eligiblePaymentMethods {
+    id
+    code
+    name
+    description
+    eligibilityMessage
+    isEligible
+  }
+}
+    `, NextOrderStatesDocument = gql`
+    query nextOrderStates {
+  nextOrderStates
+}
+    `, AvailableCountriesDocument = gql`
+    query availableCountries {
+  availableCountries {
+    id
+    name
+    code
+  }
+}
+    `, AddPaymentToOrderDocument = gql`
+    mutation addPaymentToOrder($input: PaymentInput!) {
+  addPaymentToOrder(input: $input) {
+    ...OrderDetail
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+    ${OrderDetailFragmentDoc}`, TransitionOrderToStateDocument = gql`
+    mutation transitionOrderToState($state: String!) {
+  transitionOrderToState(state: $state) {
+    ...OrderDetail
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+    ${OrderDetailFragmentDoc}`, CreateStripePaymentIntentDocument = gql`
+    mutation createStripePaymentIntent {
+  createStripePaymentIntent
+}
+    `, GenerateBraintreeClientTokenDocument = gql`
+    query generateBraintreeClientToken {
+  generateBraintreeClientToken
+}
+    `, CollectionsDocument = gql`
+    query collections($options: CollectionListOptions) {
+  collections(options: $options) {
+    items {
       id
       name
-      priceWithTax
-      currencyCode
-      sku
-      stockLevel
+      slug
+      parent {
+        name
+      }
       featuredAsset {
         id
         preview
       }
     }
   }
-`, ListedProductFragmentDoc = gql`
-  fragment ListedProduct on SearchResult {
-    productId
-    productName
+}
+    `, CollectionDocument = gql`
+    query collection($slug: String, $id: ID) {
+  collection(slug: $slug, id: $id) {
+    id
+    name
     slug
-    productAsset {
-      id
-      preview
-    }
-    currencyCode
-    priceWithTax {
-      ... on PriceRange {
-        min
-        max
-      }
-      ... on SinglePrice {
-        value
-      }
-    }
-  }
-`, LoginDocument = gql`
-  mutation login($email: String!, $password: String!, $rememberMe: Boolean) {
-    login(username: $email, password: $password, rememberMe: $rememberMe) {
-      __typename
-      ... on CurrentUser {
-        id
-        identifier
-      }
-      ... on ErrorResult {
-        errorCode
-        message
-      }
-    }
-  }
-`, LogoutDocument = gql`
-  mutation logout {
-    logout {
-      success
-    }
-  }
-`, RegisterCustomerAccountDocument = gql`
-  mutation registerCustomerAccount($input: RegisterCustomerInput!) {
-    registerCustomerAccount(input: $input) {
-      __typename
-      ... on Success {
-        success
-      }
-      ... on ErrorResult {
-        errorCode
-        message
-      }
-    }
-  }
-`, VerifyCustomerAccountDocument = gql`
-  mutation verifyCustomerAccount($token: String!, $password: String) {
-    verifyCustomerAccount(token: $token, password: $password) {
-      __typename
-      ... on CurrentUser {
-        id
-        identifier
-      }
-      ... on ErrorResult {
-        errorCode
-        message
-      }
-    }
-  }
-`, UpdateCustomerDocument = gql`
-  mutation updateCustomer($input: UpdateCustomerInput!) {
-    updateCustomer(input: $input) {
-      __typename
-    }
-  }
-`, RequestUpdateCustomerEmailAddressDocument = gql`
-  mutation requestUpdateCustomerEmailAddress(
-    $password: String!
-    $newEmailAddress: String!
-  ) {
-    requestUpdateCustomerEmailAddress(
-      password: $password
-      newEmailAddress: $newEmailAddress
-    ) {
-      __typename
-      ... on ErrorResult {
-        errorCode
-        message
-      }
-    }
-  }
-`, UpdateCustomerEmailAddressDocument = gql`
-  mutation updateCustomerEmailAddress($token: String!) {
-    updateCustomerEmailAddress(token: $token) {
-      __typename
-      ... on ErrorResult {
-        errorCode
-        message
-      }
-    }
-  }
-`, UpdateCustomerAddressDocument = gql`
-  mutation updateCustomerAddress($input: UpdateAddressInput!) {
-    updateCustomerAddress(input: $input) {
-      __typename
-    }
-  }
-`, CreateCustomerAddressDocument = gql`
-  mutation createCustomerAddress($input: CreateAddressInput!) {
-    createCustomerAddress(input: $input) {
-      __typename
-    }
-  }
-`, DeleteCustomerAddressDocument = gql`
-  mutation deleteCustomerAddress($id: ID!) {
-    deleteCustomerAddress(id: $id) {
-      success
-    }
-  }
-`, UpdateCustomerPasswordDocument = gql`
-  mutation updateCustomerPassword(
-    $currentPassword: String!
-    $newPassword: String!
-  ) {
-    updateCustomerPassword(
-      currentPassword: $currentPassword
-      newPassword: $newPassword
-    ) {
-      __typename
-      ... on Success {
-        success
-      }
-      ... on ErrorResult {
-        errorCode
-        message
-      }
-    }
-  }
-`, ActiveChannelDocument = gql`
-  query activeChannel {
-    activeChannel {
-      id
-      currencyCode
-    }
-  }
-`, EligibleShippingMethodsDocument = gql`
-  query eligibleShippingMethods {
-    eligibleShippingMethods {
-      id
-      name
-      description
-      metadata
-      price
-      priceWithTax
-    }
-  }
-`, EligiblePaymentMethodsDocument = gql`
-  query eligiblePaymentMethods {
-    eligiblePaymentMethods {
-      id
-      code
-      name
-      description
-      eligibilityMessage
-      isEligible
-    }
-  }
-`, NextOrderStatesDocument = gql`
-  query nextOrderStates {
-    nextOrderStates
-  }
-`, AvailableCountriesDocument = gql`
-  query availableCountries {
-    availableCountries {
-      id
-      name
-      code
-    }
-  }
-`, AddPaymentToOrderDocument = gql`
-  mutation addPaymentToOrder($input: PaymentInput!) {
-    addPaymentToOrder(input: $input) {
-      ...OrderDetail
-      ... on ErrorResult {
-        errorCode
-        message
-      }
-    }
-  }
-  ${OrderDetailFragmentDoc}
-`, TransitionOrderToStateDocument = gql`
-  mutation transitionOrderToState($state: String!) {
-    transitionOrderToState(state: $state) {
-      ...OrderDetail
-      ... on ErrorResult {
-        errorCode
-        message
-      }
-    }
-  }
-  ${OrderDetailFragmentDoc}
-`, CreateStripePaymentIntentDocument = gql`
-  mutation createStripePaymentIntent {
-    createStripePaymentIntent
-  }
-`, GenerateBraintreeClientTokenDocument = gql`
-  query generateBraintreeClientToken {
-    generateBraintreeClientToken
-  }
-`, CollectionsDocument = gql`
-  query collections($options: CollectionListOptions) {
-    collections(options: $options) {
-      items {
-        id
-        name
-        slug
-        parent {
-          name
-        }
-        featuredAsset {
-          id
-          preview
-        }
-      }
-    }
-  }
-`, CollectionDocument = gql`
-  query collection($slug: String, $id: ID) {
-    collection(slug: $slug, id: $id) {
+    breadcrumbs {
       id
       name
       slug
-      breadcrumbs {
+    }
+    children {
+      id
+      name
+      slug
+      featuredAsset {
         id
-        name
-        slug
-      }
-      children {
-        id
-        name
-        slug
-        featuredAsset {
-          id
-          preview
-        }
+        preview
       }
     }
   }
-`, ActiveCustomerDocument = gql`
-  query activeCustomer {
-    activeCustomer {
-      id
-      firstName
-      lastName
-    }
+}
+    `, ActiveCustomerDocument = gql`
+    query activeCustomer {
+  activeCustomer {
+    id
+    firstName
+    lastName
   }
-`, ActiveCustomerDetailsDocument = gql`
-  query activeCustomerDetails {
-    activeCustomer {
+}
+    `, ActiveCustomerDetailsDocument = gql`
+    query activeCustomerDetails {
+  activeCustomer {
+    id
+    title
+    firstName
+    lastName
+    phoneNumber
+    emailAddress
+  }
+}
+    `, ActiveCustomerAddressesDocument = gql`
+    query activeCustomerAddresses {
+  activeCustomer {
+    id
+    addresses {
       id
-      title
-      firstName
-      lastName
+      company
+      fullName
+      streetLine1
+      streetLine2
+      city
+      province
+      postalCode
+      country {
+        id
+        code
+        name
+      }
       phoneNumber
-      emailAddress
+      defaultShippingAddress
+      defaultBillingAddress
     }
   }
-`, ActiveCustomerAddressesDocument = gql`
-  query activeCustomerAddresses {
-    activeCustomer {
-      id
-      addresses {
-        id
-        company
-        fullName
-        streetLine1
-        streetLine2
-        city
-        province
-        postalCode
-        country {
-          id
-          code
-          name
-        }
-        phoneNumber
-        defaultShippingAddress
-        defaultBillingAddress
-      }
-    }
-  }
-`, ActiveCustomerOrderListDocument = gql`
-  query activeCustomerOrderList($orderListOptions: OrderListOptions) {
-    activeCustomer {
-      orders(options: $orderListOptions) {
-        totalItems
-        items {
-          code
-          state
-          orderPlacedAt
-          currencyCode
-          subTotal
-          subTotalWithTax
-          total
-          totalWithTax
-          shippingWithTax
-          shippingLines {
-            priceWithTax
-          }
-          taxSummary {
-            taxBase
-            taxTotal
-          }
-          discounts {
-            amountWithTax
-          }
-          fulfillments {
-            trackingCode
-          }
-          lines {
-            quantity
-            discountedLinePriceWithTax
-            discountedUnitPriceWithTax
-            fulfillmentLines {
-              quantity
-              fulfillment {
-                state
-                updatedAt
-              }
-            }
-            featuredAsset {
-              name
-              source
-              preview
-            }
-            productVariant {
-              name
-              sku
-              currencyCode
-              priceWithTax
-              product {
-                slug
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`, SetCustomerForOrderDocument = gql`
-  mutation setCustomerForOrder($input: CreateCustomerInput!) {
-    setCustomerForOrder(input: $input) {
-      ...OrderDetail
-      ... on ErrorResult {
-        errorCode
-        message
-      }
-    }
-  }
-  ${OrderDetailFragmentDoc}
-`, SetOrderShippingAddressDocument = gql`
-  mutation setOrderShippingAddress($input: CreateAddressInput!) {
-    setOrderShippingAddress(input: $input) {
-      ...OrderDetail
-      ... on ErrorResult {
-        errorCode
-        message
-      }
-    }
-  }
-  ${OrderDetailFragmentDoc}
-`, SetOrderShippingMethodDocument = gql`
-  mutation setOrderShippingMethod($shippingMethodId: [ID!]!) {
-    setOrderShippingMethod(shippingMethodId: $shippingMethodId) {
-      ...OrderDetail
-      ... on ErrorResult {
-        errorCode
-        message
-      }
-    }
-  }
-  ${OrderDetailFragmentDoc}
-`, AddItemToOrderDocument = gql`
-  mutation addItemToOrder($productVariantId: ID!, $quantity: Int!) {
-    addItemToOrder(productVariantId: $productVariantId, quantity: $quantity) {
-      ...OrderDetail
-      ... on ErrorResult {
-        errorCode
-        message
-      }
-    }
-  }
-  ${OrderDetailFragmentDoc}
-`, RemoveOrderLineDocument = gql`
-  mutation removeOrderLine($orderLineId: ID!) {
-    removeOrderLine(orderLineId: $orderLineId) {
-      ...OrderDetail
-      ... on ErrorResult {
-        errorCode
-        message
-      }
-    }
-  }
-  ${OrderDetailFragmentDoc}
-`, AdjustOrderLineDocument = gql`
-  mutation adjustOrderLine($orderLineId: ID!, $quantity: Int!) {
-    adjustOrderLine(orderLineId: $orderLineId, quantity: $quantity) {
-      ...OrderDetail
-      ... on ErrorResult {
-        errorCode
-        message
-      }
-    }
-  }
-  ${OrderDetailFragmentDoc}
-`, ActiveOrderDocument = gql`
-  query activeOrder {
-    activeOrder {
-      ...OrderDetail
-    }
-  }
-  ${OrderDetailFragmentDoc}
-`, OrderByCodeDocument = gql`
-  query orderByCode($code: String!) {
-    orderByCode(code: $code) {
-      ...OrderDetail
-    }
-  }
-  ${OrderDetailFragmentDoc}
-`, ProductDocument = gql`
-  query product($slug: String, $id: ID) {
-    product(slug: $slug, id: $id) {
-      ...DetailedProduct
-    }
-  }
-  ${DetailedProductFragmentDoc}
-`, SearchDocument = gql`
-  query search($input: SearchInput!) {
-    search(input: $input) {
+}
+    `, ActiveCustomerOrderListDocument = gql`
+    query activeCustomerOrderList($orderListOptions: OrderListOptions) {
+  activeCustomer {
+    orders(options: $orderListOptions) {
       totalItems
       items {
-        ...ListedProduct
-      }
-      facetValues {
-        count
-        facetValue {
-          id
-          name
-          facet {
-            id
+        code
+        state
+        orderPlacedAt
+        currencyCode
+        subTotal
+        subTotalWithTax
+        total
+        totalWithTax
+        shippingWithTax
+        shippingLines {
+          priceWithTax
+        }
+        taxSummary {
+          taxBase
+          taxTotal
+        }
+        discounts {
+          amountWithTax
+        }
+        fulfillments {
+          trackingCode
+        }
+        lines {
+          quantity
+          discountedLinePriceWithTax
+          discountedUnitPriceWithTax
+          fulfillmentLines {
+            quantity
+            fulfillment {
+              state
+              updatedAt
+            }
+          }
+          featuredAsset {
             name
+            source
+            preview
+          }
+          productVariant {
+            name
+            sku
+            currencyCode
+            priceWithTax
+            product {
+              slug
+            }
           }
         }
       }
     }
   }
-  ${ListedProductFragmentDoc}
-`, SearchFacetValuesDocument = gql`
-  query searchFacetValues($input: SearchInput!) {
-    search(input: $input) {
-      totalItems
-      facetValues {
-        count
-        facetValue {
+}
+    `, SetCustomerForOrderDocument = gql`
+    mutation setCustomerForOrder($input: CreateCustomerInput!) {
+  setCustomerForOrder(input: $input) {
+    ...OrderDetail
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+    ${OrderDetailFragmentDoc}`, SetOrderShippingAddressDocument = gql`
+    mutation setOrderShippingAddress($input: CreateAddressInput!) {
+  setOrderShippingAddress(input: $input) {
+    ...OrderDetail
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+    ${OrderDetailFragmentDoc}`, SetOrderShippingMethodDocument = gql`
+    mutation setOrderShippingMethod($shippingMethodId: [ID!]!) {
+  setOrderShippingMethod(shippingMethodId: $shippingMethodId) {
+    ...OrderDetail
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+    ${OrderDetailFragmentDoc}`, AddItemToOrderDocument = gql`
+    mutation addItemToOrder($productVariantId: ID!, $quantity: Int!) {
+  addItemToOrder(productVariantId: $productVariantId, quantity: $quantity) {
+    ...OrderDetail
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+    ${OrderDetailFragmentDoc}`, RemoveOrderLineDocument = gql`
+    mutation removeOrderLine($orderLineId: ID!) {
+  removeOrderLine(orderLineId: $orderLineId) {
+    ...OrderDetail
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+    ${OrderDetailFragmentDoc}`, AdjustOrderLineDocument = gql`
+    mutation adjustOrderLine($orderLineId: ID!, $quantity: Int!) {
+  adjustOrderLine(orderLineId: $orderLineId, quantity: $quantity) {
+    ...OrderDetail
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+    ${OrderDetailFragmentDoc}`, ActiveOrderDocument = gql`
+    query activeOrder {
+  activeOrder {
+    ...OrderDetail
+  }
+}
+    ${OrderDetailFragmentDoc}`, OrderByCodeDocument = gql`
+    query orderByCode($code: String!) {
+  orderByCode(code: $code) {
+    ...OrderDetail
+  }
+}
+    ${OrderDetailFragmentDoc}`, ProductDocument = gql`
+    query product($slug: String, $id: ID) {
+  product(slug: $slug, id: $id) {
+    ...DetailedProduct
+  }
+}
+    ${DetailedProductFragmentDoc}`, SearchDocument = gql`
+    query search($input: SearchInput!) {
+  search(input: $input) {
+    totalItems
+    items {
+      ...ListedProduct
+    }
+    facetValues {
+      count
+      facetValue {
+        id
+        name
+        facet {
           id
           name
-          facet {
-            id
-            name
-          }
         }
       }
     }
   }
-`;
+}
+    ${ListedProductFragmentDoc}`, SearchFacetValuesDocument = gql`
+    query searchFacetValues($input: SearchInput!) {
+  search(input: $input) {
+    totalItems
+    facetValues {
+      count
+      facetValue {
+        id
+        name
+        facet {
+          id
+          name
+        }
+      }
+    }
+  }
+}
+    `;
 function getSdk(requester2) {
   return {
     login(variables, options) {
-      return requester2(
-        LoginDocument,
-        variables,
-        options
-      );
+      return requester2(LoginDocument, variables, options);
     },
     logout(variables, options) {
-      return requester2(
-        LogoutDocument,
-        variables,
-        options
-      );
+      return requester2(LogoutDocument, variables, options);
     },
     registerCustomerAccount(variables, options) {
-      return requester2(
-        RegisterCustomerAccountDocument,
-        variables,
-        options
-      );
+      return requester2(RegisterCustomerAccountDocument, variables, options);
     },
     verifyCustomerAccount(variables, options) {
-      return requester2(
-        VerifyCustomerAccountDocument,
-        variables,
-        options
-      );
+      return requester2(VerifyCustomerAccountDocument, variables, options);
     },
     updateCustomer(variables, options) {
-      return requester2(
-        UpdateCustomerDocument,
-        variables,
-        options
-      );
+      return requester2(UpdateCustomerDocument, variables, options);
     },
     requestUpdateCustomerEmailAddress(variables, options) {
-      return requester2(
-        RequestUpdateCustomerEmailAddressDocument,
-        variables,
-        options
-      );
+      return requester2(RequestUpdateCustomerEmailAddressDocument, variables, options);
     },
     updateCustomerEmailAddress(variables, options) {
-      return requester2(
-        UpdateCustomerEmailAddressDocument,
-        variables,
-        options
-      );
+      return requester2(UpdateCustomerEmailAddressDocument, variables, options);
     },
     updateCustomerAddress(variables, options) {
-      return requester2(
-        UpdateCustomerAddressDocument,
-        variables,
-        options
-      );
+      return requester2(UpdateCustomerAddressDocument, variables, options);
     },
     createCustomerAddress(variables, options) {
-      return requester2(
-        CreateCustomerAddressDocument,
-        variables,
-        options
-      );
+      return requester2(CreateCustomerAddressDocument, variables, options);
     },
     deleteCustomerAddress(variables, options) {
-      return requester2(
-        DeleteCustomerAddressDocument,
-        variables,
-        options
-      );
+      return requester2(DeleteCustomerAddressDocument, variables, options);
     },
     updateCustomerPassword(variables, options) {
-      return requester2(
-        UpdateCustomerPasswordDocument,
-        variables,
-        options
-      );
+      return requester2(UpdateCustomerPasswordDocument, variables, options);
     },
     activeChannel(variables, options) {
-      return requester2(
-        ActiveChannelDocument,
-        variables,
-        options
-      );
+      return requester2(ActiveChannelDocument, variables, options);
     },
     eligibleShippingMethods(variables, options) {
-      return requester2(
-        EligibleShippingMethodsDocument,
-        variables,
-        options
-      );
+      return requester2(EligibleShippingMethodsDocument, variables, options);
     },
     eligiblePaymentMethods(variables, options) {
-      return requester2(
-        EligiblePaymentMethodsDocument,
-        variables,
-        options
-      );
+      return requester2(EligiblePaymentMethodsDocument, variables, options);
     },
     nextOrderStates(variables, options) {
-      return requester2(
-        NextOrderStatesDocument,
-        variables,
-        options
-      );
+      return requester2(NextOrderStatesDocument, variables, options);
     },
     availableCountries(variables, options) {
-      return requester2(
-        AvailableCountriesDocument,
-        variables,
-        options
-      );
+      return requester2(AvailableCountriesDocument, variables, options);
     },
     addPaymentToOrder(variables, options) {
-      return requester2(
-        AddPaymentToOrderDocument,
-        variables,
-        options
-      );
+      return requester2(AddPaymentToOrderDocument, variables, options);
     },
     transitionOrderToState(variables, options) {
-      return requester2(
-        TransitionOrderToStateDocument,
-        variables,
-        options
-      );
+      return requester2(TransitionOrderToStateDocument, variables, options);
     },
     createStripePaymentIntent(variables, options) {
-      return requester2(
-        CreateStripePaymentIntentDocument,
-        variables,
-        options
-      );
+      return requester2(CreateStripePaymentIntentDocument, variables, options);
     },
     generateBraintreeClientToken(variables, options) {
-      return requester2(
-        GenerateBraintreeClientTokenDocument,
-        variables,
-        options
-      );
+      return requester2(GenerateBraintreeClientTokenDocument, variables, options);
     },
     collections(variables, options) {
-      return requester2(
-        CollectionsDocument,
-        variables,
-        options
-      );
+      return requester2(CollectionsDocument, variables, options);
     },
     collection(variables, options) {
-      return requester2(
-        CollectionDocument,
-        variables,
-        options
-      );
+      return requester2(CollectionDocument, variables, options);
     },
     activeCustomer(variables, options) {
-      return requester2(
-        ActiveCustomerDocument,
-        variables,
-        options
-      );
+      return requester2(ActiveCustomerDocument, variables, options);
     },
     activeCustomerDetails(variables, options) {
-      return requester2(
-        ActiveCustomerDetailsDocument,
-        variables,
-        options
-      );
+      return requester2(ActiveCustomerDetailsDocument, variables, options);
     },
     activeCustomerAddresses(variables, options) {
-      return requester2(
-        ActiveCustomerAddressesDocument,
-        variables,
-        options
-      );
+      return requester2(ActiveCustomerAddressesDocument, variables, options);
     },
     activeCustomerOrderList(variables, options) {
-      return requester2(
-        ActiveCustomerOrderListDocument,
-        variables,
-        options
-      );
+      return requester2(ActiveCustomerOrderListDocument, variables, options);
     },
     setCustomerForOrder(variables, options) {
-      return requester2(
-        SetCustomerForOrderDocument,
-        variables,
-        options
-      );
+      return requester2(SetCustomerForOrderDocument, variables, options);
     },
     setOrderShippingAddress(variables, options) {
-      return requester2(
-        SetOrderShippingAddressDocument,
-        variables,
-        options
-      );
+      return requester2(SetOrderShippingAddressDocument, variables, options);
     },
     setOrderShippingMethod(variables, options) {
-      return requester2(
-        SetOrderShippingMethodDocument,
-        variables,
-        options
-      );
+      return requester2(SetOrderShippingMethodDocument, variables, options);
     },
     addItemToOrder(variables, options) {
-      return requester2(
-        AddItemToOrderDocument,
-        variables,
-        options
-      );
+      return requester2(AddItemToOrderDocument, variables, options);
     },
     removeOrderLine(variables, options) {
-      return requester2(
-        RemoveOrderLineDocument,
-        variables,
-        options
-      );
+      return requester2(RemoveOrderLineDocument, variables, options);
     },
     adjustOrderLine(variables, options) {
-      return requester2(
-        AdjustOrderLineDocument,
-        variables,
-        options
-      );
+      return requester2(AdjustOrderLineDocument, variables, options);
     },
     activeOrder(variables, options) {
-      return requester2(
-        ActiveOrderDocument,
-        variables,
-        options
-      );
+      return requester2(ActiveOrderDocument, variables, options);
     },
     orderByCode(variables, options) {
-      return requester2(
-        OrderByCodeDocument,
-        variables,
-        options
-      );
+      return requester2(OrderByCodeDocument, variables, options);
     },
     product(variables, options) {
-      return requester2(
-        ProductDocument,
-        variables,
-        options
-      );
+      return requester2(ProductDocument, variables, options);
     },
     search(variables, options) {
-      return requester2(
-        SearchDocument,
-        variables,
-        options
-      );
+      return requester2(SearchDocument, variables, options);
     },
     searchFacetValues(variables, options) {
-      return requester2(
-        SearchFacetValuesDocument,
-        variables,
-        options
-      );
+      return requester2(SearchFacetValuesDocument, variables, options);
     }
   };
 }
@@ -2533,7 +2336,7 @@ gql2`
 // app/providers/channel/channel.ts
 import gql3 from "graphql-tag";
 function activeChannel(options) {
-  return sdk.activeChannel(void 0, options).then(({ activeChannel: activeChannel2 }) => activeChannel2);
+  return sdk.activeChannel(void 0, options).then(({ activeChannel: activeChannel2 }) => activeChannel2.id == "5" ? activeChannel2 : null);
 }
 gql3`
   query activeChannel {
@@ -5056,14 +4859,19 @@ gql6`
     login(username: $email, password: $password, rememberMe: $rememberMe) {
       __typename
       ... on CurrentUser {
+      id
+      __typename
+      channels {
+        token
+        permissions
+        code
         id
-        identifier
-      }
-      ... on ErrorResult {
-        errorCode
-        message
+        __typename
       }
     }
+    ...ErrorResult
+    __typename
+  }
   }
 `;
 gql6`
@@ -12132,345 +11940,335 @@ function SignUpPage() {
       lineNumber: 49,
       columnNumber: 9
     }, this),
-    /* @__PURE__ */ jsxDEV56("div", { className: "mt-8 sm:mx-auto sm:w-full sm:max-w-md", children: /* @__PURE__ */ jsxDEV56("div", { className: "bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10", children: [
-      /* @__PURE__ */ jsxDEV56("div", { className: "bg-yellow-50 border border-yellow-400 text-yellow-800 rounded p-4 text-center text-sm", children: /* @__PURE__ */ jsxDEV56("p", { children: t("vendure.registrationMessage") }, void 0, !1, {
-        fileName: "app/routes/sign-up.index.tsx",
-        lineNumber: 67,
-        columnNumber: 15
-      }, this) }, void 0, !1, {
-        fileName: "app/routes/sign-up.index.tsx",
-        lineNumber: 66,
-        columnNumber: 13
-      }, this),
-      /* @__PURE__ */ jsxDEV56(Form6, { className: "space-y-6", method: "post", children: [
+    /* @__PURE__ */ jsxDEV56("div", { className: "mt-8 sm:mx-auto sm:w-full sm:max-w-md", children: /* @__PURE__ */ jsxDEV56("div", { className: "bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10", children: /* @__PURE__ */ jsxDEV56(Form6, { className: "space-y-6", method: "post", children: [
+      /* @__PURE__ */ jsxDEV56(
+        "input",
+        {
+          type: "hidden",
+          name: "redirectTo",
+          value: searchParams.get("redirectTo") ?? void 0
+        },
+        void 0,
+        !1,
+        {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 70,
+          columnNumber: 15
+        },
+        this
+      ),
+      /* @__PURE__ */ jsxDEV56("div", { children: [
         /* @__PURE__ */ jsxDEV56(
-          "input",
+          "label",
           {
-            type: "hidden",
-            name: "redirectTo",
-            value: searchParams.get("redirectTo") ?? void 0
+            htmlFor: "email",
+            className: "block text-sm font-medium text-gray-700",
+            children: t("account.emailAddress")
           },
           void 0,
           !1,
           {
             fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 70,
-            columnNumber: 15
+            lineNumber: 76,
+            columnNumber: 17
           },
           this
         ),
-        /* @__PURE__ */ jsxDEV56("div", { children: [
+        /* @__PURE__ */ jsxDEV56("div", { className: "mt-1", children: [
           /* @__PURE__ */ jsxDEV56(
-            "label",
-            {
-              htmlFor: "email",
-              className: "block text-sm font-medium text-gray-700",
-              children: t("account.emailAddress")
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/sign-up.index.tsx",
-              lineNumber: 76,
-              columnNumber: 17
-            },
-            this
-          ),
-          /* @__PURE__ */ jsxDEV56("div", { className: "mt-1", children: [
-            /* @__PURE__ */ jsxDEV56(
-              "input",
-              {
-                id: "email",
-                name: "email",
-                type: "email",
-                autoComplete: "email",
-                className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-              },
-              void 0,
-              !1,
-              {
-                fileName: "app/routes/sign-up.index.tsx",
-                lineNumber: 83,
-                columnNumber: 19
-              },
-              this
-            ),
-            formErrors?.email && /* @__PURE__ */ jsxDEV56("div", { className: "text-xs text-red-700", children: formErrors.email }, void 0, !1, {
-              fileName: "app/routes/sign-up.index.tsx",
-              lineNumber: 91,
-              columnNumber: 21
-            }, this)
-          ] }, void 0, !0, {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 82,
-            columnNumber: 17
-          }, this)
-        ] }, void 0, !0, {
-          fileName: "app/routes/sign-up.index.tsx",
-          lineNumber: 75,
-          columnNumber: 15
-        }, this),
-        /* @__PURE__ */ jsxDEV56("div", { children: [
-          /* @__PURE__ */ jsxDEV56(
-            "label",
-            {
-              htmlFor: "firstName",
-              className: "block text-sm font-medium text-gray-700",
-              children: t("account.firstName")
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/sign-up.index.tsx",
-              lineNumber: 99,
-              columnNumber: 17
-            },
-            this
-          ),
-          /* @__PURE__ */ jsxDEV56("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV56(
             "input",
             {
-              id: "firstName",
-              name: "firstName",
-              type: "text",
-              autoComplete: "given-name",
+              id: "email",
+              name: "email",
+              type: "email",
+              autoComplete: "email",
               className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
             },
             void 0,
             !1,
             {
               fileName: "app/routes/sign-up.index.tsx",
-              lineNumber: 106,
+              lineNumber: 83,
               columnNumber: 19
             },
             this
-          ) }, void 0, !1, {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 105,
-            columnNumber: 17
-          }, this)
-        ] }, void 0, !0, {
-          fileName: "app/routes/sign-up.index.tsx",
-          lineNumber: 98,
-          columnNumber: 15
-        }, this),
-        /* @__PURE__ */ jsxDEV56("div", { children: [
-          /* @__PURE__ */ jsxDEV56(
-            "label",
-            {
-              htmlFor: "lastName",
-              className: "block text-sm font-medium text-gray-700",
-              children: t("account.lastName")
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/sign-up.index.tsx",
-              lineNumber: 117,
-              columnNumber: 17
-            },
-            this
           ),
-          /* @__PURE__ */ jsxDEV56("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV56(
-            "input",
-            {
-              id: "lastName",
-              name: "lastName",
-              type: "text",
-              autoComplete: "family-name",
-              className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/sign-up.index.tsx",
-              lineNumber: 124,
-              columnNumber: 19
-            },
-            this
-          ) }, void 0, !1, {
+          formErrors?.email && /* @__PURE__ */ jsxDEV56("div", { className: "text-xs text-red-700", children: formErrors.email }, void 0, !1, {
             fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 123,
-            columnNumber: 17
-          }, this)
-        ] }, void 0, !0, {
-          fileName: "app/routes/sign-up.index.tsx",
-          lineNumber: 116,
-          columnNumber: 15
-        }, this),
-        /* @__PURE__ */ jsxDEV56("div", { children: [
-          /* @__PURE__ */ jsxDEV56(
-            "label",
-            {
-              htmlFor: "password",
-              className: "block text-sm font-medium text-gray-700",
-              children: t("account.password")
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/sign-up.index.tsx",
-              lineNumber: 135,
-              columnNumber: 17
-            },
-            this
-          ),
-          /* @__PURE__ */ jsxDEV56("div", { className: "mt-1", children: [
-            /* @__PURE__ */ jsxDEV56(
-              "input",
-              {
-                id: "password",
-                name: "password",
-                type: "password",
-                autoComplete: "current-password",
-                className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-              },
-              void 0,
-              !1,
-              {
-                fileName: "app/routes/sign-up.index.tsx",
-                lineNumber: 142,
-                columnNumber: 19
-              },
-              this
-            ),
-            formErrors?.password && /* @__PURE__ */ jsxDEV56("div", { className: "text-xs text-red-700", children: formErrors.password }, void 0, !1, {
-              fileName: "app/routes/sign-up.index.tsx",
-              lineNumber: 150,
-              columnNumber: 21
-            }, this)
-          ] }, void 0, !0, {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 141,
-            columnNumber: 17
-          }, this)
-        ] }, void 0, !0, {
-          fileName: "app/routes/sign-up.index.tsx",
-          lineNumber: 134,
-          columnNumber: 15
-        }, this),
-        /* @__PURE__ */ jsxDEV56("div", { children: [
-          /* @__PURE__ */ jsxDEV56(
-            "label",
-            {
-              htmlFor: "repeatPassword",
-              className: "block text-sm font-medium text-gray-700",
-              children: t("account.repeatPassword")
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/sign-up.index.tsx",
-              lineNumber: 157,
-              columnNumber: 17
-            },
-            this
-          ),
-          /* @__PURE__ */ jsxDEV56("div", { className: "mt-1", children: [
-            /* @__PURE__ */ jsxDEV56(
-              "input",
-              {
-                id: "repeatPassword",
-                name: "repeatPassword",
-                type: "password",
-                autoComplete: "current-password",
-                className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-              },
-              void 0,
-              !1,
-              {
-                fileName: "app/routes/sign-up.index.tsx",
-                lineNumber: 164,
-                columnNumber: 19
-              },
-              this
-            ),
-            formErrors?.repeatPassword && /* @__PURE__ */ jsxDEV56("div", { className: "text-xs text-red-700", children: formErrors.repeatPassword }, void 0, !1, {
-              fileName: "app/routes/sign-up.index.tsx",
-              lineNumber: 172,
-              columnNumber: 21
-            }, this)
-          ] }, void 0, !0, {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 163,
-            columnNumber: 17
-          }, this)
-        ] }, void 0, !0, {
-          fileName: "app/routes/sign-up.index.tsx",
-          lineNumber: 156,
-          columnNumber: 15
-        }, this),
-        formErrors?.form && /* @__PURE__ */ jsxDEV56("div", { className: "rounded-md bg-red-50 p-4", children: /* @__PURE__ */ jsxDEV56("div", { className: "flex", children: [
-          /* @__PURE__ */ jsxDEV56("div", { className: "flex-shrink-0", children: /* @__PURE__ */ jsxDEV56(
-            XCircleIcon6,
-            {
-              className: "h-5 w-5 text-red-400",
-              "aria-hidden": "true"
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/sign-up.index.tsx",
-              lineNumber: 182,
-              columnNumber: 23
-            },
-            this
-          ) }, void 0, !1, {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 181,
-            columnNumber: 21
-          }, this),
-          /* @__PURE__ */ jsxDEV56("div", { className: "ml-3", children: [
-            /* @__PURE__ */ jsxDEV56("h3", { className: "text-sm font-medium text-red-800", children: t("account.createError") }, void 0, !1, {
-              fileName: "app/routes/sign-up.index.tsx",
-              lineNumber: 188,
-              columnNumber: 23
-            }, this),
-            /* @__PURE__ */ jsxDEV56("p", { className: "text-sm text-red-700 mt-2", children: formErrors.form }, void 0, !1, {
-              fileName: "app/routes/sign-up.index.tsx",
-              lineNumber: 191,
-              columnNumber: 23
-            }, this)
-          ] }, void 0, !0, {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 187,
+            lineNumber: 91,
             columnNumber: 21
           }, this)
         ] }, void 0, !0, {
           fileName: "app/routes/sign-up.index.tsx",
-          lineNumber: 180,
-          columnNumber: 19
-        }, this) }, void 0, !1, {
-          fileName: "app/routes/sign-up.index.tsx",
-          lineNumber: 179,
+          lineNumber: 82,
           columnNumber: 17
-        }, this),
-        /* @__PURE__ */ jsxDEV56("div", { children: /* @__PURE__ */ jsxDEV56(
-          "button",
+        }, this)
+      ] }, void 0, !0, {
+        fileName: "app/routes/sign-up.index.tsx",
+        lineNumber: 75,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV56("div", { children: [
+        /* @__PURE__ */ jsxDEV56(
+          "label",
           {
-            type: "submit",
-            className: "w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500",
-            children: t("account.signUp")
+            htmlFor: "firstName",
+            className: "block text-sm font-medium text-gray-700",
+            children: t("account.firstName")
           },
           void 0,
           !1,
           {
             fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 200,
+            lineNumber: 99,
             columnNumber: 17
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV56("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV56(
+          "input",
+          {
+            id: "firstName",
+            name: "firstName",
+            type: "text",
+            autoComplete: "given-name",
+            className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+          },
+          void 0,
+          !1,
+          {
+            fileName: "app/routes/sign-up.index.tsx",
+            lineNumber: 106,
+            columnNumber: 19
           },
           this
         ) }, void 0, !1, {
           fileName: "app/routes/sign-up.index.tsx",
-          lineNumber: 199,
-          columnNumber: 15
+          lineNumber: 105,
+          columnNumber: 17
         }, this)
       ] }, void 0, !0, {
         fileName: "app/routes/sign-up.index.tsx",
-        lineNumber: 69,
-        columnNumber: 13
+        lineNumber: 98,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV56("div", { children: [
+        /* @__PURE__ */ jsxDEV56(
+          "label",
+          {
+            htmlFor: "lastName",
+            className: "block text-sm font-medium text-gray-700",
+            children: t("account.lastName")
+          },
+          void 0,
+          !1,
+          {
+            fileName: "app/routes/sign-up.index.tsx",
+            lineNumber: 117,
+            columnNumber: 17
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV56("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV56(
+          "input",
+          {
+            id: "lastName",
+            name: "lastName",
+            type: "text",
+            autoComplete: "family-name",
+            className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+          },
+          void 0,
+          !1,
+          {
+            fileName: "app/routes/sign-up.index.tsx",
+            lineNumber: 124,
+            columnNumber: 19
+          },
+          this
+        ) }, void 0, !1, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 123,
+          columnNumber: 17
+        }, this)
+      ] }, void 0, !0, {
+        fileName: "app/routes/sign-up.index.tsx",
+        lineNumber: 116,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV56("div", { children: [
+        /* @__PURE__ */ jsxDEV56(
+          "label",
+          {
+            htmlFor: "password",
+            className: "block text-sm font-medium text-gray-700",
+            children: t("account.password")
+          },
+          void 0,
+          !1,
+          {
+            fileName: "app/routes/sign-up.index.tsx",
+            lineNumber: 135,
+            columnNumber: 17
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV56("div", { className: "mt-1", children: [
+          /* @__PURE__ */ jsxDEV56(
+            "input",
+            {
+              id: "password",
+              name: "password",
+              type: "password",
+              autoComplete: "current-password",
+              className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+            },
+            void 0,
+            !1,
+            {
+              fileName: "app/routes/sign-up.index.tsx",
+              lineNumber: 142,
+              columnNumber: 19
+            },
+            this
+          ),
+          formErrors?.password && /* @__PURE__ */ jsxDEV56("div", { className: "text-xs text-red-700", children: formErrors.password }, void 0, !1, {
+            fileName: "app/routes/sign-up.index.tsx",
+            lineNumber: 150,
+            columnNumber: 21
+          }, this)
+        ] }, void 0, !0, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 141,
+          columnNumber: 17
+        }, this)
+      ] }, void 0, !0, {
+        fileName: "app/routes/sign-up.index.tsx",
+        lineNumber: 134,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV56("div", { children: [
+        /* @__PURE__ */ jsxDEV56(
+          "label",
+          {
+            htmlFor: "repeatPassword",
+            className: "block text-sm font-medium text-gray-700",
+            children: t("account.repeatPassword")
+          },
+          void 0,
+          !1,
+          {
+            fileName: "app/routes/sign-up.index.tsx",
+            lineNumber: 157,
+            columnNumber: 17
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV56("div", { className: "mt-1", children: [
+          /* @__PURE__ */ jsxDEV56(
+            "input",
+            {
+              id: "repeatPassword",
+              name: "repeatPassword",
+              type: "password",
+              autoComplete: "current-password",
+              className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+            },
+            void 0,
+            !1,
+            {
+              fileName: "app/routes/sign-up.index.tsx",
+              lineNumber: 164,
+              columnNumber: 19
+            },
+            this
+          ),
+          formErrors?.repeatPassword && /* @__PURE__ */ jsxDEV56("div", { className: "text-xs text-red-700", children: formErrors.repeatPassword }, void 0, !1, {
+            fileName: "app/routes/sign-up.index.tsx",
+            lineNumber: 172,
+            columnNumber: 21
+          }, this)
+        ] }, void 0, !0, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 163,
+          columnNumber: 17
+        }, this)
+      ] }, void 0, !0, {
+        fileName: "app/routes/sign-up.index.tsx",
+        lineNumber: 156,
+        columnNumber: 15
+      }, this),
+      formErrors?.form && /* @__PURE__ */ jsxDEV56("div", { className: "rounded-md bg-red-50 p-4", children: /* @__PURE__ */ jsxDEV56("div", { className: "flex", children: [
+        /* @__PURE__ */ jsxDEV56("div", { className: "flex-shrink-0", children: /* @__PURE__ */ jsxDEV56(
+          XCircleIcon6,
+          {
+            className: "h-5 w-5 text-red-400",
+            "aria-hidden": "true"
+          },
+          void 0,
+          !1,
+          {
+            fileName: "app/routes/sign-up.index.tsx",
+            lineNumber: 182,
+            columnNumber: 23
+          },
+          this
+        ) }, void 0, !1, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 181,
+          columnNumber: 21
+        }, this),
+        /* @__PURE__ */ jsxDEV56("div", { className: "ml-3", children: [
+          /* @__PURE__ */ jsxDEV56("h3", { className: "text-sm font-medium text-red-800", children: t("account.createError") }, void 0, !1, {
+            fileName: "app/routes/sign-up.index.tsx",
+            lineNumber: 188,
+            columnNumber: 23
+          }, this),
+          /* @__PURE__ */ jsxDEV56("p", { className: "text-sm text-red-700 mt-2", children: formErrors.form }, void 0, !1, {
+            fileName: "app/routes/sign-up.index.tsx",
+            lineNumber: 191,
+            columnNumber: 23
+          }, this)
+        ] }, void 0, !0, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 187,
+          columnNumber: 21
+        }, this)
+      ] }, void 0, !0, {
+        fileName: "app/routes/sign-up.index.tsx",
+        lineNumber: 180,
+        columnNumber: 19
+      }, this) }, void 0, !1, {
+        fileName: "app/routes/sign-up.index.tsx",
+        lineNumber: 179,
+        columnNumber: 17
+      }, this),
+      'console.log("Form Data:", formData); console.log("Email:", email); console.log("Password:", password); console.log("Repeat Password:", repeatPassword);',
+      /* @__PURE__ */ jsxDEV56("div", { children: /* @__PURE__ */ jsxDEV56(
+        "button",
+        {
+          type: "submit",
+          className: "w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500",
+          children: t("account.signUp")
+        },
+        void 0,
+        !1,
+        {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 204,
+          columnNumber: 17
+        },
+        this
+      ) }, void 0, !1, {
+        fileName: "app/routes/sign-up.index.tsx",
+        lineNumber: 203,
+        columnNumber: 15
       }, this)
     ] }, void 0, !0, {
+      fileName: "app/routes/sign-up.index.tsx",
+      lineNumber: 69,
+      columnNumber: 13
+    }, this) }, void 0, !1, {
       fileName: "app/routes/sign-up.index.tsx",
       lineNumber: 65,
       columnNumber: 11
@@ -12890,307 +12688,268 @@ function SignInPage() {
       lineNumber: 36,
       columnNumber: 9
     }, this),
-    /* @__PURE__ */ jsxDEV61("div", { className: "mt-8 sm:mx-auto sm:w-full sm:max-w-md", children: /* @__PURE__ */ jsxDEV61("div", { className: "bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10", children: [
-      /* @__PURE__ */ jsxDEV61("div", { className: "bg-yellow-50 border border-yellow-400 text-yellow-800 rounded p-4 text-center text-sm", children: [
-        /* @__PURE__ */ jsxDEV61("p", { children: t("vendure.demoCredentials") }, void 0, !1, {
+    /* @__PURE__ */ jsxDEV61("div", { className: "mt-8 sm:mx-auto sm:w-full sm:max-w-md", children: /* @__PURE__ */ jsxDEV61("div", { className: "bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10", children: /* @__PURE__ */ jsxDEV61(login2.Form, { method: "post", children: /* @__PURE__ */ jsxDEV61("fieldset", { disabled: login2.state !== "idle", className: "space-y-6", children: [
+      /* @__PURE__ */ jsxDEV61(
+        "input",
+        {
+          type: "hidden",
+          name: "redirectTo",
+          value: searchParams.get("redirectTo") ?? void 0
+        },
+        void 0,
+        !1,
+        {
           fileName: "app/routes/sign-in.tsx",
-          lineNumber: 54,
-          columnNumber: 15
-        }, this),
-        /* @__PURE__ */ jsxDEV61("p", { children: [
-          t("account.emailAddress"),
-          ": ",
-          /* @__PURE__ */ jsxDEV61("span", { className: "font-bold", children: "test@vendure.io" }, void 0, !1, {
-            fileName: "app/routes/sign-in.tsx",
-            lineNumber: 58,
-            columnNumber: 17
-          }, this)
-        ] }, void 0, !0, {
-          fileName: "app/routes/sign-in.tsx",
-          lineNumber: 55,
-          columnNumber: 15
-        }, this),
-        /* @__PURE__ */ jsxDEV61("p", { children: [
-          t("account.password"),
-          ": ",
-          /* @__PURE__ */ jsxDEV61("span", { className: "font-bold", children: "test" }, void 0, !1, {
-            fileName: "app/routes/sign-in.tsx",
-            lineNumber: 61,
-            columnNumber: 42
-          }, this)
-        ] }, void 0, !0, {
-          fileName: "app/routes/sign-in.tsx",
-          lineNumber: 60,
-          columnNumber: 15
-        }, this)
-      ] }, void 0, !0, {
-        fileName: "app/routes/sign-in.tsx",
-        lineNumber: 53,
-        columnNumber: 13
-      }, this),
-      /* @__PURE__ */ jsxDEV61(login2.Form, { method: "post", children: /* @__PURE__ */ jsxDEV61("fieldset", { disabled: login2.state !== "idle", className: "space-y-6", children: [
+          lineNumber: 66,
+          columnNumber: 17
+        },
+        this
+      ),
+      /* @__PURE__ */ jsxDEV61("div", { children: [
         /* @__PURE__ */ jsxDEV61(
-          "input",
+          "label",
           {
-            type: "hidden",
-            name: "redirectTo",
-            value: searchParams.get("redirectTo") ?? void 0
+            htmlFor: "email",
+            className: "block text-sm font-medium text-gray-700",
+            children: t("account.emailAddress")
           },
           void 0,
           !1,
           {
             fileName: "app/routes/sign-in.tsx",
-            lineNumber: 66,
-            columnNumber: 17
+            lineNumber: 72,
+            columnNumber: 19
           },
           this
         ),
-        /* @__PURE__ */ jsxDEV61("div", { children: [
-          /* @__PURE__ */ jsxDEV61(
-            "label",
-            {
-              htmlFor: "email",
-              className: "block text-sm font-medium text-gray-700",
-              children: t("account.emailAddress")
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/sign-in.tsx",
-              lineNumber: 72,
-              columnNumber: 19
-            },
-            this
-          ),
-          /* @__PURE__ */ jsxDEV61("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV61(
-            "input",
-            {
-              id: "email",
-              name: "email",
-              type: "email",
-              autoComplete: "email",
-              required: !0,
-              defaultValue: "test@vendure.io",
-              placeholder: t("account.emailAddress"),
-              className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed"
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/sign-in.tsx",
-              lineNumber: 79,
-              columnNumber: 21
-            },
-            this
-          ) }, void 0, !1, {
-            fileName: "app/routes/sign-in.tsx",
-            lineNumber: 78,
-            columnNumber: 19
-          }, this)
-        ] }, void 0, !0, {
-          fileName: "app/routes/sign-in.tsx",
-          lineNumber: 71,
-          columnNumber: 17
-        }, this),
-        /* @__PURE__ */ jsxDEV61("div", { children: [
-          /* @__PURE__ */ jsxDEV61(
-            "label",
-            {
-              htmlFor: "password",
-              className: "block text-sm font-medium text-gray-700",
-              children: t("account.password")
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/sign-in.tsx",
-              lineNumber: 93,
-              columnNumber: 19
-            },
-            this
-          ),
-          /* @__PURE__ */ jsxDEV61("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV61(
-            "input",
-            {
-              id: "password",
-              name: "password",
-              type: "password",
-              autoComplete: "current-password",
-              required: !0,
-              placeholder: t("account.password"),
-              defaultValue: "test",
-              className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed"
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/sign-in.tsx",
-              lineNumber: 100,
-              columnNumber: 21
-            },
-            this
-          ) }, void 0, !1, {
-            fileName: "app/routes/sign-in.tsx",
-            lineNumber: 99,
-            columnNumber: 19
-          }, this)
-        ] }, void 0, !0, {
-          fileName: "app/routes/sign-in.tsx",
-          lineNumber: 92,
-          columnNumber: 17
-        }, this),
-        /* @__PURE__ */ jsxDEV61("div", { className: "flex items-center justify-between", children: [
-          /* @__PURE__ */ jsxDEV61("div", { className: "flex items-center", children: [
-            /* @__PURE__ */ jsxDEV61(
-              "input",
-              {
-                id: "rememberMe",
-                name: "rememberMe",
-                type: "checkbox",
-                className: "h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded disabled:bg-gray-300 disabled:cursor-not-allowed",
-                defaultChecked: !0
-              },
-              void 0,
-              !1,
-              {
-                fileName: "app/routes/sign-in.tsx",
-                lineNumber: 115,
-                columnNumber: 21
-              },
-              this
-            ),
-            /* @__PURE__ */ jsxDEV61(
-              "label",
-              {
-                htmlFor: "rememberMe",
-                className: "ml-2 block text-sm text-gray-900",
-                children: t("account.rememberMe")
-              },
-              void 0,
-              !1,
-              {
-                fileName: "app/routes/sign-in.tsx",
-                lineNumber: 122,
-                columnNumber: 21
-              },
-              this
-            )
-          ] }, void 0, !0, {
-            fileName: "app/routes/sign-in.tsx",
-            lineNumber: 114,
-            columnNumber: 19
-          }, this),
-          /* @__PURE__ */ jsxDEV61("div", { className: "text-sm", children: /* @__PURE__ */ jsxDEV61(
-            "a",
-            {
-              href: "#",
-              className: "font-medium text-primary-600 hover:text-primary-500",
-              children: t("account.forgotPassword")
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/sign-in.tsx",
-              lineNumber: 131,
-              columnNumber: 21
-            },
-            this
-          ) }, void 0, !1, {
-            fileName: "app/routes/sign-in.tsx",
-            lineNumber: 130,
-            columnNumber: 19
-          }, this)
-        ] }, void 0, !0, {
-          fileName: "app/routes/sign-in.tsx",
-          lineNumber: 113,
-          columnNumber: 17
-        }, this),
-        login2.data && login2.state === "idle" && /* @__PURE__ */ jsxDEV61("div", { className: "rounded-md bg-red-50 p-4", children: /* @__PURE__ */ jsxDEV61("div", { className: "flex", children: [
-          /* @__PURE__ */ jsxDEV61("div", { className: "flex-shrink-0", children: /* @__PURE__ */ jsxDEV61(
-            XCircleIcon7,
-            {
-              className: "h-5 w-5 text-red-400",
-              "aria-hidden": "true"
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/sign-in.tsx",
-              lineNumber: 144,
-              columnNumber: 25
-            },
-            this
-          ) }, void 0, !1, {
-            fileName: "app/routes/sign-in.tsx",
-            lineNumber: 143,
-            columnNumber: 23
-          }, this),
-          /* @__PURE__ */ jsxDEV61("div", { className: "ml-3", children: [
-            /* @__PURE__ */ jsxDEV61("h3", { className: "text-sm font-medium text-red-800", children: t("account.errorSignIn") }, void 0, !1, {
-              fileName: "app/routes/sign-in.tsx",
-              lineNumber: 150,
-              columnNumber: 25
-            }, this),
-            /* @__PURE__ */ jsxDEV61("p", { className: "text-sm text-red-700 mt-2", children: login2.data.message }, void 0, !1, {
-              fileName: "app/routes/sign-in.tsx",
-              lineNumber: 153,
-              columnNumber: 25
-            }, this)
-          ] }, void 0, !0, {
-            fileName: "app/routes/sign-in.tsx",
-            lineNumber: 149,
-            columnNumber: 23
-          }, this)
-        ] }, void 0, !0, {
-          fileName: "app/routes/sign-in.tsx",
-          lineNumber: 142,
-          columnNumber: 21
-        }, this) }, void 0, !1, {
-          fileName: "app/routes/sign-in.tsx",
-          lineNumber: 141,
-          columnNumber: 19
-        }, this),
-        /* @__PURE__ */ jsxDEV61("div", { children: /* @__PURE__ */ jsxDEV61(
-          Button,
+        /* @__PURE__ */ jsxDEV61("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV61(
+          "input",
           {
-            type: "submit",
-            className: "w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500",
-            children: /* @__PURE__ */ jsxDEV61("span", { className: "flex gap-4 items-center", children: [
-              login2.state !== "idle" && /* @__PURE__ */ jsxDEV61(ArrowPathIcon4, { className: "animate-spin h-5 w-5 text-gray-500" }, void 0, !1, {
-                fileName: "app/routes/sign-in.tsx",
-                lineNumber: 168,
-                columnNumber: 25
-              }, this),
-              t("account.signIn")
-            ] }, void 0, !0, {
-              fileName: "app/routes/sign-in.tsx",
-              lineNumber: 166,
-              columnNumber: 21
-            }, this)
+            id: "email",
+            name: "email",
+            type: "email",
+            autoComplete: "email",
+            required: !0,
+            defaultValue: "test@vendure.io",
+            placeholder: t("account.emailAddress"),
+            className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed"
           },
           void 0,
           !1,
           {
             fileName: "app/routes/sign-in.tsx",
-            lineNumber: 162,
-            columnNumber: 19
+            lineNumber: 79,
+            columnNumber: 21
           },
           this
         ) }, void 0, !1, {
           fileName: "app/routes/sign-in.tsx",
-          lineNumber: 161,
-          columnNumber: 17
+          lineNumber: 78,
+          columnNumber: 19
         }, this)
       ] }, void 0, !0, {
         fileName: "app/routes/sign-in.tsx",
-        lineNumber: 65,
-        columnNumber: 15
+        lineNumber: 71,
+        columnNumber: 17
+      }, this),
+      /* @__PURE__ */ jsxDEV61("div", { children: [
+        /* @__PURE__ */ jsxDEV61(
+          "label",
+          {
+            htmlFor: "password",
+            className: "block text-sm font-medium text-gray-700",
+            children: t("account.password")
+          },
+          void 0,
+          !1,
+          {
+            fileName: "app/routes/sign-in.tsx",
+            lineNumber: 93,
+            columnNumber: 19
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV61("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV61(
+          "input",
+          {
+            id: "password",
+            name: "password",
+            type: "password",
+            autoComplete: "current-password",
+            required: !0,
+            placeholder: t("account.password"),
+            defaultValue: "test",
+            className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed"
+          },
+          void 0,
+          !1,
+          {
+            fileName: "app/routes/sign-in.tsx",
+            lineNumber: 100,
+            columnNumber: 21
+          },
+          this
+        ) }, void 0, !1, {
+          fileName: "app/routes/sign-in.tsx",
+          lineNumber: 99,
+          columnNumber: 19
+        }, this)
+      ] }, void 0, !0, {
+        fileName: "app/routes/sign-in.tsx",
+        lineNumber: 92,
+        columnNumber: 17
+      }, this),
+      /* @__PURE__ */ jsxDEV61("div", { className: "flex items-center justify-between", children: [
+        /* @__PURE__ */ jsxDEV61("div", { className: "flex items-center", children: [
+          /* @__PURE__ */ jsxDEV61(
+            "input",
+            {
+              id: "rememberMe",
+              name: "rememberMe",
+              type: "checkbox",
+              className: "h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded disabled:bg-gray-300 disabled:cursor-not-allowed",
+              defaultChecked: !0
+            },
+            void 0,
+            !1,
+            {
+              fileName: "app/routes/sign-in.tsx",
+              lineNumber: 115,
+              columnNumber: 21
+            },
+            this
+          ),
+          /* @__PURE__ */ jsxDEV61(
+            "label",
+            {
+              htmlFor: "rememberMe",
+              className: "ml-2 block text-sm text-gray-900",
+              children: t("account.rememberMe")
+            },
+            void 0,
+            !1,
+            {
+              fileName: "app/routes/sign-in.tsx",
+              lineNumber: 122,
+              columnNumber: 21
+            },
+            this
+          )
+        ] }, void 0, !0, {
+          fileName: "app/routes/sign-in.tsx",
+          lineNumber: 114,
+          columnNumber: 19
+        }, this),
+        /* @__PURE__ */ jsxDEV61("div", { className: "text-sm", children: /* @__PURE__ */ jsxDEV61(
+          "a",
+          {
+            href: "#",
+            className: "font-medium text-primary-600 hover:text-primary-500",
+            children: t("account.forgotPassword")
+          },
+          void 0,
+          !1,
+          {
+            fileName: "app/routes/sign-in.tsx",
+            lineNumber: 131,
+            columnNumber: 21
+          },
+          this
+        ) }, void 0, !1, {
+          fileName: "app/routes/sign-in.tsx",
+          lineNumber: 130,
+          columnNumber: 19
+        }, this)
+      ] }, void 0, !0, {
+        fileName: "app/routes/sign-in.tsx",
+        lineNumber: 113,
+        columnNumber: 17
+      }, this),
+      login2.data && login2.state === "idle" && /* @__PURE__ */ jsxDEV61("div", { className: "rounded-md bg-red-50 p-4", children: /* @__PURE__ */ jsxDEV61("div", { className: "flex", children: [
+        /* @__PURE__ */ jsxDEV61("div", { className: "flex-shrink-0", children: /* @__PURE__ */ jsxDEV61(
+          XCircleIcon7,
+          {
+            className: "h-5 w-5 text-red-400",
+            "aria-hidden": "true"
+          },
+          void 0,
+          !1,
+          {
+            fileName: "app/routes/sign-in.tsx",
+            lineNumber: 144,
+            columnNumber: 25
+          },
+          this
+        ) }, void 0, !1, {
+          fileName: "app/routes/sign-in.tsx",
+          lineNumber: 143,
+          columnNumber: 23
+        }, this),
+        /* @__PURE__ */ jsxDEV61("div", { className: "ml-3", children: [
+          /* @__PURE__ */ jsxDEV61("h3", { className: "text-sm font-medium text-red-800", children: t("account.errorSignIn") }, void 0, !1, {
+            fileName: "app/routes/sign-in.tsx",
+            lineNumber: 150,
+            columnNumber: 25
+          }, this),
+          /* @__PURE__ */ jsxDEV61("p", { className: "text-sm text-red-700 mt-2", children: login2.data.message }, void 0, !1, {
+            fileName: "app/routes/sign-in.tsx",
+            lineNumber: 153,
+            columnNumber: 25
+          }, this)
+        ] }, void 0, !0, {
+          fileName: "app/routes/sign-in.tsx",
+          lineNumber: 149,
+          columnNumber: 23
+        }, this)
+      ] }, void 0, !0, {
+        fileName: "app/routes/sign-in.tsx",
+        lineNumber: 142,
+        columnNumber: 21
       }, this) }, void 0, !1, {
         fileName: "app/routes/sign-in.tsx",
-        lineNumber: 64,
-        columnNumber: 13
+        lineNumber: 141,
+        columnNumber: 19
+      }, this),
+      /* @__PURE__ */ jsxDEV61("div", { children: /* @__PURE__ */ jsxDEV61(
+        Button,
+        {
+          type: "submit",
+          className: "w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500",
+          children: /* @__PURE__ */ jsxDEV61("span", { className: "flex gap-4 items-center", children: [
+            login2.state !== "idle" && /* @__PURE__ */ jsxDEV61(ArrowPathIcon4, { className: "animate-spin h-5 w-5 text-gray-500" }, void 0, !1, {
+              fileName: "app/routes/sign-in.tsx",
+              lineNumber: 168,
+              columnNumber: 25
+            }, this),
+            t("account.signIn")
+          ] }, void 0, !0, {
+            fileName: "app/routes/sign-in.tsx",
+            lineNumber: 166,
+            columnNumber: 21
+          }, this)
+        },
+        void 0,
+        !1,
+        {
+          fileName: "app/routes/sign-in.tsx",
+          lineNumber: 162,
+          columnNumber: 19
+        },
+        this
+      ) }, void 0, !1, {
+        fileName: "app/routes/sign-in.tsx",
+        lineNumber: 161,
+        columnNumber: 17
       }, this)
     ] }, void 0, !0, {
+      fileName: "app/routes/sign-in.tsx",
+      lineNumber: 65,
+      columnNumber: 15
+    }, this) }, void 0, !1, {
+      fileName: "app/routes/sign-in.tsx",
+      lineNumber: 64,
+      columnNumber: 13
+    }, this) }, void 0, !1, {
       fileName: "app/routes/sign-in.tsx",
       lineNumber: 52,
       columnNumber: 11
@@ -13737,7 +13496,7 @@ function Index() {
 }
 
 // server-assets-manifest:@remix-run/dev/assets-manifest
-var assets_manifest_default = { entry: { module: "/build/entry.client-FVJIFWK5.js", imports: ["/build/_shared/chunk-OAPPX4FA.js", "/build/_shared/chunk-7LRNVKNK.js", "/build/_shared/chunk-7PHB3BFD.js", "/build/_shared/chunk-BPVN3YYS.js", "/build/_shared/chunk-KP6QTVYU.js", "/build/_shared/chunk-JR22VO6P.js", "/build/_shared/chunk-WEAPBHQG.js", "/build/_shared/chunk-CJ4MY3PQ.js", "/build/_shared/chunk-PZDJHGND.js"] }, routes: { root: { id: "root", parentId: void 0, path: "", index: void 0, caseSensitive: void 0, module: "/build/root-7YHNHZBP.js", imports: ["/build/_shared/chunk-WYO5ATGT.js", "/build/_shared/chunk-HEMXXL6Y.js", "/build/_shared/chunk-QZYG7WHP.js", "/build/_shared/chunk-7HHNXP4R.js", "/build/_shared/chunk-2QJY4JOV.js", "/build/_shared/chunk-2S5KDW4V.js", "/build/_shared/chunk-R5BHNF67.js", "/build/_shared/chunk-4KYYPW5T.js", "/build/_shared/chunk-6IR2VAGI.js", "/build/_shared/chunk-76TTLXDT.js", "/build/_shared/chunk-L7FVEPUN.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !0 }, "routes/account": { id: "routes/account", parentId: "root", path: "account", index: void 0, caseSensitive: void 0, module: "/build/routes/account-WFQEJNVY.js", imports: void 0, hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account._index": { id: "routes/account._index", parentId: "root", path: "account/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/account._index-FKUYV3CZ.js", imports: ["/build/_shared/chunk-IN422JHN.js", "/build/_shared/chunk-37GJJKCE.js", "/build/_shared/chunk-QC532LL5.js", "/build/_shared/chunk-36WQ6G5C.js", "/build/_shared/chunk-4EJOO2IT.js", "/build/_shared/chunk-XVLAQD6G.js", "/build/_shared/chunk-XPW3HCEW.js", "/build/_shared/chunk-PKAD657O.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses": { id: "routes/account.addresses", parentId: "root", path: "account/addresses", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses-HZB33UG6.js", imports: ["/build/_shared/chunk-36WQ6G5C.js", "/build/_shared/chunk-4EJOO2IT.js", "/build/_shared/chunk-XVLAQD6G.js", "/build/_shared/chunk-PKAD657O.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.$addressId": { id: "routes/account.addresses.$addressId", parentId: "root", path: "account/addresses/:addressId", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.$addressId-TUV3MHCD.js", imports: ["/build/_shared/chunk-Q7ME2VZG.js", "/build/_shared/chunk-J34O3NPF.js", "/build/_shared/chunk-37GJJKCE.js", "/build/_shared/chunk-QC532LL5.js", "/build/_shared/chunk-4EJOO2IT.js", "/build/_shared/chunk-XVLAQD6G.js", "/build/_shared/chunk-ZGSQZHKT.js", "/build/_shared/chunk-XPW3HCEW.js", "/build/_shared/chunk-3W7WW5ZQ.js", "/build/_shared/chunk-PKAD657O.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.new": { id: "routes/account.addresses.new", parentId: "root", path: "account/addresses/new", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.new-5LZUWCVF.js", imports: ["/build/_shared/chunk-Q7ME2VZG.js", "/build/_shared/chunk-J34O3NPF.js", "/build/_shared/chunk-37GJJKCE.js", "/build/_shared/chunk-QC532LL5.js", "/build/_shared/chunk-4EJOO2IT.js", "/build/_shared/chunk-XVLAQD6G.js", "/build/_shared/chunk-ZGSQZHKT.js", "/build/_shared/chunk-XPW3HCEW.js", "/build/_shared/chunk-3W7WW5ZQ.js", "/build/_shared/chunk-PKAD657O.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.history": { id: "routes/account.history", parentId: "root", path: "account/history", index: void 0, caseSensitive: void 0, module: "/build/routes/account.history-F4SV5H3X.js", imports: ["/build/_shared/chunk-SRIC3HXS.js", "/build/_shared/chunk-ZGSQZHKT.js", "/build/_shared/chunk-XPW3HCEW.js", "/build/_shared/chunk-PKAD657O.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.password": { id: "routes/account.password", parentId: "root", path: "account/password", index: void 0, caseSensitive: void 0, module: "/build/routes/account.password-BBEHJ3KC.js", imports: ["/build/_shared/chunk-QC532LL5.js", "/build/_shared/chunk-36WQ6G5C.js", "/build/_shared/chunk-XVLAQD6G.js", "/build/_shared/chunk-XPW3HCEW.js", "/build/_shared/chunk-PKAD657O.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.active-order": { id: "routes/api.active-order", parentId: "root", path: "api/active-order", index: void 0, caseSensitive: void 0, module: "/build/routes/api.active-order-VQJ67ND7.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.logout": { id: "routes/api.logout", parentId: "root", path: "api/logout", index: void 0, caseSensitive: void 0, module: "/build/routes/api.logout-O22KF3EY.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout": { id: "routes/checkout", parentId: "root", path: "checkout", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout-FVIHTZOK.js", imports: ["/build/_shared/chunk-JEEW62NV.js"], hasAction: !1, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout._index": { id: "routes/checkout._index", parentId: "root", path: "checkout/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout._index-EAPQ26Q5.js", imports: ["/build/_shared/chunk-IN422JHN.js", "/build/_shared/chunk-J34O3NPF.js", "/build/_shared/chunk-3W7WW5ZQ.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.confirmation.$orderCode": { id: "routes/checkout.confirmation.$orderCode", parentId: "root", path: "checkout/confirmation/:orderCode", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.confirmation.$orderCode-FWQFOQVA.js", imports: ["/build/_shared/chunk-JEEW62NV.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.payment": { id: "routes/checkout.payment", parentId: "root", path: "checkout/payment", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.payment-EA24DGSA.js", imports: ["/build/_shared/chunk-J34O3NPF.js", "/build/_shared/chunk-3W7WW5ZQ.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/collections.$slug": { id: "routes/collections.$slug", parentId: "root", path: "collections/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/collections.$slug-4W5J3WHN.js", imports: ["/build/_shared/chunk-RI5G26KI.js", "/build/_shared/chunk-PHWPDOQN.js", "/build/_shared/chunk-SRIC3HXS.js", "/build/_shared/chunk-E6CLSRFG.js", "/build/_shared/chunk-WLLYEG7R.js", "/build/_shared/chunk-ZGSQZHKT.js", "/build/_shared/chunk-XPW3HCEW.js", "/build/_shared/chunk-3W7WW5ZQ.js", "/build/_shared/chunk-PKAD657O.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/index": { id: "routes/index", parentId: "root", path: void 0, index: !0, caseSensitive: void 0, module: "/build/routes/index-PBXILBOC.js", imports: ["/build/_shared/chunk-PHWPDOQN.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/products.$slug": { id: "routes/products.$slug", parentId: "root", path: "products/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/products.$slug-F7POUHBE.js", imports: ["/build/_shared/chunk-E6CLSRFG.js", "/build/_shared/chunk-WLLYEG7R.js", "/build/_shared/chunk-3W7WW5ZQ.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/search": { id: "routes/search", parentId: "root", path: "search", index: void 0, caseSensitive: void 0, module: "/build/routes/search-EIAAY6UQ.js", imports: ["/build/_shared/chunk-RI5G26KI.js", "/build/_shared/chunk-SRIC3HXS.js", "/build/_shared/chunk-WLLYEG7R.js", "/build/_shared/chunk-ZGSQZHKT.js", "/build/_shared/chunk-XPW3HCEW.js", "/build/_shared/chunk-3W7WW5ZQ.js", "/build/_shared/chunk-PKAD657O.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-in": { id: "routes/sign-in", parentId: "root", path: "sign-in", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-in-SXXRR3X4.js", imports: ["/build/_shared/chunk-PKAD657O.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.index": { id: "routes/sign-up.index", parentId: "root", path: "sign-up", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.index-JDWEQZGK.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.success": { id: "routes/sign-up.success", parentId: "root", path: "sign-up/success", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.success-Y7ECGEVQ.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify": { id: "routes/verify", parentId: "root", path: "verify", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-PPA5ZC23.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify-email-address-change": { id: "routes/verify-email-address-change", parentId: "root", path: "verify-email-address-change", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-email-address-change-UUJPKLB2.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 } }, version: "54e27507", hmr: { runtime: "/build/_shared/chunk-KP6QTVYU.js", timestamp: 1742792967238 }, url: "/build/manifest-54E27507.js" };
+var assets_manifest_default = { entry: { module: "/build/entry.client-EDULRROB.js", imports: ["/build/_shared/chunk-OAPPX4FA.js", "/build/_shared/chunk-7LRNVKNK.js", "/build/_shared/chunk-7PHB3BFD.js", "/build/_shared/chunk-LN2QK4ZM.js", "/build/_shared/chunk-RJ6WM5PD.js", "/build/_shared/chunk-JR22VO6P.js", "/build/_shared/chunk-WEAPBHQG.js", "/build/_shared/chunk-CJ4MY3PQ.js", "/build/_shared/chunk-PZDJHGND.js"] }, routes: { root: { id: "root", parentId: void 0, path: "", index: void 0, caseSensitive: void 0, module: "/build/root-62ZNOHYS.js", imports: ["/build/_shared/chunk-SQRWUPPV.js", "/build/_shared/chunk-2WPG26PK.js", "/build/_shared/chunk-QZYG7WHP.js", "/build/_shared/chunk-ENCCBPD3.js", "/build/_shared/chunk-2QJY4JOV.js", "/build/_shared/chunk-Q4DAOXYC.js", "/build/_shared/chunk-R5BHNF67.js", "/build/_shared/chunk-4KYYPW5T.js", "/build/_shared/chunk-5EWT5DRM.js", "/build/_shared/chunk-76TTLXDT.js", "/build/_shared/chunk-L7FVEPUN.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !0 }, "routes/account": { id: "routes/account", parentId: "root", path: "account", index: void 0, caseSensitive: void 0, module: "/build/routes/account-CEHCXHQH.js", imports: void 0, hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account._index": { id: "routes/account._index", parentId: "root", path: "account/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/account._index-6KQAVITU.js", imports: ["/build/_shared/chunk-6BAWLQLJ.js", "/build/_shared/chunk-X5ZRNQ2O.js", "/build/_shared/chunk-FWFO23FU.js", "/build/_shared/chunk-5JSPHM6Q.js", "/build/_shared/chunk-6XQL3ZDP.js", "/build/_shared/chunk-GQCXPWV2.js", "/build/_shared/chunk-EMQBFFD2.js", "/build/_shared/chunk-IMWKISV6.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses": { id: "routes/account.addresses", parentId: "root", path: "account/addresses", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses-KN2CL5GI.js", imports: ["/build/_shared/chunk-5JSPHM6Q.js", "/build/_shared/chunk-6XQL3ZDP.js", "/build/_shared/chunk-GQCXPWV2.js", "/build/_shared/chunk-IMWKISV6.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.$addressId": { id: "routes/account.addresses.$addressId", parentId: "root", path: "account/addresses/:addressId", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.$addressId-HRDLME5I.js", imports: ["/build/_shared/chunk-WT4B6YBY.js", "/build/_shared/chunk-G3J4JRBH.js", "/build/_shared/chunk-X5ZRNQ2O.js", "/build/_shared/chunk-FWFO23FU.js", "/build/_shared/chunk-6XQL3ZDP.js", "/build/_shared/chunk-GQCXPWV2.js", "/build/_shared/chunk-VJAJMKIA.js", "/build/_shared/chunk-EMQBFFD2.js", "/build/_shared/chunk-575GV3VZ.js", "/build/_shared/chunk-IMWKISV6.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.new": { id: "routes/account.addresses.new", parentId: "root", path: "account/addresses/new", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.new-G5A363ZD.js", imports: ["/build/_shared/chunk-WT4B6YBY.js", "/build/_shared/chunk-G3J4JRBH.js", "/build/_shared/chunk-X5ZRNQ2O.js", "/build/_shared/chunk-FWFO23FU.js", "/build/_shared/chunk-6XQL3ZDP.js", "/build/_shared/chunk-GQCXPWV2.js", "/build/_shared/chunk-VJAJMKIA.js", "/build/_shared/chunk-EMQBFFD2.js", "/build/_shared/chunk-575GV3VZ.js", "/build/_shared/chunk-IMWKISV6.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.history": { id: "routes/account.history", parentId: "root", path: "account/history", index: void 0, caseSensitive: void 0, module: "/build/routes/account.history-4TUVJRH7.js", imports: ["/build/_shared/chunk-7APOZWIT.js", "/build/_shared/chunk-VJAJMKIA.js", "/build/_shared/chunk-EMQBFFD2.js", "/build/_shared/chunk-IMWKISV6.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.password": { id: "routes/account.password", parentId: "root", path: "account/password", index: void 0, caseSensitive: void 0, module: "/build/routes/account.password-YJ42BYBX.js", imports: ["/build/_shared/chunk-FWFO23FU.js", "/build/_shared/chunk-5JSPHM6Q.js", "/build/_shared/chunk-GQCXPWV2.js", "/build/_shared/chunk-EMQBFFD2.js", "/build/_shared/chunk-IMWKISV6.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.active-order": { id: "routes/api.active-order", parentId: "root", path: "api/active-order", index: void 0, caseSensitive: void 0, module: "/build/routes/api.active-order-VQJ67ND7.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.logout": { id: "routes/api.logout", parentId: "root", path: "api/logout", index: void 0, caseSensitive: void 0, module: "/build/routes/api.logout-O22KF3EY.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout": { id: "routes/checkout", parentId: "root", path: "checkout", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout-F66EG4LU.js", imports: ["/build/_shared/chunk-I3DX7LT6.js"], hasAction: !1, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout._index": { id: "routes/checkout._index", parentId: "root", path: "checkout/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout._index-DJG7JERQ.js", imports: ["/build/_shared/chunk-6BAWLQLJ.js", "/build/_shared/chunk-G3J4JRBH.js", "/build/_shared/chunk-575GV3VZ.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.confirmation.$orderCode": { id: "routes/checkout.confirmation.$orderCode", parentId: "root", path: "checkout/confirmation/:orderCode", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.confirmation.$orderCode-XU4QTJD6.js", imports: ["/build/_shared/chunk-I3DX7LT6.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.payment": { id: "routes/checkout.payment", parentId: "root", path: "checkout/payment", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.payment-MHQWSLOU.js", imports: ["/build/_shared/chunk-G3J4JRBH.js", "/build/_shared/chunk-575GV3VZ.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/collections.$slug": { id: "routes/collections.$slug", parentId: "root", path: "collections/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/collections.$slug-VCFUSVVR.js", imports: ["/build/_shared/chunk-OTHXEPVB.js", "/build/_shared/chunk-HFJCG7C6.js", "/build/_shared/chunk-7APOZWIT.js", "/build/_shared/chunk-ULHO4LD4.js", "/build/_shared/chunk-35LHL7AD.js", "/build/_shared/chunk-VJAJMKIA.js", "/build/_shared/chunk-EMQBFFD2.js", "/build/_shared/chunk-575GV3VZ.js", "/build/_shared/chunk-IMWKISV6.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/index": { id: "routes/index", parentId: "root", path: void 0, index: !0, caseSensitive: void 0, module: "/build/routes/index-36TEHKII.js", imports: ["/build/_shared/chunk-HFJCG7C6.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/products.$slug": { id: "routes/products.$slug", parentId: "root", path: "products/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/products.$slug-BZNY3747.js", imports: ["/build/_shared/chunk-ULHO4LD4.js", "/build/_shared/chunk-35LHL7AD.js", "/build/_shared/chunk-575GV3VZ.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/search": { id: "routes/search", parentId: "root", path: "search", index: void 0, caseSensitive: void 0, module: "/build/routes/search-BL4HTSGU.js", imports: ["/build/_shared/chunk-OTHXEPVB.js", "/build/_shared/chunk-7APOZWIT.js", "/build/_shared/chunk-35LHL7AD.js", "/build/_shared/chunk-VJAJMKIA.js", "/build/_shared/chunk-EMQBFFD2.js", "/build/_shared/chunk-575GV3VZ.js", "/build/_shared/chunk-IMWKISV6.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-in": { id: "routes/sign-in", parentId: "root", path: "sign-in", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-in-5RYJ5WYG.js", imports: ["/build/_shared/chunk-IMWKISV6.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.index": { id: "routes/sign-up.index", parentId: "root", path: "sign-up", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.index-4UXGUUAS.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.success": { id: "routes/sign-up.success", parentId: "root", path: "sign-up/success", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.success-PT54H25N.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify": { id: "routes/verify", parentId: "root", path: "verify", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-SIEDXC3S.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify-email-address-change": { id: "routes/verify-email-address-change", parentId: "root", path: "verify-email-address-change", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-email-address-change-HERVC4OZ.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 } }, version: "f8a97344", hmr: { runtime: "/build/_shared/chunk-RJ6WM5PD.js", timestamp: 1743511091602 }, url: "/build/manifest-F8A97344.js" };
 
 // server-entry-module:@remix-run/dev/server-build
 var mode = "development", assetsBuildDirectory = "public/build", future = { v3_fetcherPersist: !1, v3_relativeSplatPath: !1 }, publicPath = "/build/", entry = { module: entry_server_exports }, routes = {

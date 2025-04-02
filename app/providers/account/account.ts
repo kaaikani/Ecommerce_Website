@@ -123,14 +123,19 @@ gql`
     login(username: $email, password: $password, rememberMe: $rememberMe) {
       __typename
       ... on CurrentUser {
+      id
+      __typename
+      channels {
+        token
+        permissions
+        code
         id
-        identifier
-      }
-      ... on ErrorResult {
-        errorCode
-        message
+        __typename
       }
     }
+    ...ErrorResult
+    __typename
+  }
   }
 `;
 
