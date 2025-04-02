@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../app/constants.ts"],
-  "sourcesContent": ["// REMIX HMR BEGIN\nimport * as __hmr__ from \"remix:hmr\";\nif (import.meta) {\nimport.meta.hot = __hmr__.createHotContext(\n//@ts-expect-error\n\"app/constants.ts\"\n);\nimport.meta.hot.lastModified = \"1742363591918.695\";\n}\n// REMIX HMR END\n\nexport const APP_META_TITLE = 'Vendure Remix Storefront';\nexport const APP_META_DESCRIPTION =\n  'A headless commerce storefront starter kit built with Remix & Vendure';\nexport const DEMO_API_URL = 'http://localhost:3000/shop-api';\nexport let API_URL =\n  typeof process !== 'undefined'\n    ? process.env.VENDURE_API_URL ?? DEMO_API_URL\n    : DEMO_API_URL;\n\n/**\n * This function is used when running in Cloudflare Pages in order to set the API URL\n * based on an environment variable. Env vars work differently in CF Pages and are not available\n * on the `process` object (which does not exist). Instead, it needs to be accessed from the loader\n * context, and if defined we use it here to set the API_URL var which will be used by the\n * GraphQL calls.\n *\n * See https://developers.cloudflare.com/workers/platform/environment-variables/#environmental-variables-with-module-workers\n */\nexport function setApiUrl(apiUrl: string) {\n  API_URL = apiUrl;\n}\n"],
-  "mappings": ";;;;;;AACA;AACA,IAAI,aAAa;AACjB,cAAY,MAAc;AAAA;AAAA,IAE1B;AAAA,EACA;AACA,cAAY,IAAI,eAAe;AAC/B;AAGO,IAAM,iBAAiB;AACvB,IAAM,uBACX;AACK,IAAM,eAAe;AACrB,IAAI,UACT,OAAO,YAAY,cACf,QAAQ,IAAI,mBAAmB,eAC/B;",
-  "names": []
-}
