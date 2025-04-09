@@ -195,10 +195,6 @@ export default function SignUpPage() {
                   </div>
                 </div>
               )}
-console.log("Form Data:", formData);
-console.log("Email:", email);
-console.log("Password:", password);
-console.log("Repeat Password:", repeatPassword);
 
               <div>
                 <button
