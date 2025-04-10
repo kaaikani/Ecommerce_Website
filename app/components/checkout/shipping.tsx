@@ -21,6 +21,8 @@ import { ShippingMethodSelector } from '~/components/checkout/ShippingMethodSele
 import { ShippingAddressSelector } from '~/components/checkout/ShippingAddressSelector';
 import { getActiveOrder } from '~/providers/orders/order';
 import { useTranslation } from 'react-i18next';
+import AddAddressCard from '~/components/account/AddAddressCard';
+
 
 // Loader to fetch necessary data
 export async function loader({ request }: DataFunctionArgs) {
@@ -143,8 +145,9 @@ export default function CheckoutShipping() {
   };
 
   function navigateToPayment() {
-    navigate('/checkout?state=payment');
+    navigate('./payment');
   }
+
   return (
     <div>
       <div>
@@ -251,7 +254,7 @@ export default function CheckoutShipping() {
           />
         )}
       </Form>
-
+      <AddAddressCard/>
       <div className="mt-10 border-t border-gray-200 pt-10">
         <ShippingMethodSelector
           eligibleShippingMethods={eligibleShippingMethods}
@@ -262,19 +265,19 @@ export default function CheckoutShipping() {
       </div>
 
       <button
-  type="button"
-  disabled={!canProceedToPayment}
-  onClick={navigateToPayment}
-  className={classNames(
-    canProceedToPayment
-      ? 'bg-primary-600 hover:bg-primary-700'
-      : 'bg-gray-400',
-    'flex w-full items-center justify-center space-x-2 mt-24 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
-  )}
->
-  <LockClosedIcon className="w-5 h-5" />
-  <span>{t('checkout.goToPayment')}</span>
-</button>
+        type="button"
+        disabled={!canProceedToPayment}
+        onClick={navigateToPayment}
+        className={classNames(
+          canProceedToPayment
+            ? 'bg-primary-600 hover:bg-primary-700'
+            : 'bg-gray-400',
+          'flex w-full items-center justify-center space-x-2 mt-24 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
+        )}
+      >
+        <LockClosedIcon className="w-5 h-5" />
+        <span>{t('checkout.goToPayment')}</span>
+      </button>
     </div>
   );
 }
