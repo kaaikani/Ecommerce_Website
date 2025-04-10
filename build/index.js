@@ -1295,7 +1295,7 @@ import {
 } from "@remix-run/react";
 
 // app/tailwind.css
-var tailwind_default = "/build/_assets/tailwind-OTCHCSNM.css";
+var tailwind_default = "/build/_assets/tailwind-PKRAGESQ.css";
 
 // app/components/header/Header.tsx
 import { Link } from "@remix-run/react";
@@ -5732,7 +5732,7 @@ function AddAddressCard() {
     Link6,
     {
       preventScrollReset: !0,
-      className: "border border-gray-200 p-5 min-h-[220px] h-full w-full flex flex-col justify-between",
+      className: "border border-green-500 p-5 min-h-[100px] h-full w-full flex flex-col justify-between mt-3",
       to: "/account/addresses/new",
       children: [
         /* @__PURE__ */ jsxDEV22("span", { className: "text-base-semi", children: t("address.new") }, void 0, !1, {
@@ -12542,372 +12542,10 @@ __export(checkout_exports, {
   loader: () => loader15
 });
 import { ChevronRightIcon as ChevronRightIcon2 } from "@heroicons/react/24/solid";
-import { useLocation as useLocation2, useOutletContext as useOutletContext5, useLoaderData as useLoaderData15 } from "@remix-run/react";
-import { useTranslation as useTranslation42 } from "react-i18next";
-
-// app/components/checkout/shipping.tsx
-import { useState as useState13 } from "react";
-import { LockClosedIcon as LockClosedIcon2 } from "@heroicons/react/24/solid";
-import {
-  Form as Form7,
-  useLoaderData as useLoaderData14,
-  useNavigate as useNavigate4,
-  useOutletContext as useOutletContext4
-} from "@remix-run/react";
-import { json as json13 } from "@remix-run/server-runtime";
+import { useLocation as useLocation2, useOutletContext as useOutletContext4, useLoaderData as useLoaderData14 } from "@remix-run/react";
 import { useTranslation as useTranslation41 } from "react-i18next";
+import { json as json13 } from "@remix-run/server-runtime";
 import { jsxDEV as jsxDEV57 } from "react/jsx-dev-runtime";
-function CheckoutShipping2() {
-  let { availableCountries, eligibleShippingMethods, activeCustomer, error } = useLoaderData14(), { activeOrderFetcher, activeOrder } = useOutletContext4(), [customerFormChanged, setCustomerFormChanged] = useState13(!1), [addressFormChanged, setAddressFormChanged] = useState13(!1), [selectedAddressIndex, setSelectedAddressIndex] = useState13(0), navigate = useNavigate4(), { t } = useTranslation41();
-  if (console.log("Rendering CheckoutShipping:", { activeOrder, availableCountries, error }), !activeOrder || !availableCountries || !eligibleShippingMethods)
-    return /* @__PURE__ */ jsxDEV57("div", { children: "Loading CheckoutShipping..." }, void 0, !1, {
-      fileName: "app/components/checkout/shipping.tsx",
-      lineNumber: 69,
-      columnNumber: 12
-    }, this);
-  let { customer, shippingAddress } = activeOrder ?? {}, isSignedIn = !!activeCustomer?.id, addresses = activeCustomer?.addresses ?? [], defaultFullName = shippingAddress?.fullName ?? (customer ? `${customer.firstName} ${customer.lastName}` : ""), canProceedToPayment = customer && (shippingAddress?.streetLine1 && shippingAddress?.postalCode || selectedAddressIndex != null) && activeOrder?.shippingLines?.length && activeOrder?.lines?.length, submitCustomerForm = (event) => {
-    let formData = new FormData(event.currentTarget), { emailAddress, firstName, lastName } = Object.fromEntries(formData.entries()), isValid = event.currentTarget.checkValidity();
-    customerFormChanged && isValid && emailAddress && firstName && lastName && (activeOrderFetcher.submit(formData, {
-      method: "post",
-      action: "/api/active-order"
-    }), setCustomerFormChanged(!1));
-  }, submitAddressForm = (event) => {
-    let formData = new FormData(event.currentTarget), isValid = event.currentTarget.checkValidity();
-    addressFormChanged && isValid && setShippingAddress(formData);
-  }, submitSelectedAddress = (index) => {
-    let selectedAddress = activeCustomer?.addresses?.[index];
-    if (selectedAddress) {
-      setSelectedAddressIndex(index);
-      let formData = new FormData();
-      Object.keys(selectedAddress).forEach(
-        (key) => formData.append(key, selectedAddress[key])
-      ), formData.append("countryCode", selectedAddress.country.code), formData.append("action", "setCheckoutShipping"), setShippingAddress(formData);
-    }
-  };
-  function setShippingAddress(formData) {
-    shippingFormDataIsValid(formData) && (activeOrderFetcher.submit(formData, {
-      method: "post",
-      action: "/api/active-order"
-    }), setAddressFormChanged(!1));
-  }
-  let submitSelectedShippingMethod = (value) => {
-    value && activeOrderFetcher.submit(
-      {
-        action: "setShippingMethod",
-        shippingMethodId: value
-      },
-      {
-        method: "post",
-        action: "/api/active-order"
-      }
-    );
-  };
-  function navigateToPayment() {
-    navigate("/checkout?state=payment");
-  }
-  return /* @__PURE__ */ jsxDEV57("div", { children: [
-    /* @__PURE__ */ jsxDEV57("div", { children: [
-      /* @__PURE__ */ jsxDEV57("h2", { className: "text-lg font-medium text-gray-900", children: t("checkout.detailsTitle") }, void 0, !1, {
-        fileName: "app/components/checkout/shipping.tsx",
-        lineNumber: 151,
-        columnNumber: 9
-      }, this),
-      isSignedIn ? /* @__PURE__ */ jsxDEV57("div", { children: [
-        /* @__PURE__ */ jsxDEV57("p", { className: "mt-2 text-gray-600", children: [
-          customer?.firstName,
-          " ",
-          customer?.lastName
-        ] }, void 0, !0, {
-          fileName: "app/components/checkout/shipping.tsx",
-          lineNumber: 155,
-          columnNumber: 13
-        }, this),
-        /* @__PURE__ */ jsxDEV57("p", { children: customer?.emailAddress }, void 0, !1, {
-          fileName: "app/components/checkout/shipping.tsx",
-          lineNumber: 158,
-          columnNumber: 13
-        }, this)
-      ] }, void 0, !0, {
-        fileName: "app/components/checkout/shipping.tsx",
-        lineNumber: 154,
-        columnNumber: 11
-      }, this) : /* @__PURE__ */ jsxDEV57(
-        Form7,
-        {
-          method: "post",
-          action: "/api/active-order",
-          onBlur: submitCustomerForm,
-          onChange: () => setCustomerFormChanged(!0),
-          hidden: isSignedIn,
-          children: [
-            /* @__PURE__ */ jsxDEV57("input", { type: "hidden", name: "action", value: "setOrderCustomer" }, void 0, !1, {
-              fileName: "app/components/checkout/shipping.tsx",
-              lineNumber: 168,
-              columnNumber: 13
-            }, this),
-            /* @__PURE__ */ jsxDEV57("div", { className: "mt-4", children: [
-              /* @__PURE__ */ jsxDEV57("label", { htmlFor: "emailAddress", className: "block text-sm font-medium text-gray-700", children: t("account.emailAddress") }, void 0, !1, {
-                fileName: "app/components/checkout/shipping.tsx",
-                lineNumber: 170,
-                columnNumber: 15
-              }, this),
-              /* @__PURE__ */ jsxDEV57("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV57(
-                "input",
-                {
-                  type: "email",
-                  id: "emailAddress",
-                  name: "emailAddress",
-                  autoComplete: "email",
-                  defaultValue: customer?.emailAddress,
-                  className: "block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm",
-                  required: !0
-                },
-                void 0,
-                !1,
-                {
-                  fileName: "app/components/checkout/shipping.tsx",
-                  lineNumber: 174,
-                  columnNumber: 17
-                },
-                this
-              ) }, void 0, !1, {
-                fileName: "app/components/checkout/shipping.tsx",
-                lineNumber: 173,
-                columnNumber: 15
-              }, this),
-              error?.errorCode === "EMAIL_ADDRESS_CONFLICT_ERROR" && /* @__PURE__ */ jsxDEV57("p", { className: "mt-2 text-sm text-red-600", id: "email-error", children: error.message }, void 0, !1, {
-                fileName: "app/components/checkout/shipping.tsx",
-                lineNumber: 185,
-                columnNumber: 17
-              }, this)
-            ] }, void 0, !0, {
-              fileName: "app/components/checkout/shipping.tsx",
-              lineNumber: 169,
-              columnNumber: 13
-            }, this),
-            /* @__PURE__ */ jsxDEV57("div", { className: "mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4", children: [
-              /* @__PURE__ */ jsxDEV57("div", { children: [
-                /* @__PURE__ */ jsxDEV57("label", { htmlFor: "firstName", className: "block text-sm font-medium text-gray-700", children: t("account.firstName") }, void 0, !1, {
-                  fileName: "app/components/checkout/shipping.tsx",
-                  lineNumber: 192,
-                  columnNumber: 17
-                }, this),
-                /* @__PURE__ */ jsxDEV57("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV57(
-                  "input",
-                  {
-                    type: "text",
-                    id: "firstName",
-                    name: "firstName",
-                    autoComplete: "given-name",
-                    defaultValue: customer?.firstName,
-                    className: "block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm",
-                    required: !0
-                  },
-                  void 0,
-                  !1,
-                  {
-                    fileName: "app/components/checkout/shipping.tsx",
-                    lineNumber: 196,
-                    columnNumber: 19
-                  },
-                  this
-                ) }, void 0, !1, {
-                  fileName: "app/components/checkout/shipping.tsx",
-                  lineNumber: 195,
-                  columnNumber: 17
-                }, this)
-              ] }, void 0, !0, {
-                fileName: "app/components/checkout/shipping.tsx",
-                lineNumber: 191,
-                columnNumber: 15
-              }, this),
-              /* @__PURE__ */ jsxDEV57("div", { children: [
-                /* @__PURE__ */ jsxDEV57("label", { htmlFor: "lastName", className: "block text-sm font-medium text-gray-700", children: t("account.lastName") }, void 0, !1, {
-                  fileName: "app/components/checkout/shipping.tsx",
-                  lineNumber: 208,
-                  columnNumber: 17
-                }, this),
-                /* @__PURE__ */ jsxDEV57("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV57(
-                  "input",
-                  {
-                    type: "text",
-                    id: "lastName",
-                    name: "lastName",
-                    autoComplete: "family-name",
-                    defaultValue: customer?.lastName,
-                    className: "block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm",
-                    required: !0
-                  },
-                  void 0,
-                  !1,
-                  {
-                    fileName: "app/components/checkout/shipping.tsx",
-                    lineNumber: 212,
-                    columnNumber: 19
-                  },
-                  this
-                ) }, void 0, !1, {
-                  fileName: "app/components/checkout/shipping.tsx",
-                  lineNumber: 211,
-                  columnNumber: 17
-                }, this)
-              ] }, void 0, !0, {
-                fileName: "app/components/checkout/shipping.tsx",
-                lineNumber: 207,
-                columnNumber: 15
-              }, this)
-            ] }, void 0, !0, {
-              fileName: "app/components/checkout/shipping.tsx",
-              lineNumber: 190,
-              columnNumber: 13
-            }, this)
-          ]
-        },
-        void 0,
-        !0,
-        {
-          fileName: "app/components/checkout/shipping.tsx",
-          lineNumber: 161,
-          columnNumber: 11
-        },
-        this
-      )
-    ] }, void 0, !0, {
-      fileName: "app/components/checkout/shipping.tsx",
-      lineNumber: 150,
-      columnNumber: 7
-    }, this),
-    /* @__PURE__ */ jsxDEV57(
-      Form7,
-      {
-        method: "post",
-        action: "/api/active-order",
-        onBlur: submitAddressForm,
-        onChange: () => setAddressFormChanged(!0),
-        children: [
-          /* @__PURE__ */ jsxDEV57("input", { type: "hidden", name: "action", value: "setCheckoutShipping" }, void 0, !1, {
-            fileName: "app/components/checkout/shipping.tsx",
-            lineNumber: 234,
-            columnNumber: 9
-          }, this),
-          /* @__PURE__ */ jsxDEV57("div", { className: "mt-10 border-t border-gray-200 pt-10", children: /* @__PURE__ */ jsxDEV57("h2", { className: "text-lg font-medium text-gray-900", children: t("checkout.shippingTitle") }, void 0, !1, {
-            fileName: "app/components/checkout/shipping.tsx",
-            lineNumber: 236,
-            columnNumber: 11
-          }, this) }, void 0, !1, {
-            fileName: "app/components/checkout/shipping.tsx",
-            lineNumber: 235,
-            columnNumber: 9
-          }, this),
-          isSignedIn && activeCustomer.addresses?.length ? /* @__PURE__ */ jsxDEV57("div", { children: /* @__PURE__ */ jsxDEV57(
-            ShippingAddressSelector,
-            {
-              addresses: activeCustomer.addresses,
-              selectedAddressIndex,
-              onChange: submitSelectedAddress
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/components/checkout/shipping.tsx",
-              lineNumber: 240,
-              columnNumber: 13
-            },
-            this
-          ) }, void 0, !1, {
-            fileName: "app/components/checkout/shipping.tsx",
-            lineNumber: 239,
-            columnNumber: 11
-          }, this) : /* @__PURE__ */ jsxDEV57(
-            AddressForm,
-            {
-              availableCountries,
-              address: shippingAddress,
-              defaultFullName
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/components/checkout/shipping.tsx",
-              lineNumber: 247,
-              columnNumber: 11
-            },
-            this
-          )
-        ]
-      },
-      void 0,
-      !0,
-      {
-        fileName: "app/components/checkout/shipping.tsx",
-        lineNumber: 228,
-        columnNumber: 7
-      },
-      this
-    ),
-    /* @__PURE__ */ jsxDEV57("div", { className: "mt-10 border-t border-gray-200 pt-10", children: /* @__PURE__ */ jsxDEV57(
-      ShippingMethodSelector,
-      {
-        eligibleShippingMethods,
-        currencyCode: activeOrder?.currencyCode,
-        shippingMethodId: activeOrder?.shippingLines[0]?.shippingMethod.id ?? "",
-        onChange: submitSelectedShippingMethod
-      },
-      void 0,
-      !1,
-      {
-        fileName: "app/components/checkout/shipping.tsx",
-        lineNumber: 256,
-        columnNumber: 9
-      },
-      this
-    ) }, void 0, !1, {
-      fileName: "app/components/checkout/shipping.tsx",
-      lineNumber: 255,
-      columnNumber: 7
-    }, this),
-    /* @__PURE__ */ jsxDEV57(
-      "button",
-      {
-        type: "button",
-        disabled: !canProceedToPayment,
-        onClick: navigateToPayment,
-        className: classNames(
-          canProceedToPayment ? "bg-primary-600 hover:bg-primary-700" : "bg-gray-400",
-          "flex w-full items-center justify-center space-x-2 mt-24 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-        ),
-        children: [
-          /* @__PURE__ */ jsxDEV57(LockClosedIcon2, { className: "w-5 h-5" }, void 0, !1, {
-            fileName: "app/components/checkout/shipping.tsx",
-            lineNumber: 275,
-            columnNumber: 3
-          }, this),
-          /* @__PURE__ */ jsxDEV57("span", { children: t("checkout.goToPayment") }, void 0, !1, {
-            fileName: "app/components/checkout/shipping.tsx",
-            lineNumber: 276,
-            columnNumber: 3
-          }, this)
-        ]
-      },
-      void 0,
-      !0,
-      {
-        fileName: "app/components/checkout/shipping.tsx",
-        lineNumber: 264,
-        columnNumber: 7
-      },
-      this
-    )
-  ] }, void 0, !0, {
-    fileName: "app/components/checkout/shipping.tsx",
-    lineNumber: 149,
-    columnNumber: 5
-  }, this);
-}
-
-// app/routes/checkout.tsx
-import { json as json14 } from "@remix-run/server-runtime";
-import { jsxDEV as jsxDEV58 } from "react/jsx-dev-runtime";
 async function loader15({ request }) {
   console.log("Checkout loader executed");
   let session = await getSessionStorage().then(
@@ -12915,7 +12553,7 @@ async function loader15({ request }) {
   ), activeOrder = await getActiveOrder({ request });
   console.log("Loader data:", { session, activeOrder }), (!session || !activeOrder || !activeOrder.active || activeOrder.lines.length === 0) && console.log("Redirect would occur, but bypassed for debugging");
   let { availableCountries } = await getAvailableCountries({ request }), { eligibleShippingMethods } = await getEligibleShippingMethods({ request }), { activeCustomer } = await getActiveCustomerAddresses({ request }), error = session.get("activeOrderError");
-  return json14({
+  return json13({
     availableCountries,
     eligibleShippingMethods,
     activeCustomer,
@@ -12925,10 +12563,10 @@ async function loader15({ request }) {
 }
 var steps = ["shipping", "payment", "confirmation"];
 function Checkout() {
-  let { availableCountries, eligibleShippingMethods, activeCustomer, error, activeOrder } = useLoaderData15(), { activeOrderFetcher, removeItem, adjustOrderLine: adjustOrderLine2, refresh } = useOutletContext5(), location2 = useLocation2(), { t } = useTranslation42(), state = "shipping";
+  let { availableCountries, eligibleShippingMethods, activeCustomer, error, activeOrder } = useLoaderData14(), { activeOrderFetcher, removeItem, adjustOrderLine: adjustOrderLine2, refresh } = useOutletContext4(), location2 = useLocation2(), { t } = useTranslation41(), state = "shipping";
   location2.pathname === "/checkout/payment" ? state = "payment" : location2.pathname.startsWith("/checkout/confirmation") && (state = "confirmation");
   let isConfirmationPage = state === "confirmation";
-  return /* @__PURE__ */ jsxDEV58("div", { className: "bg-gray-50", children: /* @__PURE__ */ jsxDEV58(
+  return /* @__PURE__ */ jsxDEV57("div", { className: "bg-gray-50", children: /* @__PURE__ */ jsxDEV57(
     "div",
     {
       className: classNames(
@@ -12936,27 +12574,27 @@ function Checkout() {
         "max-w-2xl mx-auto pt-8 pb-24 px-4 sm:px-6 lg:px-8"
       ),
       children: [
-        /* @__PURE__ */ jsxDEV58("h2", { className: "sr-only", children: t("cart.checkout") }, void 0, !1, {
+        /* @__PURE__ */ jsxDEV57("h2", { className: "sr-only", children: t("cart.checkout") }, void 0, !1, {
           fileName: "app/routes/checkout.tsx",
           lineNumber: 72,
           columnNumber: 9
         }, this),
-        /* @__PURE__ */ jsxDEV58(
+        /* @__PURE__ */ jsxDEV57(
           "nav",
           {
             "aria-label": t("cart.progress"),
             className: "hidden sm:block pb-8 mb-8 border-b border-gray-200",
-            children: /* @__PURE__ */ jsxDEV58("ol", { role: "list", className: "flex space-x-4 justify-center", children: steps.map((step, stepIdx) => /* @__PURE__ */ jsxDEV58("li", { className: "flex items-center", children: [
-              step === state ? /* @__PURE__ */ jsxDEV58("span", { "aria-current": "page", className: "text-primary-600 font-medium", children: t(`checkout.steps.${step}`) }, void 0, !1, {
+            children: /* @__PURE__ */ jsxDEV57("ol", { role: "list", className: "flex space-x-4 justify-center", children: steps.map((step, stepIdx) => /* @__PURE__ */ jsxDEV57("li", { className: "flex items-center", children: [
+              step === state ? /* @__PURE__ */ jsxDEV57("span", { "aria-current": "page", className: "text-primary-600 font-medium", children: t(`checkout.steps.${step}`) }, void 0, !1, {
                 fileName: "app/routes/checkout.tsx",
                 lineNumber: 81,
                 columnNumber: 19
-              }, this) : /* @__PURE__ */ jsxDEV58("span", { className: "text-gray-500", children: t(`checkout.steps.${step}`) }, void 0, !1, {
+              }, this) : /* @__PURE__ */ jsxDEV57("span", { className: "text-gray-500", children: t(`checkout.steps.${step}`) }, void 0, !1, {
                 fileName: "app/routes/checkout.tsx",
                 lineNumber: 85,
                 columnNumber: 19
               }, this),
-              stepIdx !== steps.length - 1 ? /* @__PURE__ */ jsxDEV58(
+              stepIdx !== steps.length - 1 ? /* @__PURE__ */ jsxDEV57(
                 ChevronRightIcon2,
                 {
                   className: "w-5 h-5 text-gray-300 ml-4",
@@ -12990,8 +12628,8 @@ function Checkout() {
           },
           this
         ),
-        /* @__PURE__ */ jsxDEV58("div", { className: "lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16", children: [
-          /* @__PURE__ */ jsxDEV58("div", { className: isConfirmationPage ? "lg:col-span-2" : "", children: /* @__PURE__ */ jsxDEV58(CheckoutShipping2, {}, void 0, !1, {
+        /* @__PURE__ */ jsxDEV57("div", { className: "lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16", children: [
+          /* @__PURE__ */ jsxDEV57("div", { className: isConfirmationPage ? "lg:col-span-2" : "", children: /* @__PURE__ */ jsxDEV57(CheckoutShipping, {}, void 0, !1, {
             fileName: "app/routes/checkout.tsx",
             lineNumber: 100,
             columnNumber: 13
@@ -13000,14 +12638,14 @@ function Checkout() {
             lineNumber: 98,
             columnNumber: 11
           }, this),
-          !isConfirmationPage && /* @__PURE__ */ jsxDEV58("div", { className: "mt-10 lg:mt-0", children: [
-            /* @__PURE__ */ jsxDEV58("h2", { className: "text-lg font-medium text-gray-900 mb-6", children: t("order.summary") }, void 0, !1, {
+          !isConfirmationPage && /* @__PURE__ */ jsxDEV57("div", { className: "mt-10 lg:mt-0", children: [
+            /* @__PURE__ */ jsxDEV57("h2", { className: "text-lg font-medium text-gray-900 mb-6", children: t("order.summary") }, void 0, !1, {
               fileName: "app/routes/checkout.tsx",
               lineNumber: 106,
               columnNumber: 15
             }, this),
-            /* @__PURE__ */ jsxDEV58("div", { className: "bg-white p-6 rounded-lg shadow-sm border border-gray-200", children: [
-              /* @__PURE__ */ jsxDEV58(
+            /* @__PURE__ */ jsxDEV57("div", { className: "bg-white p-6 rounded-lg shadow-sm border border-gray-200", children: [
+              /* @__PURE__ */ jsxDEV57(
                 CartContents,
                 {
                   orderLines: activeOrder?.lines ?? [],
@@ -13025,7 +12663,7 @@ function Checkout() {
                 },
                 this
               ),
-              /* @__PURE__ */ jsxDEV58(CartTotals, { order: activeOrder }, void 0, !1, {
+              /* @__PURE__ */ jsxDEV57(CartTotals, { order: activeOrder }, void 0, !1, {
                 fileName: "app/routes/checkout.tsx",
                 lineNumber: 115,
                 columnNumber: 17
@@ -13075,21 +12713,21 @@ import {
   ShoppingBagIcon as ShoppingBagIcon2,
   UserCircleIcon
 } from "@heroicons/react/24/solid";
-import { Form as Form8, Outlet as Outlet4, useLoaderData as useLoaderData16 } from "@remix-run/react";
-import { json as json15, redirect as redirect13 } from "@remix-run/server-runtime";
+import { Form as Form7, Outlet as Outlet4, useLoaderData as useLoaderData15 } from "@remix-run/react";
+import { json as json14, redirect as redirect12 } from "@remix-run/server-runtime";
 
 // app/components/tabs/Tab.tsx
 import { NavLink, useMatches as useMatches3, useResolvedPath } from "@remix-run/react";
-import { jsxDEV as jsxDEV59 } from "react/jsx-dev-runtime";
+import { jsxDEV as jsxDEV58 } from "react/jsx-dev-runtime";
 function Tab({ Icon, text, to }) {
   let resolved = useResolvedPath(to), isActive = useMatches3().find((m) => m.pathname === resolved.pathname);
-  return /* @__PURE__ */ jsxDEV59("li", { className: isActive ? "cursor-default" : "cursor-pointer", children: /* @__PURE__ */ jsxDEV59(
+  return /* @__PURE__ */ jsxDEV58("li", { className: isActive ? "cursor-default" : "cursor-pointer", children: /* @__PURE__ */ jsxDEV58(
     NavLink,
     {
       to,
       className: `group w-full gap-x-2 max-w-[12rem] inline-flex items-center justify-around p-4 rounded-t-lg border-b-2 ${isActive ? "text-primary-500 border-primary-500" : "border-transparent hover:text-gray-600 hover:border-gray-300"}`,
       children: [
-        /* @__PURE__ */ jsxDEV59(
+        /* @__PURE__ */ jsxDEV58(
           Icon,
           {
             className: `w-5 h-5 ${isActive ? "text-primary-500" : "text-gray-400 group-hover:text-gray-500"}`
@@ -13103,7 +12741,7 @@ function Tab({ Icon, text, to }) {
           },
           this
         ),
-        /* @__PURE__ */ jsxDEV59("p", { className: "flex-1", children: text }, void 0, !1, {
+        /* @__PURE__ */ jsxDEV58("p", { className: "flex-1", children: text }, void 0, !1, {
           fileName: "app/components/tabs/Tab.tsx",
           lineNumber: 37,
           columnNumber: 9
@@ -13126,13 +12764,13 @@ function Tab({ Icon, text, to }) {
 }
 
 // app/components/tabs/TabsContainer.tsx
-import { Fragment as Fragment15, jsxDEV as jsxDEV60 } from "react/jsx-dev-runtime";
+import { Fragment as Fragment15, jsxDEV as jsxDEV59 } from "react/jsx-dev-runtime";
 function TabsContainer({
   tabs,
   children
 }) {
-  return /* @__PURE__ */ jsxDEV60(Fragment15, { children: [
-    /* @__PURE__ */ jsxDEV60("div", { className: "border-b border-gray-200 mt-4", children: /* @__PURE__ */ jsxDEV60("ul", { className: "gap-x-4 grid grid-cols-2 sm:grid-0 sm:flex sm:flex-wrap -mb-px text-sm font-medium text-center text-gray-500", children: tabs.map((props) => /* @__PURE__ */ jsxDEV60(
+  return /* @__PURE__ */ jsxDEV59(Fragment15, { children: [
+    /* @__PURE__ */ jsxDEV59("div", { className: "border-b border-gray-200 mt-4", children: /* @__PURE__ */ jsxDEV59("ul", { className: "gap-x-4 grid grid-cols-2 sm:grid-0 sm:flex sm:flex-wrap -mb-px text-sm font-medium text-center text-gray-500", children: tabs.map((props) => /* @__PURE__ */ jsxDEV59(
       Tab,
       {
         Icon: props.Icon,
@@ -13165,14 +12803,14 @@ function TabsContainer({
 }
 
 // app/routes/account.tsx
-import { useTranslation as useTranslation43 } from "react-i18next";
-import { jsxDEV as jsxDEV61 } from "react/jsx-dev-runtime";
+import { useTranslation as useTranslation42 } from "react-i18next";
+import { jsxDEV as jsxDEV60 } from "react/jsx-dev-runtime";
 async function loader16({ request }) {
   let { activeCustomer } = await getActiveCustomerDetails({ request });
-  return activeCustomer ? json15({ activeCustomer }) : redirect13("/sign-in");
+  return activeCustomer ? json14({ activeCustomer }) : redirect12("/sign-in");
 }
 function AccountDashboard() {
-  let { activeCustomer } = useLoaderData16(), { firstName, lastName } = activeCustomer, { t } = useTranslation43(), tabs = [
+  let { activeCustomer } = useLoaderData15(), { firstName, lastName } = activeCustomer, { t } = useTranslation42(), tabs = [
     {
       Icon: UserCircleIcon,
       text: t("account.details"),
@@ -13194,13 +12832,13 @@ function AccountDashboard() {
       to: "./password"
     }
   ];
-  return /* @__PURE__ */ jsxDEV61("div", { className: "max-w-6xl xl:mx-auto px-4", children: [
-    /* @__PURE__ */ jsxDEV61("h2", { className: "text-3xl sm:text-5xl font-light text-gray-900 my-8", children: t("account.myAccount") }, void 0, !1, {
+  return /* @__PURE__ */ jsxDEV60("div", { className: "max-w-6xl xl:mx-auto px-4", children: [
+    /* @__PURE__ */ jsxDEV60("h2", { className: "text-3xl sm:text-5xl font-light text-gray-900 my-8", children: t("account.myAccount") }, void 0, !1, {
       fileName: "app/routes/account.tsx",
       lineNumber: 52,
       columnNumber: 7
     }, this),
-    /* @__PURE__ */ jsxDEV61("p", { className: "text-gray-700 text-lg -mt-4", children: [
+    /* @__PURE__ */ jsxDEV60("p", { className: "text-gray-700 text-lg -mt-4", children: [
       t("account.welcomeBack"),
       ", ",
       firstName,
@@ -13211,7 +12849,7 @@ function AccountDashboard() {
       lineNumber: 55,
       columnNumber: 7
     }, this),
-    /* @__PURE__ */ jsxDEV61(Form8, { method: "post", action: "/api/logout", children: /* @__PURE__ */ jsxDEV61(
+    /* @__PURE__ */ jsxDEV60(Form7, { method: "post", action: "/api/logout", children: /* @__PURE__ */ jsxDEV60(
       "button",
       {
         type: "submit",
@@ -13231,7 +12869,7 @@ function AccountDashboard() {
       lineNumber: 58,
       columnNumber: 7
     }, this),
-    /* @__PURE__ */ jsxDEV61(TabsContainer, { tabs, children: /* @__PURE__ */ jsxDEV61(Outlet4, {}, void 0, !1, {
+    /* @__PURE__ */ jsxDEV60(TabsContainer, { tabs, children: /* @__PURE__ */ jsxDEV60(Outlet4, {}, void 0, !1, {
       fileName: "app/routes/account.tsx",
       lineNumber: 67,
       columnNumber: 9
@@ -13254,33 +12892,33 @@ __export(sign_in_exports, {
   default: () => SignInPage
 });
 import { Link as Link13, useFetcher as useFetcher3, useSearchParams as useSearchParams4 } from "@remix-run/react";
-import { json as json16, redirect as redirect14 } from "@remix-run/server-runtime";
+import { json as json15, redirect as redirect13 } from "@remix-run/server-runtime";
 import { XCircleIcon as XCircleIcon7 } from "@heroicons/react/24/solid";
 import { ArrowPathIcon as ArrowPathIcon4 } from "@heroicons/react/24/solid";
-import { useTranslation as useTranslation44 } from "react-i18next";
-import { Fragment as Fragment16, jsxDEV as jsxDEV62 } from "react/jsx-dev-runtime";
+import { useTranslation as useTranslation43 } from "react-i18next";
+import { Fragment as Fragment16, jsxDEV as jsxDEV61 } from "react/jsx-dev-runtime";
 async function action12({ params, request }) {
   let body = await request.formData(), email = body.get("email"), password = body.get("password");
   if (typeof email == "string" && typeof password == "string") {
     let rememberMe = !!body.get("rememberMe"), redirectTo = body.get("redirectTo") || "/account", result = await login(email, password, rememberMe, { request });
-    return result.__typename === "CurrentUser" ? redirect14(redirectTo, { headers: result._headers }) : json16(result, {
+    return result.__typename === "CurrentUser" ? redirect13(redirectTo, { headers: result._headers }) : json15(result, {
       status: 401
     });
   }
 }
 function SignInPage() {
-  let [searchParams] = useSearchParams4(), login2 = useFetcher3(), { t } = useTranslation44();
-  return /* @__PURE__ */ jsxDEV62(Fragment16, { children: /* @__PURE__ */ jsxDEV62("div", { className: "flex flex-col justify-center py-12 sm:px-6 lg:px-8", children: [
-    /* @__PURE__ */ jsxDEV62("div", { className: "sm:mx-auto sm:w-full sm:max-w-md", children: [
-      /* @__PURE__ */ jsxDEV62("h2", { className: "mt-6 text-center text-3xl text-gray-900", children: t("account.signInTitle") }, void 0, !1, {
+  let [searchParams] = useSearchParams4(), login2 = useFetcher3(), { t } = useTranslation43();
+  return /* @__PURE__ */ jsxDEV61(Fragment16, { children: /* @__PURE__ */ jsxDEV61("div", { className: "flex flex-col justify-center py-12 sm:px-6 lg:px-8", children: [
+    /* @__PURE__ */ jsxDEV61("div", { className: "sm:mx-auto sm:w-full sm:max-w-md", children: [
+      /* @__PURE__ */ jsxDEV61("h2", { className: "mt-6 text-center text-3xl text-gray-900", children: t("account.signInTitle") }, void 0, !1, {
         fileName: "app/routes/sign-in.tsx",
         lineNumber: 37,
         columnNumber: 11
       }, this),
-      /* @__PURE__ */ jsxDEV62("p", { className: "mt-2 text-center text-sm text-gray-600", children: [
+      /* @__PURE__ */ jsxDEV61("p", { className: "mt-2 text-center text-sm text-gray-600", children: [
         t("common.or"),
         " ",
-        /* @__PURE__ */ jsxDEV62(
+        /* @__PURE__ */ jsxDEV61(
           Link13,
           {
             to: "/sign-up",
@@ -13306,8 +12944,8 @@ function SignInPage() {
       lineNumber: 36,
       columnNumber: 9
     }, this),
-    /* @__PURE__ */ jsxDEV62("div", { className: "mt-8 sm:mx-auto sm:w-full sm:max-w-md", children: /* @__PURE__ */ jsxDEV62("div", { className: "bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10", children: /* @__PURE__ */ jsxDEV62(login2.Form, { method: "post", children: /* @__PURE__ */ jsxDEV62("fieldset", { disabled: login2.state !== "idle", className: "space-y-6", children: [
-      /* @__PURE__ */ jsxDEV62(
+    /* @__PURE__ */ jsxDEV61("div", { className: "mt-8 sm:mx-auto sm:w-full sm:max-w-md", children: /* @__PURE__ */ jsxDEV61("div", { className: "bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10", children: /* @__PURE__ */ jsxDEV61(login2.Form, { method: "post", children: /* @__PURE__ */ jsxDEV61("fieldset", { disabled: login2.state !== "idle", className: "space-y-6", children: [
+      /* @__PURE__ */ jsxDEV61(
         "input",
         {
           type: "hidden",
@@ -13323,8 +12961,8 @@ function SignInPage() {
         },
         this
       ),
-      /* @__PURE__ */ jsxDEV62("div", { children: [
-        /* @__PURE__ */ jsxDEV62(
+      /* @__PURE__ */ jsxDEV61("div", { children: [
+        /* @__PURE__ */ jsxDEV61(
           "label",
           {
             htmlFor: "email",
@@ -13340,7 +12978,7 @@ function SignInPage() {
           },
           this
         ),
-        /* @__PURE__ */ jsxDEV62("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV62(
+        /* @__PURE__ */ jsxDEV61("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV61(
           "input",
           {
             id: "email",
@@ -13370,8 +13008,8 @@ function SignInPage() {
         lineNumber: 71,
         columnNumber: 17
       }, this),
-      /* @__PURE__ */ jsxDEV62("div", { children: [
-        /* @__PURE__ */ jsxDEV62(
+      /* @__PURE__ */ jsxDEV61("div", { children: [
+        /* @__PURE__ */ jsxDEV61(
           "label",
           {
             htmlFor: "password",
@@ -13387,7 +13025,7 @@ function SignInPage() {
           },
           this
         ),
-        /* @__PURE__ */ jsxDEV62("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV62(
+        /* @__PURE__ */ jsxDEV61("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV61(
           "input",
           {
             id: "password",
@@ -13417,9 +13055,9 @@ function SignInPage() {
         lineNumber: 92,
         columnNumber: 17
       }, this),
-      /* @__PURE__ */ jsxDEV62("div", { className: "flex items-center justify-between", children: [
-        /* @__PURE__ */ jsxDEV62("div", { className: "flex items-center", children: [
-          /* @__PURE__ */ jsxDEV62(
+      /* @__PURE__ */ jsxDEV61("div", { className: "flex items-center justify-between", children: [
+        /* @__PURE__ */ jsxDEV61("div", { className: "flex items-center", children: [
+          /* @__PURE__ */ jsxDEV61(
             "input",
             {
               id: "rememberMe",
@@ -13437,7 +13075,7 @@ function SignInPage() {
             },
             this
           ),
-          /* @__PURE__ */ jsxDEV62(
+          /* @__PURE__ */ jsxDEV61(
             "label",
             {
               htmlFor: "rememberMe",
@@ -13458,7 +13096,7 @@ function SignInPage() {
           lineNumber: 114,
           columnNumber: 19
         }, this),
-        /* @__PURE__ */ jsxDEV62("div", { className: "text-sm", children: /* @__PURE__ */ jsxDEV62(
+        /* @__PURE__ */ jsxDEV61("div", { className: "text-sm", children: /* @__PURE__ */ jsxDEV61(
           "a",
           {
             href: "#",
@@ -13483,8 +13121,8 @@ function SignInPage() {
         lineNumber: 113,
         columnNumber: 17
       }, this),
-      login2.data && login2.state === "idle" && /* @__PURE__ */ jsxDEV62("div", { className: "rounded-md bg-red-50 p-4", children: /* @__PURE__ */ jsxDEV62("div", { className: "flex", children: [
-        /* @__PURE__ */ jsxDEV62("div", { className: "flex-shrink-0", children: /* @__PURE__ */ jsxDEV62(
+      login2.data && login2.state === "idle" && /* @__PURE__ */ jsxDEV61("div", { className: "rounded-md bg-red-50 p-4", children: /* @__PURE__ */ jsxDEV61("div", { className: "flex", children: [
+        /* @__PURE__ */ jsxDEV61("div", { className: "flex-shrink-0", children: /* @__PURE__ */ jsxDEV61(
           XCircleIcon7,
           {
             className: "h-5 w-5 text-red-400",
@@ -13503,13 +13141,13 @@ function SignInPage() {
           lineNumber: 143,
           columnNumber: 23
         }, this),
-        /* @__PURE__ */ jsxDEV62("div", { className: "ml-3", children: [
-          /* @__PURE__ */ jsxDEV62("h3", { className: "text-sm font-medium text-red-800", children: t("account.errorSignIn") }, void 0, !1, {
+        /* @__PURE__ */ jsxDEV61("div", { className: "ml-3", children: [
+          /* @__PURE__ */ jsxDEV61("h3", { className: "text-sm font-medium text-red-800", children: t("account.errorSignIn") }, void 0, !1, {
             fileName: "app/routes/sign-in.tsx",
             lineNumber: 150,
             columnNumber: 25
           }, this),
-          /* @__PURE__ */ jsxDEV62("p", { className: "text-sm text-red-700 mt-2", children: login2.data.message }, void 0, !1, {
+          /* @__PURE__ */ jsxDEV61("p", { className: "text-sm text-red-700 mt-2", children: login2.data.message }, void 0, !1, {
             fileName: "app/routes/sign-in.tsx",
             lineNumber: 153,
             columnNumber: 25
@@ -13528,13 +13166,13 @@ function SignInPage() {
         lineNumber: 141,
         columnNumber: 19
       }, this),
-      /* @__PURE__ */ jsxDEV62("div", { children: /* @__PURE__ */ jsxDEV62(
+      /* @__PURE__ */ jsxDEV61("div", { children: /* @__PURE__ */ jsxDEV61(
         Button,
         {
           type: "submit",
           className: "w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500",
-          children: /* @__PURE__ */ jsxDEV62("span", { className: "flex gap-4 items-center", children: [
-            login2.state !== "idle" && /* @__PURE__ */ jsxDEV62(ArrowPathIcon4, { className: "animate-spin h-5 w-5 text-gray-500" }, void 0, !1, {
+          children: /* @__PURE__ */ jsxDEV61("span", { className: "flex gap-4 items-center", children: [
+            login2.state !== "idle" && /* @__PURE__ */ jsxDEV61(ArrowPathIcon4, { className: "animate-spin h-5 w-5 text-gray-500" }, void 0, !1, {
               fileName: "app/routes/sign-in.tsx",
               lineNumber: 168,
               columnNumber: 25
@@ -13593,11 +13231,11 @@ __export(search_exports, {
   default: () => Search,
   loader: () => loader17
 });
-import { useLoaderData as useLoaderData17, useSubmit as useSubmit6 } from "@remix-run/react";
-import { useRef as useRef9, useState as useState14 } from "react";
+import { useLoaderData as useLoaderData16, useSubmit as useSubmit6 } from "@remix-run/react";
+import { useRef as useRef9, useState as useState13 } from "react";
 import { ValidatedForm as ValidatedForm6 } from "remix-validated-form";
-import { useTranslation as useTranslation45 } from "react-i18next";
-import { jsxDEV as jsxDEV63 } from "react/jsx-dev-runtime";
+import { useTranslation as useTranslation44 } from "react-i18next";
+import { jsxDEV as jsxDEV62 } from "react/jsx-dev-runtime";
 var paginationLimitMinimumDefault3 = 25, allowedPaginationLimits3 = /* @__PURE__ */ new Set([
   paginationLimitMinimumDefault3,
   50,
@@ -13607,21 +13245,21 @@ var paginationLimitMinimumDefault3 = 25, allowedPaginationLimits3 = /* @__PURE__
   paginationLimitMinimumDefault3
 );
 function Search() {
-  let loaderData = useLoaderData17(), { result, resultWithoutFacetValueFilters, term, facetValueIds } = loaderData, [mobileFiltersOpen, setMobileFiltersOpen] = useState14(!1);
+  let loaderData = useLoaderData16(), { result, resultWithoutFacetValueFilters, term, facetValueIds } = loaderData, [mobileFiltersOpen, setMobileFiltersOpen] = useState13(!1);
   useRef9(new FacetFilterTracker()).current.update(
     result,
     resultWithoutFacetValueFilters,
     facetValueIds
   );
-  let submit = useSubmit6(), { t } = useTranslation45();
-  return /* @__PURE__ */ jsxDEV63("div", { className: "max-w-6xl mx-auto px-4", children: [
-    /* @__PURE__ */ jsxDEV63("div", { className: "flex justify-between items-center", children: [
-      /* @__PURE__ */ jsxDEV63("h2", { className: "text-3xl sm:text-5xl font-light tracking-tight text-gray-900 my-8", children: term ? `${t("common.resultsFor")} "${term}"` : t("common.allResults") }, void 0, !1, {
+  let submit = useSubmit6(), { t } = useTranslation44();
+  return /* @__PURE__ */ jsxDEV62("div", { className: "max-w-6xl mx-auto px-4", children: [
+    /* @__PURE__ */ jsxDEV62("div", { className: "flex justify-between items-center", children: [
+      /* @__PURE__ */ jsxDEV62("h2", { className: "text-3xl sm:text-5xl font-light tracking-tight text-gray-900 my-8", children: term ? `${t("common.resultsFor")} "${term}"` : t("common.allResults") }, void 0, !1, {
         fileName: "app/routes/search.tsx",
         lineNumber: 43,
         columnNumber: 9
       }, this),
-      /* @__PURE__ */ jsxDEV63(
+      /* @__PURE__ */ jsxDEV62(
         FiltersButton,
         {
           filterCount: facetValueIds.length,
@@ -13641,13 +13279,13 @@ function Search() {
       lineNumber: 42,
       columnNumber: 7
     }, this),
-    /* @__PURE__ */ jsxDEV63(
+    /* @__PURE__ */ jsxDEV62(
       ValidatedForm6,
       {
         validator: validator5,
         method: "get",
         onChange: (e) => submit(e.currentTarget, { preventScrollReset: !0 }),
-        children: /* @__PURE__ */ jsxDEV63(
+        children: /* @__PURE__ */ jsxDEV62(
           FilterableProductGrid,
           {
             allowedPaginationLimits: allowedPaginationLimits3,
@@ -13689,11 +13327,11 @@ __export(verify_exports, {
   loader: () => loader18
 });
 import { useEffect as useEffect13, useRef as useRef10 } from "react";
-import { useLoaderData as useLoaderData18, useSearchParams as useSearchParams5 } from "@remix-run/react";
-import { redirect as redirect15 } from "@remix-run/server-runtime";
+import { useLoaderData as useLoaderData17, useSearchParams as useSearchParams5 } from "@remix-run/react";
+import { redirect as redirect14 } from "@remix-run/server-runtime";
 import { CheckCircleIcon as CheckCircleIcon6, XCircleIcon as XCircleIcon8 } from "@heroicons/react/24/outline";
-import { useTranslation as useTranslation46 } from "react-i18next";
-import { jsxDEV as jsxDEV64 } from "react/jsx-dev-runtime";
+import { useTranslation as useTranslation45 } from "react-i18next";
+import { jsxDEV as jsxDEV63 } from "react/jsx-dev-runtime";
 async function loader18({
   request
 }) {
@@ -13713,17 +13351,17 @@ async function action13({ request }) {
   let headers = new Headers(), headerData = JSON.parse(headersJson);
   return Object.keys(headerData).forEach((key) => {
     headers.set(key, headerData[key]);
-  }), redirect15(redirectTarget, { headers });
+  }), redirect14(redirectTarget, { headers });
 }
 function VerifyTokenPage() {
-  let [searchParams] = useSearchParams5(), result = useLoaderData18(), btnRef = useRef10(null), { t } = useTranslation46();
+  let [searchParams] = useSearchParams5(), result = useLoaderData17(), btnRef = useRef10(null), { t } = useTranslation45();
   return useEffect13(() => {
     if (!result.success || !btnRef.current)
       return;
     let submitBtn = btnRef.current;
     setTimeout(() => submitBtn.click(), 5e3);
-  }, [result]), /* @__PURE__ */ jsxDEV64("div", { className: "flex flex-col justify-center py-12 sm:px-6 lg:px-8", children: /* @__PURE__ */ jsxDEV64("div", { className: "mt-8 sm:mx-auto sm:w-full sm:max-w-md", children: /* @__PURE__ */ jsxDEV64("div", { className: "bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10", children: result.success ? /* @__PURE__ */ jsxDEV64("div", { className: "rounded-md bg-green-100 p-4", children: /* @__PURE__ */ jsxDEV64("div", { className: "flex items-center", children: [
-    /* @__PURE__ */ jsxDEV64("div", { className: "flex-shrink-0", children: /* @__PURE__ */ jsxDEV64(
+  }, [result]), /* @__PURE__ */ jsxDEV63("div", { className: "flex flex-col justify-center py-12 sm:px-6 lg:px-8", children: /* @__PURE__ */ jsxDEV63("div", { className: "mt-8 sm:mx-auto sm:w-full sm:max-w-md", children: /* @__PURE__ */ jsxDEV63("div", { className: "bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10", children: result.success ? /* @__PURE__ */ jsxDEV63("div", { className: "rounded-md bg-green-100 p-4", children: /* @__PURE__ */ jsxDEV63("div", { className: "flex items-center", children: [
+    /* @__PURE__ */ jsxDEV63("div", { className: "flex-shrink-0", children: /* @__PURE__ */ jsxDEV63(
       CheckCircleIcon6,
       {
         className: "h-5 w-5 text-green-600",
@@ -13742,7 +13380,7 @@ function VerifyTokenPage() {
       lineNumber: 79,
       columnNumber: 17
     }, this),
-    /* @__PURE__ */ jsxDEV64("div", { className: "ml-3", children: /* @__PURE__ */ jsxDEV64("p", { className: "text-sm text-green-700", children: t("account.verifyMessage") }, void 0, !1, {
+    /* @__PURE__ */ jsxDEV63("div", { className: "ml-3", children: /* @__PURE__ */ jsxDEV63("p", { className: "text-sm text-green-700", children: t("account.verifyMessage") }, void 0, !1, {
       fileName: "app/routes/verify.tsx",
       lineNumber: 86,
       columnNumber: 19
@@ -13751,8 +13389,8 @@ function VerifyTokenPage() {
       lineNumber: 85,
       columnNumber: 17
     }, this),
-    /* @__PURE__ */ jsxDEV64("form", { method: "post", children: [
-      /* @__PURE__ */ jsxDEV64(
+    /* @__PURE__ */ jsxDEV63("form", { method: "post", children: [
+      /* @__PURE__ */ jsxDEV63(
         "input",
         {
           type: "hidden",
@@ -13768,7 +13406,7 @@ function VerifyTokenPage() {
         },
         this
       ),
-      /* @__PURE__ */ jsxDEV64(
+      /* @__PURE__ */ jsxDEV63(
         "input",
         {
           type: "hidden",
@@ -13784,7 +13422,7 @@ function VerifyTokenPage() {
         },
         this
       ),
-      /* @__PURE__ */ jsxDEV64(
+      /* @__PURE__ */ jsxDEV63(
         "button",
         {
           ref: btnRef,
@@ -13813,8 +13451,8 @@ function VerifyTokenPage() {
     fileName: "app/routes/verify.tsx",
     lineNumber: 77,
     columnNumber: 13
-  }, this) : /* @__PURE__ */ jsxDEV64("div", { className: "rounded-md bg-red-50 p-4", children: /* @__PURE__ */ jsxDEV64("div", { className: "flex", children: [
-    /* @__PURE__ */ jsxDEV64("div", { className: "flex-shrink-0", children: /* @__PURE__ */ jsxDEV64(
+  }, this) : /* @__PURE__ */ jsxDEV63("div", { className: "rounded-md bg-red-50 p-4", children: /* @__PURE__ */ jsxDEV63("div", { className: "flex", children: [
+    /* @__PURE__ */ jsxDEV63("div", { className: "flex-shrink-0", children: /* @__PURE__ */ jsxDEV63(
       XCircleIcon8,
       {
         className: "h-5 w-5 text-red-400",
@@ -13833,7 +13471,7 @@ function VerifyTokenPage() {
       lineNumber: 112,
       columnNumber: 17
     }, this),
-    /* @__PURE__ */ jsxDEV64("div", { className: "ml-3", children: /* @__PURE__ */ jsxDEV64("p", { className: "text-sm text-red-700", children: result.error }, void 0, !1, {
+    /* @__PURE__ */ jsxDEV63("div", { className: "ml-3", children: /* @__PURE__ */ jsxDEV63("p", { className: "text-sm text-red-700", children: result.error }, void 0, !1, {
       fileName: "app/routes/verify.tsx",
       lineNumber: 119,
       columnNumber: 19
@@ -13871,21 +13509,21 @@ __export(routes_exports, {
   default: () => Index,
   loader: () => loader19
 });
-import { useLoaderData as useLoaderData19 } from "@remix-run/react";
+import { useLoaderData as useLoaderData18 } from "@remix-run/react";
 import { BookOpenIcon } from "@heroicons/react/24/solid";
-import { useTranslation as useTranslation47 } from "react-i18next";
-import { Fragment as Fragment17, jsxDEV as jsxDEV65 } from "react/jsx-dev-runtime";
+import { useTranslation as useTranslation46 } from "react-i18next";
+import { Fragment as Fragment17, jsxDEV as jsxDEV64 } from "react/jsx-dev-runtime";
 async function loader19({ request }) {
   return {
     collections: await getCollections(request, { take: 20 })
   };
 }
 function Index() {
-  let { collections } = useLoaderData19(), { t } = useTranslation47(), headerImage = collections[0]?.featuredAsset?.preview;
-  return /* @__PURE__ */ jsxDEV65(Fragment17, { children: [
-    /* @__PURE__ */ jsxDEV65("div", { className: "relative", children: [
-      /* @__PURE__ */ jsxDEV65("div", { "aria-hidden": "true", className: "absolute inset-0 overflow-hidden", children: [
-        headerImage && /* @__PURE__ */ jsxDEV65(
+  let { collections } = useLoaderData18(), { t } = useTranslation46(), headerImage = collections[0]?.featuredAsset?.preview;
+  return /* @__PURE__ */ jsxDEV64(Fragment17, { children: [
+    /* @__PURE__ */ jsxDEV64("div", { className: "relative", children: [
+      /* @__PURE__ */ jsxDEV64("div", { "aria-hidden": "true", className: "absolute inset-0 overflow-hidden", children: [
+        headerImage && /* @__PURE__ */ jsxDEV64(
           "img",
           {
             className: "absolute inset-0 w-full",
@@ -13901,7 +13539,7 @@ function Index() {
           },
           this
         ),
-        /* @__PURE__ */ jsxDEV65("div", { className: "absolute inset-0 bg-gradient-to-br from-zinc-400 to-black mix-blend-darken" }, void 0, !1, {
+        /* @__PURE__ */ jsxDEV64("div", { className: "absolute inset-0 bg-gradient-to-br from-zinc-400 to-black mix-blend-darken" }, void 0, !1, {
           fileName: "app/routes/index.tsx",
           lineNumber: 32,
           columnNumber: 11
@@ -13911,7 +13549,7 @@ function Index() {
         lineNumber: 24,
         columnNumber: 9
       }, this),
-      /* @__PURE__ */ jsxDEV65(
+      /* @__PURE__ */ jsxDEV64(
         "div",
         {
           "aria-hidden": "true",
@@ -13926,8 +13564,8 @@ function Index() {
         },
         this
       ),
-      /* @__PURE__ */ jsxDEV65("div", { className: "relative max-w-3xl mx-auto py-32 px-6 flex flex-col items-center text-center sm:py-64 lg:px-0", children: [
-        /* @__PURE__ */ jsxDEV65("div", { className: "relative bg-zinc-800 bg-opacity-0 rounded-lg p-0", children: /* @__PURE__ */ jsxDEV65("h1", { className: "text-6xl text-transparent bg-clip-text font-extrabold tracking-normal lg:text-6xl bg-gradient-to-r from-yellow-600 via-red-500 to-blue-600", children: t("vendure.title") }, void 0, !1, {
+      /* @__PURE__ */ jsxDEV64("div", { className: "relative max-w-3xl mx-auto py-32 px-6 flex flex-col items-center text-center sm:py-64 lg:px-0", children: [
+        /* @__PURE__ */ jsxDEV64("div", { className: "relative bg-zinc-800 bg-opacity-0 rounded-lg p-0", children: /* @__PURE__ */ jsxDEV64("h1", { className: "text-6xl text-transparent bg-clip-text font-extrabold tracking-normal lg:text-6xl bg-gradient-to-r from-yellow-600 via-red-500 to-blue-600", children: t("vendure.title") }, void 0, !1, {
           fileName: "app/routes/index.tsx",
           lineNumber: 40,
           columnNumber: 13
@@ -13936,10 +13574,10 @@ function Index() {
           lineNumber: 39,
           columnNumber: 11
         }, this),
-        /* @__PURE__ */ jsxDEV65("p", { className: "mt-4 text-2xl text-white", children: [
+        /* @__PURE__ */ jsxDEV64("p", { className: "mt-4 text-2xl text-white", children: [
           t("vendure.intro"),
           " ",
-          /* @__PURE__ */ jsxDEV65(
+          /* @__PURE__ */ jsxDEV64(
             "a",
             {
               href: "https://www.vendure.io",
@@ -13958,7 +13596,7 @@ function Index() {
           " ",
           "&",
           " ",
-          /* @__PURE__ */ jsxDEV65(
+          /* @__PURE__ */ jsxDEV64(
             "a",
             {
               href: "~/routes/__cart/index",
@@ -13979,18 +13617,18 @@ function Index() {
           lineNumber: 45,
           columnNumber: 11
         }, this),
-        /* @__PURE__ */ jsxDEV65("p", { className: "mt-4 text-gray-300 space-x-1", children: [
-          /* @__PURE__ */ jsxDEV65(BookOpenIcon, { className: "w-5 h-5 inline" }, void 0, !1, {
+        /* @__PURE__ */ jsxDEV64("p", { className: "mt-4 text-gray-300 space-x-1", children: [
+          /* @__PURE__ */ jsxDEV64(BookOpenIcon, { className: "w-5 h-5 inline" }, void 0, !1, {
             fileName: "app/routes/index.tsx",
             lineNumber: 62,
             columnNumber: 13
           }, this),
-          /* @__PURE__ */ jsxDEV65("span", { children: t("common.readMore") }, void 0, !1, {
+          /* @__PURE__ */ jsxDEV64("span", { children: t("common.readMore") }, void 0, !1, {
             fileName: "app/routes/index.tsx",
             lineNumber: 63,
             columnNumber: 13
           }, this),
-          /* @__PURE__ */ jsxDEV65(
+          /* @__PURE__ */ jsxDEV64(
             "a",
             {
               className: "text-primary-200 hover:text-primary-400",
@@ -14021,13 +13659,13 @@ function Index() {
       lineNumber: 22,
       columnNumber: 7
     }, this),
-    /* @__PURE__ */ jsxDEV65(
+    /* @__PURE__ */ jsxDEV64(
       "section",
       {
         "aria-labelledby": "category-heading",
         className: "pt-24 sm:pt-32 xl:max-w-7xl xl:mx-auto xl:px-8",
         children: [
-          /* @__PURE__ */ jsxDEV65("div", { className: "px-4 sm:px-6 lg:px-8 xl:px-0", children: /* @__PURE__ */ jsxDEV65(
+          /* @__PURE__ */ jsxDEV64("div", { className: "px-4 sm:px-6 lg:px-8 xl:px-0", children: /* @__PURE__ */ jsxDEV64(
             "h2",
             {
               id: "category-heading",
@@ -14047,7 +13685,7 @@ function Index() {
             lineNumber: 78,
             columnNumber: 9
           }, this),
-          /* @__PURE__ */ jsxDEV65("div", { className: "mt-4 flow-root", children: /* @__PURE__ */ jsxDEV65("div", { className: "-my-2", children: /* @__PURE__ */ jsxDEV65("div", { className: "box-content py-2 px-2 relative overflow-x-auto xl:overflow-visible", children: /* @__PURE__ */ jsxDEV65("div", { className: "grid justify-items-center grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-8 sm:px-6 lg:px-8 xl:relative xl:px-0 xl:space-x-0 xl:gap-x-8", children: collections.map((collection) => /* @__PURE__ */ jsxDEV65(CollectionCard, { collection }, collection.id, !1, {
+          /* @__PURE__ */ jsxDEV64("div", { className: "mt-4 flow-root", children: /* @__PURE__ */ jsxDEV64("div", { className: "-my-2", children: /* @__PURE__ */ jsxDEV64("div", { className: "box-content py-2 px-2 relative overflow-x-auto xl:overflow-visible", children: /* @__PURE__ */ jsxDEV64("div", { className: "grid justify-items-center grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-8 sm:px-6 lg:px-8 xl:relative xl:px-0 xl:space-x-0 xl:gap-x-8", children: collections.map((collection) => /* @__PURE__ */ jsxDEV64(CollectionCard, { collection }, collection.id, !1, {
             fileName: "app/routes/index.tsx",
             lineNumber: 92,
             columnNumber: 19
@@ -14068,14 +13706,14 @@ function Index() {
             lineNumber: 87,
             columnNumber: 9
           }, this),
-          /* @__PURE__ */ jsxDEV65("div", { className: "mt-6 px-4 sm:hidden", children: /* @__PURE__ */ jsxDEV65(
+          /* @__PURE__ */ jsxDEV64("div", { className: "mt-6 px-4 sm:hidden", children: /* @__PURE__ */ jsxDEV64(
             "a",
             {
               href: "~/routes/__cart/index#",
               className: "block text-sm font-semibold text-primary-600 hover:text-primary-500",
               children: [
                 t("common.browseCategories"),
-                /* @__PURE__ */ jsxDEV65("span", { "aria-hidden": "true", children: " \u2192" }, void 0, !1, {
+                /* @__PURE__ */ jsxDEV64("span", { "aria-hidden": "true", children: " \u2192" }, void 0, !1, {
                   fileName: "app/routes/index.tsx",
                   lineNumber: 105,
                   columnNumber: 13
@@ -14114,7 +13752,7 @@ function Index() {
 }
 
 // server-assets-manifest:@remix-run/dev/assets-manifest
-var assets_manifest_default = { entry: { module: "/build/entry.client-P74B6JJO.js", imports: ["/build/_shared/chunk-OAPPX4FA.js", "/build/_shared/chunk-7LRNVKNK.js", "/build/_shared/chunk-7PHB3BFD.js", "/build/_shared/chunk-GX376P3A.js", "/build/_shared/chunk-V3WCK3NS.js", "/build/_shared/chunk-JR22VO6P.js", "/build/_shared/chunk-WEAPBHQG.js", "/build/_shared/chunk-CJ4MY3PQ.js", "/build/_shared/chunk-PZDJHGND.js"] }, routes: { root: { id: "root", parentId: void 0, path: "", index: void 0, caseSensitive: void 0, module: "/build/root-GZXAEFCG.js", imports: ["/build/_shared/chunk-XRV3KUX7.js", "/build/_shared/chunk-D5NR54C3.js", "/build/_shared/chunk-QZYG7WHP.js", "/build/_shared/chunk-WYTUHPBX.js", "/build/_shared/chunk-2QJY4JOV.js", "/build/_shared/chunk-GL42KH6V.js", "/build/_shared/chunk-R5BHNF67.js", "/build/_shared/chunk-4KYYPW5T.js", "/build/_shared/chunk-SW3WFDAK.js", "/build/_shared/chunk-76TTLXDT.js", "/build/_shared/chunk-L7FVEPUN.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !0 }, "routes/account": { id: "routes/account", parentId: "root", path: "account", index: void 0, caseSensitive: void 0, module: "/build/routes/account-QOS4HHVK.js", imports: void 0, hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account._index": { id: "routes/account._index", parentId: "root", path: "account/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/account._index-7MTGE24D.js", imports: ["/build/_shared/chunk-HB3LTPFA.js", "/build/_shared/chunk-CK6JBXLB.js", "/build/_shared/chunk-ZBNJBJG3.js", "/build/_shared/chunk-UGICVU2E.js", "/build/_shared/chunk-K5DUBKG2.js", "/build/_shared/chunk-6ORBHVW4.js", "/build/_shared/chunk-OYL3GVXJ.js", "/build/_shared/chunk-NWTVELB6.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses": { id: "routes/account.addresses", parentId: "root", path: "account/addresses", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses-6BKRK2JZ.js", imports: ["/build/_shared/chunk-UGICVU2E.js", "/build/_shared/chunk-K5DUBKG2.js", "/build/_shared/chunk-6ORBHVW4.js", "/build/_shared/chunk-NWTVELB6.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.$addressId": { id: "routes/account.addresses.$addressId", parentId: "root", path: "account/addresses/:addressId", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.$addressId-HZJA44QO.js", imports: ["/build/_shared/chunk-W5IXWGXX.js", "/build/_shared/chunk-W5I4V2KD.js", "/build/_shared/chunk-CK6JBXLB.js", "/build/_shared/chunk-ZBNJBJG3.js", "/build/_shared/chunk-K5DUBKG2.js", "/build/_shared/chunk-6ORBHVW4.js", "/build/_shared/chunk-LQXYEQAK.js", "/build/_shared/chunk-OYL3GVXJ.js", "/build/_shared/chunk-QFWMM6E2.js", "/build/_shared/chunk-NWTVELB6.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.new": { id: "routes/account.addresses.new", parentId: "root", path: "account/addresses/new", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.new-DVTHVEE7.js", imports: ["/build/_shared/chunk-W5IXWGXX.js", "/build/_shared/chunk-W5I4V2KD.js", "/build/_shared/chunk-CK6JBXLB.js", "/build/_shared/chunk-ZBNJBJG3.js", "/build/_shared/chunk-K5DUBKG2.js", "/build/_shared/chunk-6ORBHVW4.js", "/build/_shared/chunk-LQXYEQAK.js", "/build/_shared/chunk-OYL3GVXJ.js", "/build/_shared/chunk-QFWMM6E2.js", "/build/_shared/chunk-NWTVELB6.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.history": { id: "routes/account.history", parentId: "root", path: "account/history", index: void 0, caseSensitive: void 0, module: "/build/routes/account.history-HWD6MY6F.js", imports: ["/build/_shared/chunk-HAXWA5QZ.js", "/build/_shared/chunk-LQXYEQAK.js", "/build/_shared/chunk-OYL3GVXJ.js", "/build/_shared/chunk-NWTVELB6.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.password": { id: "routes/account.password", parentId: "root", path: "account/password", index: void 0, caseSensitive: void 0, module: "/build/routes/account.password-5YC5L3A2.js", imports: ["/build/_shared/chunk-ZBNJBJG3.js", "/build/_shared/chunk-UGICVU2E.js", "/build/_shared/chunk-6ORBHVW4.js", "/build/_shared/chunk-OYL3GVXJ.js", "/build/_shared/chunk-NWTVELB6.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.active-order": { id: "routes/api.active-order", parentId: "root", path: "api/active-order", index: void 0, caseSensitive: void 0, module: "/build/routes/api.active-order-VQJ67ND7.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.logout": { id: "routes/api.logout", parentId: "root", path: "api/logout", index: void 0, caseSensitive: void 0, module: "/build/routes/api.logout-O22KF3EY.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout": { id: "routes/checkout", parentId: "root", path: "checkout", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout-ZJDCNBWU.js", imports: ["/build/_shared/chunk-3MWQNNES.js", "/build/_shared/chunk-HB3LTPFA.js", "/build/_shared/chunk-YZIITF2F.js", "/build/_shared/chunk-W5I4V2KD.js", "/build/_shared/chunk-QFWMM6E2.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout._index": { id: "routes/checkout._index", parentId: "root", path: "checkout/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout._index-OEGWZFPW.js", imports: ["/build/_shared/chunk-3MWQNNES.js", "/build/_shared/chunk-HB3LTPFA.js", "/build/_shared/chunk-W5I4V2KD.js", "/build/_shared/chunk-QFWMM6E2.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.confirmation.$orderCode": { id: "routes/checkout.confirmation.$orderCode", parentId: "root", path: "checkout/confirmation/:orderCode", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.confirmation.$orderCode-2BXKQOJ6.js", imports: ["/build/_shared/chunk-YZIITF2F.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.payment": { id: "routes/checkout.payment", parentId: "root", path: "checkout/payment", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.payment-TKPPH4W7.js", imports: ["/build/_shared/chunk-W5I4V2KD.js", "/build/_shared/chunk-QFWMM6E2.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/collections.$slug": { id: "routes/collections.$slug", parentId: "root", path: "collections/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/collections.$slug-L5O32BUE.js", imports: ["/build/_shared/chunk-TTBVAUHW.js", "/build/_shared/chunk-QZFOGA6H.js", "/build/_shared/chunk-HAXWA5QZ.js", "/build/_shared/chunk-UEM5VJ2F.js", "/build/_shared/chunk-K6T266AO.js", "/build/_shared/chunk-LQXYEQAK.js", "/build/_shared/chunk-OYL3GVXJ.js", "/build/_shared/chunk-QFWMM6E2.js", "/build/_shared/chunk-NWTVELB6.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/index": { id: "routes/index", parentId: "root", path: void 0, index: !0, caseSensitive: void 0, module: "/build/routes/index-QMBPUCQT.js", imports: ["/build/_shared/chunk-QZFOGA6H.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/products.$slug": { id: "routes/products.$slug", parentId: "root", path: "products/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/products.$slug-YBB5WYEU.js", imports: ["/build/_shared/chunk-UEM5VJ2F.js", "/build/_shared/chunk-K6T266AO.js", "/build/_shared/chunk-QFWMM6E2.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/search": { id: "routes/search", parentId: "root", path: "search", index: void 0, caseSensitive: void 0, module: "/build/routes/search-Q3X6WHYE.js", imports: ["/build/_shared/chunk-TTBVAUHW.js", "/build/_shared/chunk-HAXWA5QZ.js", "/build/_shared/chunk-K6T266AO.js", "/build/_shared/chunk-LQXYEQAK.js", "/build/_shared/chunk-OYL3GVXJ.js", "/build/_shared/chunk-QFWMM6E2.js", "/build/_shared/chunk-NWTVELB6.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-in": { id: "routes/sign-in", parentId: "root", path: "sign-in", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-in-AEO3DRKM.js", imports: ["/build/_shared/chunk-NWTVELB6.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.index": { id: "routes/sign-up.index", parentId: "root", path: "sign-up", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.index-ZFPYHXBC.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.success": { id: "routes/sign-up.success", parentId: "root", path: "sign-up/success", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.success-G75BXDC6.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify": { id: "routes/verify", parentId: "root", path: "verify", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-X43QRP25.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify-email-address-change": { id: "routes/verify-email-address-change", parentId: "root", path: "verify-email-address-change", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-email-address-change-IORYIYDO.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 } }, version: "6a33eb2c", hmr: { runtime: "/build/_shared/chunk-V3WCK3NS.js", timestamp: 1744196202631 }, url: "/build/manifest-6A33EB2C.js" };
+var assets_manifest_default = { entry: { module: "/build/entry.client-P74B6JJO.js", imports: ["/build/_shared/chunk-OAPPX4FA.js", "/build/_shared/chunk-7LRNVKNK.js", "/build/_shared/chunk-7PHB3BFD.js", "/build/_shared/chunk-GX376P3A.js", "/build/_shared/chunk-V3WCK3NS.js", "/build/_shared/chunk-JR22VO6P.js", "/build/_shared/chunk-WEAPBHQG.js", "/build/_shared/chunk-CJ4MY3PQ.js", "/build/_shared/chunk-PZDJHGND.js"] }, routes: { root: { id: "root", parentId: void 0, path: "", index: void 0, caseSensitive: void 0, module: "/build/root-INYU2UB6.js", imports: ["/build/_shared/chunk-XRV3KUX7.js", "/build/_shared/chunk-D5NR54C3.js", "/build/_shared/chunk-QZYG7WHP.js", "/build/_shared/chunk-WYTUHPBX.js", "/build/_shared/chunk-2QJY4JOV.js", "/build/_shared/chunk-GL42KH6V.js", "/build/_shared/chunk-R5BHNF67.js", "/build/_shared/chunk-4KYYPW5T.js", "/build/_shared/chunk-SW3WFDAK.js", "/build/_shared/chunk-76TTLXDT.js", "/build/_shared/chunk-L7FVEPUN.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !0 }, "routes/account": { id: "routes/account", parentId: "root", path: "account", index: void 0, caseSensitive: void 0, module: "/build/routes/account-QOS4HHVK.js", imports: void 0, hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account._index": { id: "routes/account._index", parentId: "root", path: "account/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/account._index-7MTGE24D.js", imports: ["/build/_shared/chunk-HB3LTPFA.js", "/build/_shared/chunk-CK6JBXLB.js", "/build/_shared/chunk-ZBNJBJG3.js", "/build/_shared/chunk-UGICVU2E.js", "/build/_shared/chunk-K5DUBKG2.js", "/build/_shared/chunk-6ORBHVW4.js", "/build/_shared/chunk-OYL3GVXJ.js", "/build/_shared/chunk-NWTVELB6.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses": { id: "routes/account.addresses", parentId: "root", path: "account/addresses", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses-PQM3QCH6.js", imports: ["/build/_shared/chunk-UGICVU2E.js", "/build/_shared/chunk-K5DUBKG2.js", "/build/_shared/chunk-6ORBHVW4.js", "/build/_shared/chunk-NWTVELB6.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.$addressId": { id: "routes/account.addresses.$addressId", parentId: "root", path: "account/addresses/:addressId", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.$addressId-HZJA44QO.js", imports: ["/build/_shared/chunk-W5IXWGXX.js", "/build/_shared/chunk-W5I4V2KD.js", "/build/_shared/chunk-CK6JBXLB.js", "/build/_shared/chunk-ZBNJBJG3.js", "/build/_shared/chunk-K5DUBKG2.js", "/build/_shared/chunk-6ORBHVW4.js", "/build/_shared/chunk-LQXYEQAK.js", "/build/_shared/chunk-OYL3GVXJ.js", "/build/_shared/chunk-QFWMM6E2.js", "/build/_shared/chunk-NWTVELB6.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.new": { id: "routes/account.addresses.new", parentId: "root", path: "account/addresses/new", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.new-DVTHVEE7.js", imports: ["/build/_shared/chunk-W5IXWGXX.js", "/build/_shared/chunk-W5I4V2KD.js", "/build/_shared/chunk-CK6JBXLB.js", "/build/_shared/chunk-ZBNJBJG3.js", "/build/_shared/chunk-K5DUBKG2.js", "/build/_shared/chunk-6ORBHVW4.js", "/build/_shared/chunk-LQXYEQAK.js", "/build/_shared/chunk-OYL3GVXJ.js", "/build/_shared/chunk-QFWMM6E2.js", "/build/_shared/chunk-NWTVELB6.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.history": { id: "routes/account.history", parentId: "root", path: "account/history", index: void 0, caseSensitive: void 0, module: "/build/routes/account.history-HWD6MY6F.js", imports: ["/build/_shared/chunk-HAXWA5QZ.js", "/build/_shared/chunk-LQXYEQAK.js", "/build/_shared/chunk-OYL3GVXJ.js", "/build/_shared/chunk-NWTVELB6.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.password": { id: "routes/account.password", parentId: "root", path: "account/password", index: void 0, caseSensitive: void 0, module: "/build/routes/account.password-5YC5L3A2.js", imports: ["/build/_shared/chunk-ZBNJBJG3.js", "/build/_shared/chunk-UGICVU2E.js", "/build/_shared/chunk-6ORBHVW4.js", "/build/_shared/chunk-OYL3GVXJ.js", "/build/_shared/chunk-NWTVELB6.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.active-order": { id: "routes/api.active-order", parentId: "root", path: "api/active-order", index: void 0, caseSensitive: void 0, module: "/build/routes/api.active-order-VQJ67ND7.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.logout": { id: "routes/api.logout", parentId: "root", path: "api/logout", index: void 0, caseSensitive: void 0, module: "/build/routes/api.logout-O22KF3EY.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout": { id: "routes/checkout", parentId: "root", path: "checkout", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout-NQUXUWMR.js", imports: ["/build/_shared/chunk-GSQHZHN2.js", "/build/_shared/chunk-HB3LTPFA.js", "/build/_shared/chunk-YZIITF2F.js", "/build/_shared/chunk-W5I4V2KD.js", "/build/_shared/chunk-QFWMM6E2.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout._index": { id: "routes/checkout._index", parentId: "root", path: "checkout/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout._index-VOHMKPHA.js", imports: ["/build/_shared/chunk-GSQHZHN2.js", "/build/_shared/chunk-HB3LTPFA.js", "/build/_shared/chunk-W5I4V2KD.js", "/build/_shared/chunk-QFWMM6E2.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.confirmation.$orderCode": { id: "routes/checkout.confirmation.$orderCode", parentId: "root", path: "checkout/confirmation/:orderCode", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.confirmation.$orderCode-2BXKQOJ6.js", imports: ["/build/_shared/chunk-YZIITF2F.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.payment": { id: "routes/checkout.payment", parentId: "root", path: "checkout/payment", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.payment-O7QXFKTN.js", imports: ["/build/_shared/chunk-W5I4V2KD.js", "/build/_shared/chunk-QFWMM6E2.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/collections.$slug": { id: "routes/collections.$slug", parentId: "root", path: "collections/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/collections.$slug-L5O32BUE.js", imports: ["/build/_shared/chunk-TTBVAUHW.js", "/build/_shared/chunk-QZFOGA6H.js", "/build/_shared/chunk-HAXWA5QZ.js", "/build/_shared/chunk-UEM5VJ2F.js", "/build/_shared/chunk-K6T266AO.js", "/build/_shared/chunk-LQXYEQAK.js", "/build/_shared/chunk-OYL3GVXJ.js", "/build/_shared/chunk-QFWMM6E2.js", "/build/_shared/chunk-NWTVELB6.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/index": { id: "routes/index", parentId: "root", path: void 0, index: !0, caseSensitive: void 0, module: "/build/routes/index-QMBPUCQT.js", imports: ["/build/_shared/chunk-QZFOGA6H.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/products.$slug": { id: "routes/products.$slug", parentId: "root", path: "products/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/products.$slug-YBB5WYEU.js", imports: ["/build/_shared/chunk-UEM5VJ2F.js", "/build/_shared/chunk-K6T266AO.js", "/build/_shared/chunk-QFWMM6E2.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/search": { id: "routes/search", parentId: "root", path: "search", index: void 0, caseSensitive: void 0, module: "/build/routes/search-Q3X6WHYE.js", imports: ["/build/_shared/chunk-TTBVAUHW.js", "/build/_shared/chunk-HAXWA5QZ.js", "/build/_shared/chunk-K6T266AO.js", "/build/_shared/chunk-LQXYEQAK.js", "/build/_shared/chunk-OYL3GVXJ.js", "/build/_shared/chunk-QFWMM6E2.js", "/build/_shared/chunk-NWTVELB6.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-in": { id: "routes/sign-in", parentId: "root", path: "sign-in", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-in-AEO3DRKM.js", imports: ["/build/_shared/chunk-NWTVELB6.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.index": { id: "routes/sign-up.index", parentId: "root", path: "sign-up", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.index-ZFPYHXBC.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.success": { id: "routes/sign-up.success", parentId: "root", path: "sign-up/success", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.success-G75BXDC6.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify": { id: "routes/verify", parentId: "root", path: "verify", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-X43QRP25.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify-email-address-change": { id: "routes/verify-email-address-change", parentId: "root", path: "verify-email-address-change", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-email-address-change-IORYIYDO.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 } }, version: "9f116101", hmr: { runtime: "/build/_shared/chunk-V3WCK3NS.js", timestamp: 1744282758100 }, url: "/build/manifest-9F116101.js" };
 
 // server-entry-module:@remix-run/dev/server-build
 var mode = "development", assetsBuildDirectory = "public/build", future = { v3_fetcherPersist: !1, v3_relativeSplatPath: !1 }, publicPath = "/build/", entry = { module: entry_server_exports }, routes = {

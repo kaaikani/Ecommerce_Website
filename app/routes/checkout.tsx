@@ -5,7 +5,7 @@ import { OutletContext } from '~/types';
 import { classNames } from '~/utils/class-names';
 import { CartTotals } from '~/components/cart/CartTotals';
 import { useTranslation } from 'react-i18next';
-import CheckoutShipping from '../components/checkout/shipping'; // Import CheckoutShipping component
+import CheckoutShipping from '~/routes/checkout._index'; // Import CheckoutShipping component
 import {
   getAvailableCountries,
   getEligibleShippingMethods,
