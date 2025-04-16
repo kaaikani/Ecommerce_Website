@@ -21,7 +21,7 @@ import { ShippingMethodSelector } from '~/components/checkout/ShippingMethodSele
 import { ShippingAddressSelector } from '~/components/checkout/ShippingAddressSelector';
 import { getActiveOrder } from '~/providers/orders/order';
 import { useTranslation } from 'react-i18next';
-
+import AddAddressCard from '~/components/account/AddAddressCard';
 export async function loader({ request }: DataFunctionArgs) {
   const session = await getSessionStorage().then((sessionStorage) =>
     sessionStorage.getSession(request?.headers.get('Cookie')),
@@ -262,7 +262,7 @@ export default function CheckoutShipping() {
           ></AddressForm>
         )}
       </Form>
-
+        <AddAddressCard />
       <div className="mt-10 border-t border-gray-200 pt-10">
         <ShippingMethodSelector
           eligibleShippingMethods={eligibleShippingMethods}

@@ -23,6 +23,7 @@ async function sendQuery<Response, Variables = {}>(options: {
   request?: Request;
 }): Promise<GraphqlResponse<Response> & { headers: Headers }> {
   const headers = new Headers(options.headers);
+  headers.set('vendure-token', 'ind-coimbatore');
   const req = options.request;
   headers.append('Content-Type', 'application/json');
   const session = await getSessionStorage().then((sessionStorage) =>
