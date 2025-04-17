@@ -3,12 +3,13 @@ import { Form } from '@remix-run/react';
 import { EligiblePaymentMethodsQuery,OrderDetailFragment } from '~/generated/graphql';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
+import { getActiveCustomerDetails } from '~/providers/customer/customer';
+
 // Define the expected response type for the Razorpay order creation API
 interface RazorpayOrderResponse {
   orderId: string;
   error?: string; // Optional error field for API failures
 }
-
 export function DummyPayments({
   paymentMethod,
   paymentError,
