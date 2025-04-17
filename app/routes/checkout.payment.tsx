@@ -235,10 +235,12 @@ export default function CheckoutPayment() {
           </div>
         ) : (
           <div className="py-12" key={paymentMethod.id}>
-            <DummyPayments
+           <DummyPayments
               paymentMethod={paymentMethod}
               paymentError={paymentError}
-            />
+              order={activeOrder as any}
+           />
+
           </div>
         ),
       )}

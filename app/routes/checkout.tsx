@@ -112,7 +112,7 @@ export default function Checkout() {
                   removeItem={removeItem}
                   adjustOrderLine={adjustOrderLine}
                 />
-                <CartTotals order={activeOrder} /> {/* Adjust type if needed */}
+                <CartTotals order={activeOrder as any} /> {/* Adjust type if needed */}
               </div>
             </div>
           )}

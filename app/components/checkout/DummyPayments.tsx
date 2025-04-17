@@ -3,7 +3,6 @@ import { Form } from '@remix-run/react';
 import { EligiblePaymentMethodsQuery,OrderDetailFragment } from '~/generated/graphql';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
-
 // Define the expected response type for the Razorpay order creation API
 interface RazorpayOrderResponse {
   orderId: string;
@@ -13,13 +12,18 @@ interface RazorpayOrderResponse {
 export function DummyPayments({
   paymentMethod,
   paymentError,
-
+  order, 
 }: {
   paymentMethod: EligiblePaymentMethodsQuery['eligiblePaymentMethods'][number];
   paymentError?: string;
+  order?: OrderDetailFragment | null;
 }) {
   const { t } = useTranslation();
   const [razorpayError, setRazorpayError] = useState<string | null>(null);
+  const amountInPaise = order?.totalWithTax
+    ? Math.round(order.totalWithTax *1):1000; // default 100.00 INR
+  
+  const currency = order?.currencyCode || 'INR';
 
   // Function to load Razorpay script
   const loadRazorpayScript = () => {
@@ -57,8 +61,8 @@ export function DummyPayments({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: "100", // Example: 500 INR in paise
-          currency: "INR",
+          amount: amountInPaise,
+          currency: currency,
         }),
       });
 
@@ -79,20 +83,13 @@ export function DummyPayments({
 
     // Razorpay options
     const options = {
-      key: 'rzp_live_MT7BL3eZs3HHGB', // Replace with your new Razorpay Key ID
-      amount: '100',
- // Example: 500 INR in paise
-      currency: "INR",
+      key: 'rzp_live_MT7BL3eZs3HHGB',
+      amount: amountInPaise,
+      currency: currency,
       name: 'Kaaikani',
       description: 'Online Payment',
-      order_id: orderData.orderId, // Use order ID from backend
-      handler: function (response: any) {
-        // Handle successful payment
-        console.log('Payment successful:', response);
-        setRazorpayError(null);
-        // Submit payment details to your server for verification
-        // Example: POST to /api/verify-payment with response.razorpay_payment_id, etc.
-      },
+      order_id: orderData.orderId,
+      
       prefill: {
         name: 'Kaaikani',
         email: 'customer@example.com',
@@ -105,6 +102,9 @@ export function DummyPayments({
         color: '#3399cc',
       },
     };
+   
+     
+    
     
     // Initialize Razorpay
     try {
@@ -128,7 +128,7 @@ export function DummyPayments({
 
   return (
     <div className="flex flex-col items-center">
-      <p className="text-gray-600 text-sm p-6">{t('checkout.dummyPayment')}</p>
+      <p className="text-gray-600 text-sm p-6">{t('')}</p>
       {paymentError && (
         <div className="rounded-md bg-red-50 p-4 mb-8">
           <div className="flex">
