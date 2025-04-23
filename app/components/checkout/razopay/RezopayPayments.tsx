@@ -57,7 +57,7 @@ export function RazorpayPayments({ orderCode, amount, currency }: RazorpayPaymen
       prefill: {
         name: 'Customer Name',
         email: 'customer@example.com',
-        contact: '9999999999',
+        contact: '111111',
       },
       theme: {
         color: '#3399cc',

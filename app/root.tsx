@@ -140,7 +140,7 @@ export default function App() {
         <CartTray
           open={open}
           onClose={setOpen}
-          activeOrder={activeOrder}
+          activeOrder={activeOrder as any}
           adjustOrderLine={adjustOrderLine}
           removeItem={removeItem}
         />

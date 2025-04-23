@@ -1701,6 +1701,7 @@ export type Mutation = {
   createStripePaymentIntent?: Maybe<Scalars['String']>;
   /** Delete an existing Address */
   deleteCustomerAddress: Success;
+  generateRazorpayOrderId: GenerateRazorpayOrderIdResult;
   /**
    * Authenticates the user using the native authentication strategy. This mutation is an alias for authenticate({ native: { ... }})
    *
@@ -1827,6 +1828,11 @@ export type MutationCreateCustomerAddressArgs = {
 
 export type MutationDeleteCustomerAddressArgs = {
   id: Scalars['ID'];
+};
+
+
+export type MutationGenerateRazorpayOrderIdArgs = {
+  orderId: Scalars['ID'];
 };
 
 
@@ -2090,6 +2096,7 @@ export type OrderCustomFields = {
   __typename?: 'OrderCustomFields';
   clientRequestToCancel?: Maybe<Scalars['Int']>;
   otherInstructions?: Maybe<Scalars['String']>;
+  razorpay_order_id?: Maybe<Scalars['String']>;
 };
 
 export type OrderFilterParameter = {
@@ -2103,6 +2110,7 @@ export type OrderFilterParameter = {
   id?: InputMaybe<IdOperators>;
   orderPlacedAt?: InputMaybe<DateOperators>;
   otherInstructions?: InputMaybe<StringOperators>;
+  razorpay_order_id?: InputMaybe<StringOperators>;
   shipping?: InputMaybe<NumberOperators>;
   shippingWithTax?: InputMaybe<NumberOperators>;
   state?: InputMaybe<StringOperators>;
@@ -2227,6 +2235,7 @@ export type OrderSortParameter = {
   id?: InputMaybe<SortOrder>;
   orderPlacedAt?: InputMaybe<SortOrder>;
   otherInstructions?: InputMaybe<SortOrder>;
+  razorpay_order_id?: InputMaybe<SortOrder>;
   shipping?: InputMaybe<SortOrder>;
   shippingWithTax?: InputMaybe<SortOrder>;
   state?: InputMaybe<SortOrder>;
@@ -3002,6 +3011,17 @@ export type QuerySearchArgs = {
   input: SearchInput;
 };
 
+export type RazorpayOrderIdGenerationError = {
+  __typename?: 'RazorpayOrderIdGenerationError';
+  errorCode?: Maybe<Scalars['String']>;
+  message?: Maybe<Scalars['String']>;
+};
+
+export type RazorpayOrderIdSuccess = {
+  __typename?: 'RazorpayOrderIdSuccess';
+  razorpayOrderId: Scalars['String'];
+};
+
 export type RefreshCustomerVerificationResult = NativeAuthStrategyError | Success;
 
 export type Refund = Node & {
@@ -3412,6 +3432,7 @@ export type UpdateCustomerPasswordResult = InvalidCredentialsError | NativeAuthS
 export type UpdateOrderCustomFieldsInput = {
   clientRequestToCancel?: InputMaybe<Scalars['Int']>;
   otherInstructions?: InputMaybe<Scalars['String']>;
+  razorpay_order_id?: InputMaybe<Scalars['String']>;
 };
 
 export type UpdateOrderInput = {
@@ -3465,6 +3486,8 @@ export type Zone = Node & {
   updatedAt: Scalars['DateTime'];
 };
 
+export type GenerateRazorpayOrderIdResult = RazorpayOrderIdGenerationError | RazorpayOrderIdSuccess;
+
 export type LoginMutationVariables = Exact<{
   email: Scalars['String'];
   password: Scalars['String'];
@@ -3472,7 +3495,67 @@ export type LoginMutationVariables = Exact<{
 }>;
 
 
-export type LoginMutation = { __typename?: 'Mutation', login: { __typename: 'CurrentUser', id: string, identifier: string } | { __typename: 'InvalidCredentialsError', errorCode: ErrorCode, message: string } | { __typename: 'NativeAuthStrategyError', errorCode: ErrorCode, message: string } | { __typename: 'NotVerifiedError', errorCode: ErrorCode, message: string } };
+export type LoginMutation = { __typename?: 'Mutation', login: { __typename: 'CurrentUser', id: string, channels: Array<{ __typename: 'CurrentUserChannel', token: string, permissions: Array<Permission>, code: string, id: string }> } | { __typename: 'InvalidCredentialsError', errorCode: ErrorCode, message: string } | { __typename: 'NativeAuthStrategyError', errorCode: ErrorCode, message: string } | { __typename: 'NotVerifiedError', errorCode: ErrorCode, message: string } };
+
+type ErrorResult_AlreadyLoggedInError_Fragment = { __typename?: 'AlreadyLoggedInError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_CouponCodeExpiredError_Fragment = { __typename?: 'CouponCodeExpiredError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_CouponCodeInvalidError_Fragment = { __typename?: 'CouponCodeInvalidError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_CouponCodeLimitError_Fragment = { __typename?: 'CouponCodeLimitError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_EmailAddressConflictError_Fragment = { __typename?: 'EmailAddressConflictError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_GuestCheckoutError_Fragment = { __typename?: 'GuestCheckoutError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_IdentifierChangeTokenExpiredError_Fragment = { __typename?: 'IdentifierChangeTokenExpiredError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_IdentifierChangeTokenInvalidError_Fragment = { __typename?: 'IdentifierChangeTokenInvalidError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_IneligiblePaymentMethodError_Fragment = { __typename?: 'IneligiblePaymentMethodError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_IneligibleShippingMethodError_Fragment = { __typename?: 'IneligibleShippingMethodError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_InsufficientStockError_Fragment = { __typename?: 'InsufficientStockError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_InvalidCredentialsError_Fragment = { __typename?: 'InvalidCredentialsError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_MissingPasswordError_Fragment = { __typename?: 'MissingPasswordError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_NativeAuthStrategyError_Fragment = { __typename?: 'NativeAuthStrategyError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_NegativeQuantityError_Fragment = { __typename?: 'NegativeQuantityError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_NoActiveOrderError_Fragment = { __typename?: 'NoActiveOrderError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_NotVerifiedError_Fragment = { __typename?: 'NotVerifiedError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_OrderLimitError_Fragment = { __typename?: 'OrderLimitError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_OrderModificationError_Fragment = { __typename?: 'OrderModificationError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_OrderPaymentStateError_Fragment = { __typename?: 'OrderPaymentStateError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_OrderStateTransitionError_Fragment = { __typename?: 'OrderStateTransitionError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_PasswordAlreadySetError_Fragment = { __typename?: 'PasswordAlreadySetError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_PasswordResetTokenExpiredError_Fragment = { __typename?: 'PasswordResetTokenExpiredError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_PasswordResetTokenInvalidError_Fragment = { __typename?: 'PasswordResetTokenInvalidError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_PasswordValidationError_Fragment = { __typename?: 'PasswordValidationError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_PaymentDeclinedError_Fragment = { __typename?: 'PaymentDeclinedError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_PaymentFailedError_Fragment = { __typename?: 'PaymentFailedError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_VerificationTokenExpiredError_Fragment = { __typename?: 'VerificationTokenExpiredError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_VerificationTokenInvalidError_Fragment = { __typename?: 'VerificationTokenInvalidError', errorCode: ErrorCode, message: string };
+
+export type ErrorResultFragment = ErrorResult_AlreadyLoggedInError_Fragment | ErrorResult_CouponCodeExpiredError_Fragment | ErrorResult_CouponCodeInvalidError_Fragment | ErrorResult_CouponCodeLimitError_Fragment | ErrorResult_EmailAddressConflictError_Fragment | ErrorResult_GuestCheckoutError_Fragment | ErrorResult_IdentifierChangeTokenExpiredError_Fragment | ErrorResult_IdentifierChangeTokenInvalidError_Fragment | ErrorResult_IneligiblePaymentMethodError_Fragment | ErrorResult_IneligibleShippingMethodError_Fragment | ErrorResult_InsufficientStockError_Fragment | ErrorResult_InvalidCredentialsError_Fragment | ErrorResult_MissingPasswordError_Fragment | ErrorResult_NativeAuthStrategyError_Fragment | ErrorResult_NegativeQuantityError_Fragment | ErrorResult_NoActiveOrderError_Fragment | ErrorResult_NotVerifiedError_Fragment | ErrorResult_OrderLimitError_Fragment | ErrorResult_OrderModificationError_Fragment | ErrorResult_OrderPaymentStateError_Fragment | ErrorResult_OrderStateTransitionError_Fragment | ErrorResult_PasswordAlreadySetError_Fragment | ErrorResult_PasswordResetTokenExpiredError_Fragment | ErrorResult_PasswordResetTokenInvalidError_Fragment | ErrorResult_PasswordValidationError_Fragment | ErrorResult_PaymentDeclinedError_Fragment | ErrorResult_PaymentFailedError_Fragment | ErrorResult_VerificationTokenExpiredError_Fragment | ErrorResult_VerificationTokenInvalidError_Fragment;
 
 export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -3680,7 +3763,7 @@ export type OrderDetailFragment = { __typename: 'Order', id: string, code: strin
 export type ActiveOrderQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ActiveOrderQuery = { __typename?: 'Query', activeOrder?: { __typename: 'Order', id: string, code: string, active: boolean, createdAt?: any, state: string, currencyCode: CurrencyCode, totalQuantity: number, subTotal: number, subTotalWithTax: number, shippingWithTax: number, totalWithTax: number, taxSummary: Array<{ __typename?: 'OrderTaxSummary', description: string, taxRate: number, taxTotal: number }>, customer?: { __typename?: 'Customer', id: string, firstName: string, lastName: string, emailAddress: string } | null, shippingAddress?: { __typename?: 'OrderAddress', fullName?: string | null, streetLine1?: string | null, streetLine2?: string | null, company?: string | null, city?: string | null, province?: string | null, postalCode?: string | null, countryCode?: string | null, phoneNumber?: string | null } | null, shippingLines: Array<{ __typename?: 'ShippingLine', priceWithTax: number, shippingMethod: { __typename?: 'ShippingMethod', id: string, name: string } }>, lines: Array<{ __typename?: 'OrderLine', id: string, unitPriceWithTax: number, linePriceWithTax: number, quantity: number, featuredAsset?: { __typename?: 'Asset', id: string, preview: string } | null, productVariant: { __typename?: 'ProductVariant', id: string, name: string, price: number, product: { __typename?: 'Product', id: string, slug: string } } }>, payments?: Array<{ __typename?: 'Payment', id: string, state: string, method: string, amount: number, metadata?: any | null }> | null } | null };
+export type ActiveOrderQuery = { __typename?: 'Query', activeOrder?: { __typename: 'Order', id: string, code: string, active: boolean, createdAt: any, state: string, currencyCode: CurrencyCode, totalQuantity: number, subTotal: number, subTotalWithTax: number, shippingWithTax: number, totalWithTax: number, taxSummary: Array<{ __typename?: 'OrderTaxSummary', description: string, taxRate: number, taxTotal: number }>, customer?: { __typename?: 'Customer', id: string, firstName: string, lastName: string, emailAddress: string } | null, shippingAddress?: { __typename?: 'OrderAddress', fullName?: string | null, streetLine1?: string | null, streetLine2?: string | null, company?: string | null, city?: string | null, province?: string | null, postalCode?: string | null, countryCode?: string | null, phoneNumber?: string | null } | null, shippingLines: Array<{ __typename?: 'ShippingLine', priceWithTax: number, shippingMethod: { __typename?: 'ShippingMethod', id: string, name: string } }>, lines: Array<{ __typename?: 'OrderLine', id: string, unitPriceWithTax: number, linePriceWithTax: number, quantity: number, featuredAsset?: { __typename?: 'Asset', id: string, preview: string } | null, productVariant: { __typename?: 'ProductVariant', id: string, name: string, price: number, product: { __typename?: 'Product', id: string, slug: string } } }>, payments?: Array<{ __typename?: 'Payment', id: string, state: string, method: string, amount: number, metadata?: any | null }> | null } | null };
 
 export type OrderByCodeQueryVariables = Exact<{
   code: Scalars['String'];
@@ -3688,6 +3771,25 @@ export type OrderByCodeQueryVariables = Exact<{
 
 
 export type OrderByCodeQuery = { __typename?: 'Query', orderByCode?: { __typename: 'Order', id: string, code: string, active: boolean, createdAt: any, state: string, currencyCode: CurrencyCode, totalQuantity: number, subTotal: number, subTotalWithTax: number, shippingWithTax: number, totalWithTax: number, taxSummary: Array<{ __typename?: 'OrderTaxSummary', description: string, taxRate: number, taxTotal: number }>, customer?: { __typename?: 'Customer', id: string, firstName: string, lastName: string, emailAddress: string } | null, shippingAddress?: { __typename?: 'OrderAddress', fullName?: string | null, streetLine1?: string | null, streetLine2?: string | null, company?: string | null, city?: string | null, province?: string | null, postalCode?: string | null, countryCode?: string | null, phoneNumber?: string | null } | null, shippingLines: Array<{ __typename?: 'ShippingLine', priceWithTax: number, shippingMethod: { __typename?: 'ShippingMethod', id: string, name: string } }>, lines: Array<{ __typename?: 'OrderLine', id: string, unitPriceWithTax: number, linePriceWithTax: number, quantity: number, featuredAsset?: { __typename?: 'Asset', id: string, preview: string } | null, productVariant: { __typename?: 'ProductVariant', id: string, name: string, price: number, product: { __typename?: 'Product', id: string, slug: string } } }>, payments?: Array<{ __typename?: 'Payment', id: string, state: string, method: string, amount: number, metadata?: any | null }> | null } | null };
+
+export type GetCouponCodeListQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetCouponCodeListQuery = { __typename?: 'Query', getCouponCodeList: { __typename: 'CoupcodesList', totalItems: number, items: Array<{ __typename?: 'Promotion', id: string, name: string, couponCode?: string | null, description: string, enabled: boolean, endsAt?: any | null, startsAt?: any | null, usageLimit?: number | null, conditions: Array<{ __typename?: 'ConfigurableOperation', code: string, args: Array<{ __typename?: 'ConfigArg', name: string, value: string }> }> }> } };
+
+export type ApplyCouponCodeMutationVariables = Exact<{
+  input: Scalars['String'];
+}>;
+
+
+export type ApplyCouponCodeMutation = { __typename?: 'Mutation', applyCouponCode: { __typename: 'CouponCodeExpiredError' } | { __typename: 'CouponCodeInvalidError', message: string } | { __typename: 'CouponCodeLimitError' } | { __typename: 'Order', id: string, couponCodes: Array<string>, total: number } };
+
+export type RemoveCouponCodeMutationVariables = Exact<{
+  couponCode: Scalars['String'];
+}>;
+
+
+export type RemoveCouponCodeMutation = { __typename?: 'Mutation', removeCouponCode?: { __typename: 'Order' } | null };
 
 export type DetailedProductFragment = { __typename?: 'Product', id: string, name: string, description: string, collections: Array<{ __typename?: 'Collection', id: string, slug: string, name: string, breadcrumbs: Array<{ __typename?: 'CollectionBreadcrumb', id: string, name: string, slug: string }> }>, facetValues: Array<{ __typename?: 'FacetValue', id: string, code: string, name: string, facet: { __typename?: 'Facet', id: string, code: string, name: string } }>, featuredAsset?: { __typename?: 'Asset', id: string, preview: string } | null, assets: Array<{ __typename?: 'Asset', id: string, preview: string }>, variants: Array<{ __typename?: 'ProductVariant', id: string, name: string, priceWithTax: number, currencyCode: CurrencyCode, sku: string, stockLevel: string, featuredAsset?: { __typename?: 'Asset', id: string, preview: string } | null }> };
 
@@ -3715,6 +3817,12 @@ export type SearchFacetValuesQueryVariables = Exact<{
 
 export type SearchFacetValuesQuery = { __typename?: 'Query', search: { __typename?: 'SearchResponse', totalItems: number, facetValues: Array<{ __typename?: 'FacetValueResult', count: number, facetValue: { __typename?: 'FacetValue', id: string, name: string, facet: { __typename?: 'Facet', id: string, name: string } } }> } };
 
+export const ErrorResultFragmentDoc = gql`
+    fragment ErrorResult on ErrorResult {
+  errorCode
+  message
+}
+    `;
 export const OrderDetailFragmentDoc = gql`
     fragment OrderDetail on Order {
   __typename
@@ -3860,15 +3968,20 @@ export const LoginDocument = gql`
     __typename
     ... on CurrentUser {
       id
-      identifier
+      __typename
+      channels {
+        token
+        permissions
+        code
+        id
+        __typename
+      }
     }
-    ... on ErrorResult {
-      errorCode
-      message
-    }
+    ...ErrorResult
+    __typename
   }
 }
-    `;
+    ${ErrorResultFragmentDoc}`;
 export const LogoutDocument = gql`
     mutation logout {
   logout {
@@ -4279,6 +4392,53 @@ export const OrderByCodeDocument = gql`
   }
 }
     ${OrderDetailFragmentDoc}`;
+export const GetCouponCodeListDocument = gql`
+    query GetCouponCodeList {
+  getCouponCodeList {
+    items {
+      id
+      name
+      couponCode
+      description
+      enabled
+      endsAt
+      startsAt
+      conditions {
+        code
+        args {
+          name
+          value
+        }
+      }
+      usageLimit
+    }
+    totalItems
+    __typename
+  }
+}
+    `;
+export const ApplyCouponCodeDocument = gql`
+    mutation ApplyCouponCode($input: String!) {
+  applyCouponCode(couponCode: $input) {
+    __typename
+    ... on Order {
+      id
+      couponCodes
+      total
+    }
+    ... on CouponCodeInvalidError {
+      message
+    }
+  }
+}
+    `;
+export const RemoveCouponCodeDocument = gql`
+    mutation RemoveCouponCode($couponCode: String!) {
+  removeCouponCode(couponCode: $couponCode) {
+    __typename
+  }
+}
+    `;
 export const ProductDocument = gql`
     query product($slug: String, $id: ID) {
   product(slug: $slug, id: $id) {
@@ -4429,6 +4589,15 @@ export function getSdk<C, E>(requester: Requester<C, E>) {
     },
     orderByCode(variables: OrderByCodeQueryVariables, options?: C): Promise<OrderByCodeQuery> {
       return requester<OrderByCodeQuery, OrderByCodeQueryVariables>(OrderByCodeDocument, variables, options) as Promise<OrderByCodeQuery>;
+    },
+    GetCouponCodeList(variables?: GetCouponCodeListQueryVariables, options?: C): Promise<GetCouponCodeListQuery> {
+      return requester<GetCouponCodeListQuery, GetCouponCodeListQueryVariables>(GetCouponCodeListDocument, variables, options) as Promise<GetCouponCodeListQuery>;
+    },
+    ApplyCouponCode(variables: ApplyCouponCodeMutationVariables, options?: C): Promise<ApplyCouponCodeMutation> {
+      return requester<ApplyCouponCodeMutation, ApplyCouponCodeMutationVariables>(ApplyCouponCodeDocument, variables, options) as Promise<ApplyCouponCodeMutation>;
+    },
+    RemoveCouponCode(variables: RemoveCouponCodeMutationVariables, options?: C): Promise<RemoveCouponCodeMutation> {
+      return requester<RemoveCouponCodeMutation, RemoveCouponCodeMutationVariables>(RemoveCouponCodeDocument, variables, options) as Promise<RemoveCouponCodeMutation>;
     },
     product(variables?: ProductQueryVariables, options?: C): Promise<ProductQuery> {
       return requester<ProductQuery, ProductQueryVariables>(ProductDocument, variables, options) as Promise<ProductQuery>;

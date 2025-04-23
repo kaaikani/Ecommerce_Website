@@ -1984,6 +1984,7 @@ type Mutation {
 
   """Delete an existing Address"""
   deleteCustomerAddress(id: ID!): Success!
+  generateRazorpayOrderId(orderId: ID!): generateRazorpayOrderIdResult!
 
   """
   Authenticates the user using the native authentication strategy. This mutation is an alias for authenticate({ native: { ... }})
@@ -2249,6 +2250,7 @@ type OrderAddress {
 type OrderCustomFields {
   clientRequestToCancel: Int
   otherInstructions: String
+  razorpay_order_id: String
 }
 
 input OrderFilterParameter {
@@ -2262,6 +2264,7 @@ input OrderFilterParameter {
   id: IDOperators
   orderPlacedAt: DateOperators
   otherInstructions: StringOperators
+  razorpay_order_id: StringOperators
   shipping: NumberOperators
   shippingWithTax: NumberOperators
   state: StringOperators
@@ -2412,6 +2415,7 @@ input OrderSortParameter {
   id: SortOrder
   orderPlacedAt: SortOrder
   otherInstructions: SortOrder
+  razorpay_order_id: SortOrder
   shipping: SortOrder
   shippingWithTax: SortOrder
   state: SortOrder
@@ -3240,6 +3244,15 @@ type Query {
   search(input: SearchInput!): SearchResponse!
 }
 
+type RazorpayOrderIdGenerationError {
+  errorCode: String
+  message: String
+}
+
+type RazorpayOrderIdSuccess {
+  razorpayOrderId: String!
+}
+
 union RefreshCustomerVerificationResult = NativeAuthStrategyError | Success
 
 type Refund implements Node {
@@ -3632,6 +3645,7 @@ union UpdateCustomerPasswordResult = InvalidCredentialsError | NativeAuthStrateg
 input UpdateOrderCustomFieldsInput {
   clientRequestToCancel: Int
   otherInstructions: String
+  razorpay_order_id: String
 }
 
 input UpdateOrderInput {
@@ -3683,3 +3697,5 @@ type Zone implements Node {
   name: String!
   updatedAt: DateTime!
 }
+
+union generateRazorpayOrderIdResult = RazorpayOrderIdGenerationError | RazorpayOrderIdSuccess

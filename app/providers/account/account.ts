@@ -138,12 +138,24 @@ gql`
   }
   }
 `;
+gql`
+  fragment ErrorResult on ErrorResult {
+    errorCode
+    message
+  }
+`;
 
 gql`
   mutation logout {
     logout {
       success
     }
+  }
+`;
+gql`
+  fragment ErrorResult on ErrorResult {
+    errorCode
+    message
   }
 `;
 
@@ -159,6 +171,12 @@ gql`
         message
       }
     }
+  }
+`;
+gql`
+  fragment ErrorResult on ErrorResult {
+    errorCode
+    message
   }
 `;
 
@@ -177,12 +195,24 @@ gql`
     }
   }
 `;
+gql`
+  fragment ErrorResult on ErrorResult {
+    errorCode
+    message
+  }
+`;
 
 gql`
   mutation updateCustomer($input: UpdateCustomerInput!) {
     updateCustomer(input: $input) {
       __typename
     }
+  }
+`;
+gql`
+  fragment ErrorResult on ErrorResult {
+    errorCode
+    message
   }
 `;
 
@@ -203,6 +233,12 @@ gql`
     }
   }
 `;
+gql`
+  fragment ErrorResult on ErrorResult {
+    errorCode
+    message
+  }
+`;
 
 gql`
   mutation updateCustomerEmailAddress($token: String!) {
@@ -215,12 +251,24 @@ gql`
     }
   }
 `;
+gql`
+  fragment ErrorResult on ErrorResult {
+    errorCode
+    message
+  }
+`;
 
 gql`
   mutation updateCustomerAddress($input: UpdateAddressInput!) {
     updateCustomerAddress(input: $input) {
       __typename
     }
+  }
+`;
+gql`
+  fragment ErrorResult on ErrorResult {
+    errorCode
+    message
   }
 `;
 
@@ -231,12 +279,24 @@ gql`
     }
   }
 `;
+gql`
+  fragment ErrorResult on ErrorResult {
+    errorCode
+    message
+  }
+`;
 
 gql`
   mutation deleteCustomerAddress($id: ID!) {
     deleteCustomerAddress(id: $id) {
       success
     }
+  }
+`;
+gql`
+  fragment ErrorResult on ErrorResult {
+    errorCode
+    message
   }
 `;
 
@@ -258,5 +318,11 @@ gql`
         message
       }
     }
+  }
+`;
+gql`
+  fragment ErrorResult on ErrorResult {
+    errorCode
+    message
   }
 `;

@@ -137,7 +137,6 @@ export async function action({ request }: DataFunctionArgs) {
       customerUpdated: true,
     });
   }
-
   return formError({ message: 'No valid form intent' }, { status: 401 });
 }
 
@@ -160,7 +159,9 @@ export default function AccountDetails() {
 
   const emailInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
-
+  console.log('First Name:', firstName);
+  console.log('Email:', emailAddress);
+  console.log('Phone Number:', phoneNumber);
   useEffect(() => {
     if (!actionDataHook) {
       return;
@@ -252,6 +253,57 @@ export default function AccountDetails() {
       <div className="space-y-10 p-4 mt-5">
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
+          <div className="space-y-10 p-4 mt-5">
+  {/* New Box for Name, Email, Phone */}
+  <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('account.contactDetails')}</h3>
+    <div className="space-y-3">
+      <div>
+        <span className="text-sm text-gray-500">{t('account.fullName')}</span>
+        <p className="text-gray-800">{replaceEmptyString(fullName)}</p>
+      </div>
+      <div>
+        <span className="text-sm text-gray-500">{t('account.email')}</span>
+        <p className="text-gray-800">
+          {emailSavedResponse ? emailSavedResponse.newEmailAddress : emailAddress}
+        </p>
+      </div>
+      <div>
+        <span className="text-sm text-gray-500">{t('account.phoneNumber')}</span>
+        <p className="text-gray-800">{replaceEmptyString(phoneNumber)}</p>
+      </div>
+    </div>
+  </div>
+
+  {/* Existing Email Section */}
+  <div className="grid grid-cols-2 gap-4">
+    <div className="col-span-2">
+      <h3 className="text-sm text-gray-500">{t('account.email')}</h3>
+      {emailSavedResponse ? (
+        <span>
+          <span className="italic text-gray-800">
+            {emailSavedResponse.newEmailAddress}
+          </span>
+          <span className="ml-2 bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+            {t('account.changeEmailConfirmation')}
+          </span>
+        </span>
+      ) : (
+        <span>{emailAddress}</span>
+      )}
+    </div>
+    <div className="col-span-2">
+      <HighlightedButton
+        type="button"
+        onClick={() => openChangeEmailModal()}
+      >
+        <PencilIcon className="w-4 h-4" />{' '}
+        {t('account.changeEmailButton')}
+      </HighlightedButton>
+    </div>
+  </div>
+  {/* Rest of the existing code remains unchanged */}
+</div>
             <h3 className="text-sm text-gray-500">{t('account.email')}</h3>
             {emailSavedResponse ? (
               <span>

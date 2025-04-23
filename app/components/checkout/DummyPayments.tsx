@@ -1,19 +1,43 @@
 import { CreditCardIcon, XCircleIcon } from '@heroicons/react/24/solid';
-import { Form } from '@remix-run/react';
-import { EligiblePaymentMethodsQuery,OrderDetailFragment } from '~/generated/graphql';
+import { Form, useLoaderData } from '@remix-run/react';
+import { ActiveCustomerQuery, EligiblePaymentMethodsQuery, OrderDetailFragment,ActiveCustomerDetailsQuery } from '~/generated/graphql';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { getActiveCustomerDetails } from '~/providers/customer/customer';
+import { DataFunctionArgs, json } from '@remix-run/server-runtime';
 
 // Define the expected response type for the Razorpay order creation API
 interface RazorpayOrderResponse {
   orderId: string;
-  error?: string; // Optional error field for API failures
+  error?: string;
+}
+
+// Define Razorpay SDK interface (basic)
+interface Razorpay {
+  new (options: any): RazorpayInstance;
+}
+
+interface RazorpayInstance {
+  open: () => void;
+  on: (event: string, callback: (response: any) => void) => void;
+}
+
+// Loader to fetch active customer details
+export async function loader({ request }: DataFunctionArgs) {
+  const { activeCustomer } = await getActiveCustomerDetails({ request });
+  if (!activeCustomer) {
+    return json({ activeCustomer: null });
+
+console.log('check1',activeCustomer);
+  }
+  return json({ activeCustomer });
+
+console.log('check2',activeCustomer);
 }
 export function DummyPayments({
   paymentMethod,
   paymentError,
-  order, 
+  order,
 }: {
   paymentMethod: EligiblePaymentMethodsQuery['eligiblePaymentMethods'][number];
   paymentError?: string;
@@ -21,11 +45,11 @@ export function DummyPayments({
 }) {
   const { t } = useTranslation();
   const [razorpayError, setRazorpayError] = useState<string | null>(null);
-  const amountInPaise = order?.totalWithTax
-    ? Math.round(order.totalWithTax *1):1000; // default 100.00 INR
-  
+  const { activeCustomer } = useLoaderData<typeof loader>() as { activeCustomer: ActiveCustomerDetailsQuery['activeCustomer'] | null };
+  const amountInPaise = order?.totalWithTax ? Math.round(order.totalWithTax * 1) : 1000; // default 100.00 INR
   const currency = order?.currencyCode || 'INR';
 
+  console.log('check3',activeCustomer);
   // Function to load Razorpay script
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -82,7 +106,7 @@ export function DummyPayments({
       return;
     }
 
-    // Razorpay options
+    // Razorpay options with dynamic prefill
     const options = {
       key: 'rzp_live_MT7BL3eZs3HHGB',
       amount: amountInPaise,
@@ -90,11 +114,12 @@ export function DummyPayments({
       name: 'Kaaikani',
       description: 'Online Payment',
       order_id: orderData.orderId,
-      
       prefill: {
-        name: 'Kaaikani',
-        email: 'customer@example.com',
-        contact: '9999999999',
+        name: activeCustomer?.firstName
+          ? `${activeCustomer.firstName} ${activeCustomer.lastName || ''}`.trim()
+          : '',
+        email: activeCustomer?.emailAddress || '',
+        contact: activeCustomer?.phoneNumber || '',
       },
       notes: {
         address: 'Customer Address',
@@ -103,13 +128,12 @@ export function DummyPayments({
         color: '#3399cc',
       },
     };
-   
-     
-    
-    
+      console.log(activeCustomer?.firstName);
+      console.log(activeCustomer?.phoneNumber);
+      console.log(activeCustomer?.emailAddress);
     // Initialize Razorpay
     try {
-      const rzp = new (window as any).Razorpay(options);
+      const rzp = new (window as any).Razorpay(options) as RazorpayInstance;
       rzp.on('payment.failed', function (response: any) {
         // Handle payment failure
         console.error('Payment failed:', response.error);
@@ -121,7 +145,7 @@ export function DummyPayments({
       // Open Razorpay checkout
       console.log('Opening Razorpay checkout');
       rzp.open();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error initializing Razorpay:', error);
       setRazorpayError('Failed to initialize payment. Please try again.');
     }
@@ -134,10 +158,7 @@ export function DummyPayments({
         <div className="rounded-md bg-red-50 p-4 mb-8">
           <div className="flex">
             <div className="flex-shrink-0">
-              <XCircleIcon
-                className="h-5 w-5 text-red-400"
-                aria-hidden="true"
-              />
+              <XCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
             </div>
             <div className="ml-3">
               <h3 className="text-sm font-medium text-red-800">
@@ -152,15 +173,10 @@ export function DummyPayments({
         <div className="rounded-md bg-red-50 p-4 mb-8">
           <div className="flex">
             <div className="flex-shrink-0">
-              <XCircleIcon
-                className="h-5 w-5 text-red-400"
-                aria-hidden="true"
-              />
+              <XCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">
-                Razorpay Error
-              </h3>
+              <h3 className="text-sm font-medium text-red-800">Razorpay Error</h3>
               <div className="mt-2 text-sm text-red-700">{razorpayError}</div>
             </div>
           </div>
@@ -173,16 +189,14 @@ export function DummyPayments({
           className="flex px-6 bg-primary-600 hover:bg-primary-700 items-center justify-center space-x-2 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
         >
           <CreditCardIcon className="w-5 h-5" />
-          <span>{t('checkout.payWith')} {paymentMethod.name}</span>
+          <span>
+            {t('checkout.payWith')} {paymentMethod.name}
+          </span>
         </button>
       ) : (
         // Form for Offline payment
         <Form method="post">
-          <input
-            type="hidden"
-            name="paymentMethodCode"
-            value={paymentMethod.code}
-          />
+          <input type="hidden" name="paymentMethodCode" value={paymentMethod.code} />
           <button
             type="submit"
             className="flex px-6 bg-primary-600 hover:bg-primary-700 items-center justify-center space-x-2 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
