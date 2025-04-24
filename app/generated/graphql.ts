@@ -101,7 +101,6 @@ export enum AssetType {
 
 export type AuthenticationInput = {
   native?: InputMaybe<NativeAuthInput>;
-  phoneOtp?: InputMaybe<PhoneOtpInput>;
 };
 
 export type AuthenticationMethod = Node & {
@@ -1702,6 +1701,7 @@ export type Mutation = {
   createStripePaymentIntent?: Maybe<Scalars['String']>;
   /** Delete an existing Address */
   deleteCustomerAddress: Success;
+  generateRazorpayOrderId: GenerateRazorpayOrderIdResult;
   /**
    * Authenticates the user using the native authentication strategy. This mutation is an alias for authenticate({ native: { ... }})
    *
@@ -1748,7 +1748,6 @@ export type Mutation = {
   requestUpdateCustomerEmailAddress: RequestUpdateCustomerEmailAddressResult;
   /** Resets a Customer's password based on the provided token */
   resetPassword: ResetPasswordResult;
-  sendPhoneOtp?: Maybe<Scalars['Boolean']>;
   /** Set the Customer for the Order. Required only if the Customer is not currently logged in */
   setCustomerForOrder: SetCustomerForOrderResult;
   /** Sets the billing address for this order */
@@ -1832,6 +1831,11 @@ export type MutationDeleteCustomerAddressArgs = {
 };
 
 
+export type MutationGenerateRazorpayOrderIdArgs = {
+  orderId: Scalars['ID'];
+};
+
+
 export type MutationLoginArgs = {
   password: Scalars['String'];
   rememberMe?: InputMaybe<Scalars['Boolean']>;
@@ -1879,11 +1883,6 @@ export type MutationRequestUpdateCustomerEmailAddressArgs = {
 export type MutationResetPasswordArgs = {
   password: Scalars['String'];
   token: Scalars['String'];
-};
-
-
-export type MutationSendPhoneOtpArgs = {
-  phoneNumber: Scalars['String'];
 };
 
 
@@ -2097,6 +2096,7 @@ export type OrderCustomFields = {
   __typename?: 'OrderCustomFields';
   clientRequestToCancel?: Maybe<Scalars['Int']>;
   otherInstructions?: Maybe<Scalars['String']>;
+  razorpay_order_id?: Maybe<Scalars['String']>;
 };
 
 export type OrderFilterParameter = {
@@ -2110,6 +2110,7 @@ export type OrderFilterParameter = {
   id?: InputMaybe<IdOperators>;
   orderPlacedAt?: InputMaybe<DateOperators>;
   otherInstructions?: InputMaybe<StringOperators>;
+  razorpay_order_id?: InputMaybe<StringOperators>;
   shipping?: InputMaybe<NumberOperators>;
   shippingWithTax?: InputMaybe<NumberOperators>;
   state?: InputMaybe<StringOperators>;
@@ -2234,6 +2235,7 @@ export type OrderSortParameter = {
   id?: InputMaybe<SortOrder>;
   orderPlacedAt?: InputMaybe<SortOrder>;
   otherInstructions?: InputMaybe<SortOrder>;
+  razorpay_order_id?: InputMaybe<SortOrder>;
   shipping?: InputMaybe<SortOrder>;
   shippingWithTax?: InputMaybe<SortOrder>;
   state?: InputMaybe<SortOrder>;
@@ -2616,13 +2618,6 @@ export enum Permission {
   UpdateZone = 'UpdateZone'
 }
 
-export type PhoneOtpInput = {
-  code: Scalars['String'];
-  firstName?: InputMaybe<Scalars['String']>;
-  lastName?: InputMaybe<Scalars['String']>;
-  phoneNumber: Scalars['String'];
-};
-
 /** The price range where the result has more than one price */
 export type PriceRange = {
   __typename?: 'PriceRange';
@@ -2928,7 +2923,6 @@ export type Query = {
   facets: FacetList;
   generateBraintreeClientToken?: Maybe<Scalars['String']>;
   getChannelList: Array<Channel>;
-  getChannelsByCustomerEmail: Array<Channel>;
   getCouponCodeList: CoupcodesList;
   getPasswordResetToken: Scalars['String'];
   /** Returns information about the current authenticated User */
@@ -2992,11 +2986,6 @@ export type QueryFacetsArgs = {
 };
 
 
-export type QueryGetChannelsByCustomerEmailArgs = {
-  email: Scalars['String'];
-};
-
-
 export type QueryOrderArgs = {
   id: Scalars['ID'];
 };
@@ -3020,6 +3009,17 @@ export type QueryProductsArgs = {
 
 export type QuerySearchArgs = {
   input: SearchInput;
+};
+
+export type RazorpayOrderIdGenerationError = {
+  __typename?: 'RazorpayOrderIdGenerationError';
+  errorCode?: Maybe<Scalars['String']>;
+  message?: Maybe<Scalars['String']>;
+};
+
+export type RazorpayOrderIdSuccess = {
+  __typename?: 'RazorpayOrderIdSuccess';
+  razorpayOrderId: Scalars['String'];
 };
 
 export type RefreshCustomerVerificationResult = NativeAuthStrategyError | Success;
@@ -3432,6 +3432,7 @@ export type UpdateCustomerPasswordResult = InvalidCredentialsError | NativeAuthS
 export type UpdateOrderCustomFieldsInput = {
   clientRequestToCancel?: InputMaybe<Scalars['Int']>;
   otherInstructions?: InputMaybe<Scalars['String']>;
+  razorpay_order_id?: InputMaybe<Scalars['String']>;
 };
 
 export type UpdateOrderInput = {
@@ -3485,6 +3486,8 @@ export type Zone = Node & {
   updatedAt: Scalars['DateTime'];
 };
 
+export type GenerateRazorpayOrderIdResult = RazorpayOrderIdGenerationError | RazorpayOrderIdSuccess;
+
 export type LoginMutationVariables = Exact<{
   email: Scalars['String'];
   password: Scalars['String'];
@@ -3492,7 +3495,67 @@ export type LoginMutationVariables = Exact<{
 }>;
 
 
-export type LoginMutation = { __typename?: 'Mutation', login: { __typename: 'CurrentUser', id: string, identifier: string } | { __typename: 'InvalidCredentialsError', errorCode: ErrorCode, message: string } | { __typename: 'NativeAuthStrategyError', errorCode: ErrorCode, message: string } | { __typename: 'NotVerifiedError', errorCode: ErrorCode, message: string } };
+export type LoginMutation = { __typename?: 'Mutation', login: { __typename: 'CurrentUser', id: string, channels: Array<{ __typename: 'CurrentUserChannel', token: string, permissions: Array<Permission>, code: string, id: string }> } | { __typename: 'InvalidCredentialsError', errorCode: ErrorCode, message: string } | { __typename: 'NativeAuthStrategyError', errorCode: ErrorCode, message: string } | { __typename: 'NotVerifiedError', errorCode: ErrorCode, message: string } };
+
+type ErrorResult_AlreadyLoggedInError_Fragment = { __typename?: 'AlreadyLoggedInError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_CouponCodeExpiredError_Fragment = { __typename?: 'CouponCodeExpiredError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_CouponCodeInvalidError_Fragment = { __typename?: 'CouponCodeInvalidError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_CouponCodeLimitError_Fragment = { __typename?: 'CouponCodeLimitError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_EmailAddressConflictError_Fragment = { __typename?: 'EmailAddressConflictError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_GuestCheckoutError_Fragment = { __typename?: 'GuestCheckoutError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_IdentifierChangeTokenExpiredError_Fragment = { __typename?: 'IdentifierChangeTokenExpiredError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_IdentifierChangeTokenInvalidError_Fragment = { __typename?: 'IdentifierChangeTokenInvalidError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_IneligiblePaymentMethodError_Fragment = { __typename?: 'IneligiblePaymentMethodError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_IneligibleShippingMethodError_Fragment = { __typename?: 'IneligibleShippingMethodError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_InsufficientStockError_Fragment = { __typename?: 'InsufficientStockError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_InvalidCredentialsError_Fragment = { __typename?: 'InvalidCredentialsError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_MissingPasswordError_Fragment = { __typename?: 'MissingPasswordError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_NativeAuthStrategyError_Fragment = { __typename?: 'NativeAuthStrategyError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_NegativeQuantityError_Fragment = { __typename?: 'NegativeQuantityError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_NoActiveOrderError_Fragment = { __typename?: 'NoActiveOrderError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_NotVerifiedError_Fragment = { __typename?: 'NotVerifiedError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_OrderLimitError_Fragment = { __typename?: 'OrderLimitError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_OrderModificationError_Fragment = { __typename?: 'OrderModificationError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_OrderPaymentStateError_Fragment = { __typename?: 'OrderPaymentStateError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_OrderStateTransitionError_Fragment = { __typename?: 'OrderStateTransitionError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_PasswordAlreadySetError_Fragment = { __typename?: 'PasswordAlreadySetError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_PasswordResetTokenExpiredError_Fragment = { __typename?: 'PasswordResetTokenExpiredError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_PasswordResetTokenInvalidError_Fragment = { __typename?: 'PasswordResetTokenInvalidError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_PasswordValidationError_Fragment = { __typename?: 'PasswordValidationError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_PaymentDeclinedError_Fragment = { __typename?: 'PaymentDeclinedError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_PaymentFailedError_Fragment = { __typename?: 'PaymentFailedError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_VerificationTokenExpiredError_Fragment = { __typename?: 'VerificationTokenExpiredError', errorCode: ErrorCode, message: string };
+
+type ErrorResult_VerificationTokenInvalidError_Fragment = { __typename?: 'VerificationTokenInvalidError', errorCode: ErrorCode, message: string };
+
+export type ErrorResultFragment = ErrorResult_AlreadyLoggedInError_Fragment | ErrorResult_CouponCodeExpiredError_Fragment | ErrorResult_CouponCodeInvalidError_Fragment | ErrorResult_CouponCodeLimitError_Fragment | ErrorResult_EmailAddressConflictError_Fragment | ErrorResult_GuestCheckoutError_Fragment | ErrorResult_IdentifierChangeTokenExpiredError_Fragment | ErrorResult_IdentifierChangeTokenInvalidError_Fragment | ErrorResult_IneligiblePaymentMethodError_Fragment | ErrorResult_IneligibleShippingMethodError_Fragment | ErrorResult_InsufficientStockError_Fragment | ErrorResult_InvalidCredentialsError_Fragment | ErrorResult_MissingPasswordError_Fragment | ErrorResult_NativeAuthStrategyError_Fragment | ErrorResult_NegativeQuantityError_Fragment | ErrorResult_NoActiveOrderError_Fragment | ErrorResult_NotVerifiedError_Fragment | ErrorResult_OrderLimitError_Fragment | ErrorResult_OrderModificationError_Fragment | ErrorResult_OrderPaymentStateError_Fragment | ErrorResult_OrderStateTransitionError_Fragment | ErrorResult_PasswordAlreadySetError_Fragment | ErrorResult_PasswordResetTokenExpiredError_Fragment | ErrorResult_PasswordResetTokenInvalidError_Fragment | ErrorResult_PasswordValidationError_Fragment | ErrorResult_PaymentDeclinedError_Fragment | ErrorResult_PaymentFailedError_Fragment | ErrorResult_VerificationTokenExpiredError_Fragment | ErrorResult_VerificationTokenInvalidError_Fragment;
 
 export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -3629,105 +3692,6 @@ export type CollectionQueryVariables = Exact<{
 
 export type CollectionQuery = { __typename?: 'Query', collection?: { __typename?: 'Collection', id: string, name: string, slug: string, breadcrumbs: Array<{ __typename?: 'CollectionBreadcrumb', id: string, name: string, slug: string }>, children?: Array<{ __typename?: 'Collection', id: string, name: string, slug: string, featuredAsset?: { __typename?: 'Asset', id: string, preview: string } | null }> | null } | null };
 
-export type GetChannelListQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type GetChannelListQuery = { __typename?: 'Query', getChannelList: Array<{ __typename?: 'Channel', id: string, token: string, code: string }> };
-
-export type GetChannelsByCustomerEmailQueryVariables = Exact<{
-  email: Scalars['String'];
-}>;
-
-
-export type GetChannelsByCustomerEmailQuery = { __typename?: 'Query', getChannelsByCustomerEmail: Array<{ __typename?: 'Channel', id: string, code: string, token: string, defaultCurrencyCode: CurrencyCode }> };
-
-export type GetPasswordResetTokenQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type GetPasswordResetTokenQuery = { __typename?: 'Query', getPasswordResetToken: string };
-
-export type RequestPasswordResetMutationVariables = Exact<{
-  email: Scalars['String'];
-}>;
-
-
-export type RequestPasswordResetMutation = { __typename?: 'Mutation', requestPasswordReset?: { __typename: 'NativeAuthStrategyError' } | { __typename: 'Success' } | null };
-
-export type ResetPasswordMutationVariables = Exact<{
-  token: Scalars['String'];
-  password: Scalars['String'];
-}>;
-
-
-export type ResetPasswordMutation = { __typename?: 'Mutation', resetPassword: { __typename: 'CurrentUser', id: string, channels: Array<{ __typename?: 'CurrentUserChannel', token: string, code: string, permissions: Array<Permission> }> } | { __typename: 'NativeAuthStrategyError', errorCode: ErrorCode, message: string } | { __typename: 'NotVerifiedError', errorCode: ErrorCode, message: string } | { __typename: 'PasswordResetTokenExpiredError', errorCode: ErrorCode, message: string } | { __typename: 'PasswordResetTokenInvalidError', errorCode: ErrorCode, message: string } | { __typename: 'PasswordValidationError', errorCode: ErrorCode, message: string } };
-
-type ErrorResult_AlreadyLoggedInError_Fragment = { __typename: 'AlreadyLoggedInError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_CouponCodeExpiredError_Fragment = { __typename: 'CouponCodeExpiredError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_CouponCodeInvalidError_Fragment = { __typename: 'CouponCodeInvalidError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_CouponCodeLimitError_Fragment = { __typename: 'CouponCodeLimitError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_EmailAddressConflictError_Fragment = { __typename: 'EmailAddressConflictError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_GuestCheckoutError_Fragment = { __typename: 'GuestCheckoutError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_IdentifierChangeTokenExpiredError_Fragment = { __typename: 'IdentifierChangeTokenExpiredError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_IdentifierChangeTokenInvalidError_Fragment = { __typename: 'IdentifierChangeTokenInvalidError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_IneligiblePaymentMethodError_Fragment = { __typename: 'IneligiblePaymentMethodError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_IneligibleShippingMethodError_Fragment = { __typename: 'IneligibleShippingMethodError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_InsufficientStockError_Fragment = { __typename: 'InsufficientStockError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_InvalidCredentialsError_Fragment = { __typename: 'InvalidCredentialsError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_MissingPasswordError_Fragment = { __typename: 'MissingPasswordError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_NativeAuthStrategyError_Fragment = { __typename: 'NativeAuthStrategyError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_NegativeQuantityError_Fragment = { __typename: 'NegativeQuantityError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_NoActiveOrderError_Fragment = { __typename: 'NoActiveOrderError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_NotVerifiedError_Fragment = { __typename: 'NotVerifiedError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_OrderLimitError_Fragment = { __typename: 'OrderLimitError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_OrderModificationError_Fragment = { __typename: 'OrderModificationError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_OrderPaymentStateError_Fragment = { __typename: 'OrderPaymentStateError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_OrderStateTransitionError_Fragment = { __typename: 'OrderStateTransitionError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_PasswordAlreadySetError_Fragment = { __typename: 'PasswordAlreadySetError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_PasswordResetTokenExpiredError_Fragment = { __typename: 'PasswordResetTokenExpiredError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_PasswordResetTokenInvalidError_Fragment = { __typename: 'PasswordResetTokenInvalidError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_PasswordValidationError_Fragment = { __typename: 'PasswordValidationError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_PaymentDeclinedError_Fragment = { __typename: 'PaymentDeclinedError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_PaymentFailedError_Fragment = { __typename: 'PaymentFailedError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_VerificationTokenExpiredError_Fragment = { __typename: 'VerificationTokenExpiredError', errorCode: ErrorCode, message: string };
-
-type ErrorResult_VerificationTokenInvalidError_Fragment = { __typename: 'VerificationTokenInvalidError', errorCode: ErrorCode, message: string };
-
-export type ErrorResultFragment = ErrorResult_AlreadyLoggedInError_Fragment | ErrorResult_CouponCodeExpiredError_Fragment | ErrorResult_CouponCodeInvalidError_Fragment | ErrorResult_CouponCodeLimitError_Fragment | ErrorResult_EmailAddressConflictError_Fragment | ErrorResult_GuestCheckoutError_Fragment | ErrorResult_IdentifierChangeTokenExpiredError_Fragment | ErrorResult_IdentifierChangeTokenInvalidError_Fragment | ErrorResult_IneligiblePaymentMethodError_Fragment | ErrorResult_IneligibleShippingMethodError_Fragment | ErrorResult_InsufficientStockError_Fragment | ErrorResult_InvalidCredentialsError_Fragment | ErrorResult_MissingPasswordError_Fragment | ErrorResult_NativeAuthStrategyError_Fragment | ErrorResult_NegativeQuantityError_Fragment | ErrorResult_NoActiveOrderError_Fragment | ErrorResult_NotVerifiedError_Fragment | ErrorResult_OrderLimitError_Fragment | ErrorResult_OrderModificationError_Fragment | ErrorResult_OrderPaymentStateError_Fragment | ErrorResult_OrderStateTransitionError_Fragment | ErrorResult_PasswordAlreadySetError_Fragment | ErrorResult_PasswordResetTokenExpiredError_Fragment | ErrorResult_PasswordResetTokenInvalidError_Fragment | ErrorResult_PasswordValidationError_Fragment | ErrorResult_PaymentDeclinedError_Fragment | ErrorResult_PaymentFailedError_Fragment | ErrorResult_VerificationTokenExpiredError_Fragment | ErrorResult_VerificationTokenInvalidError_Fragment;
-
-export type SendPhoneOtpMutationVariables = Exact<{
-  phoneNumber: Scalars['String'];
-}>;
-
-
-export type SendPhoneOtpMutation = { __typename?: 'Mutation', sendPhoneOtp?: boolean | null };
-
 export type ActiveCustomerQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -3808,6 +3772,25 @@ export type OrderByCodeQueryVariables = Exact<{
 
 export type OrderByCodeQuery = { __typename?: 'Query', orderByCode?: { __typename: 'Order', id: string, code: string, active: boolean, createdAt: any, state: string, currencyCode: CurrencyCode, totalQuantity: number, subTotal: number, subTotalWithTax: number, shippingWithTax: number, totalWithTax: number, taxSummary: Array<{ __typename?: 'OrderTaxSummary', description: string, taxRate: number, taxTotal: number }>, customer?: { __typename?: 'Customer', id: string, firstName: string, lastName: string, emailAddress: string } | null, shippingAddress?: { __typename?: 'OrderAddress', fullName?: string | null, streetLine1?: string | null, streetLine2?: string | null, company?: string | null, city?: string | null, province?: string | null, postalCode?: string | null, countryCode?: string | null, phoneNumber?: string | null } | null, shippingLines: Array<{ __typename?: 'ShippingLine', priceWithTax: number, shippingMethod: { __typename?: 'ShippingMethod', id: string, name: string } }>, lines: Array<{ __typename?: 'OrderLine', id: string, unitPriceWithTax: number, linePriceWithTax: number, quantity: number, featuredAsset?: { __typename?: 'Asset', id: string, preview: string } | null, productVariant: { __typename?: 'ProductVariant', id: string, name: string, price: number, product: { __typename?: 'Product', id: string, slug: string } } }>, payments?: Array<{ __typename?: 'Payment', id: string, state: string, method: string, amount: number, metadata?: any | null }> | null } | null };
 
+export type GetCouponCodeListQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetCouponCodeListQuery = { __typename?: 'Query', getCouponCodeList: { __typename: 'CoupcodesList', totalItems: number, items: Array<{ __typename?: 'Promotion', id: string, name: string, couponCode?: string | null, description: string, enabled: boolean, endsAt?: any | null, startsAt?: any | null, usageLimit?: number | null, conditions: Array<{ __typename?: 'ConfigurableOperation', code: string, args: Array<{ __typename?: 'ConfigArg', name: string, value: string }> }> }> } };
+
+export type ApplyCouponCodeMutationVariables = Exact<{
+  input: Scalars['String'];
+}>;
+
+
+export type ApplyCouponCodeMutation = { __typename?: 'Mutation', applyCouponCode: { __typename: 'CouponCodeExpiredError' } | { __typename: 'CouponCodeInvalidError', message: string } | { __typename: 'CouponCodeLimitError' } | { __typename: 'Order', id: string, couponCodes: Array<string>, total: number } };
+
+export type RemoveCouponCodeMutationVariables = Exact<{
+  couponCode: Scalars['String'];
+}>;
+
+
+export type RemoveCouponCodeMutation = { __typename?: 'Mutation', removeCouponCode?: { __typename: 'Order' } | null };
+
 export type DetailedProductFragment = { __typename?: 'Product', id: string, name: string, description: string, collections: Array<{ __typename?: 'Collection', id: string, slug: string, name: string, breadcrumbs: Array<{ __typename?: 'CollectionBreadcrumb', id: string, name: string, slug: string }> }>, facetValues: Array<{ __typename?: 'FacetValue', id: string, code: string, name: string, facet: { __typename?: 'Facet', id: string, code: string, name: string } }>, featuredAsset?: { __typename?: 'Asset', id: string, preview: string } | null, assets: Array<{ __typename?: 'Asset', id: string, preview: string }>, variants: Array<{ __typename?: 'ProductVariant', id: string, name: string, priceWithTax: number, currencyCode: CurrencyCode, sku: string, stockLevel: string, featuredAsset?: { __typename?: 'Asset', id: string, preview: string } | null }> };
 
 export type ProductQueryVariables = Exact<{
@@ -3838,7 +3821,6 @@ export const ErrorResultFragmentDoc = gql`
     fragment ErrorResult on ErrorResult {
   errorCode
   message
-  __typename
 }
     `;
 export const OrderDetailFragmentDoc = gql`
@@ -3986,15 +3968,20 @@ export const LoginDocument = gql`
     __typename
     ... on CurrentUser {
       id
-      identifier
+      __typename
+      channels {
+        token
+        permissions
+        code
+        id
+        __typename
+      }
     }
-    ... on ErrorResult {
-      errorCode
-      message
-    }
+    ...ErrorResult
+    __typename
   }
 }
-    `;
+    ${ErrorResultFragmentDoc}`;
 export const LogoutDocument = gql`
     mutation logout {
   logout {
@@ -4220,58 +4207,6 @@ export const CollectionDocument = gql`
   }
 }
     `;
-export const GetChannelListDocument = gql`
-    query getChannelList {
-  getChannelList {
-    id
-    token
-    code
-  }
-}
-    `;
-export const GetChannelsByCustomerEmailDocument = gql`
-    query GetChannelsByCustomerEmail($email: String!) {
-  getChannelsByCustomerEmail(email: $email) {
-    id
-    code
-    token
-    defaultCurrencyCode
-  }
-}
-    `;
-export const GetPasswordResetTokenDocument = gql`
-    query GetPasswordResetToken {
-  getPasswordResetToken
-}
-    `;
-export const RequestPasswordResetDocument = gql`
-    mutation RequestPasswordReset($email: String!) {
-  requestPasswordReset(emailAddress: $email) {
-    __typename
-  }
-}
-    `;
-export const ResetPasswordDocument = gql`
-    mutation ResetPassword($token: String!, $password: String!) {
-  resetPassword(token: $token, password: $password) {
-    ... on CurrentUser {
-      id
-      channels {
-        token
-        code
-        permissions
-      }
-    }
-    ...ErrorResult
-    __typename
-  }
-}
-    ${ErrorResultFragmentDoc}`;
-export const SendPhoneOtpDocument = gql`
-    mutation SendPhoneOtp($phoneNumber: String!) {
-  sendPhoneOtp(phoneNumber: $phoneNumber)
-}
-    `;
 export const ActiveCustomerDocument = gql`
     query activeCustomer {
   activeCustomer {
@@ -4457,6 +4392,53 @@ export const OrderByCodeDocument = gql`
   }
 }
     ${OrderDetailFragmentDoc}`;
+export const GetCouponCodeListDocument = gql`
+    query GetCouponCodeList {
+  getCouponCodeList {
+    items {
+      id
+      name
+      couponCode
+      description
+      enabled
+      endsAt
+      startsAt
+      conditions {
+        code
+        args {
+          name
+          value
+        }
+      }
+      usageLimit
+    }
+    totalItems
+    __typename
+  }
+}
+    `;
+export const ApplyCouponCodeDocument = gql`
+    mutation ApplyCouponCode($input: String!) {
+  applyCouponCode(couponCode: $input) {
+    __typename
+    ... on Order {
+      id
+      couponCodes
+      total
+    }
+    ... on CouponCodeInvalidError {
+      message
+    }
+  }
+}
+    `;
+export const RemoveCouponCodeDocument = gql`
+    mutation RemoveCouponCode($couponCode: String!) {
+  removeCouponCode(couponCode: $couponCode) {
+    __typename
+  }
+}
+    `;
 export const ProductDocument = gql`
     query product($slug: String, $id: ID) {
   product(slug: $slug, id: $id) {
@@ -4572,24 +4554,6 @@ export function getSdk<C, E>(requester: Requester<C, E>) {
     collection(variables?: CollectionQueryVariables, options?: C): Promise<CollectionQuery> {
       return requester<CollectionQuery, CollectionQueryVariables>(CollectionDocument, variables, options) as Promise<CollectionQuery>;
     },
-    getChannelList(variables?: GetChannelListQueryVariables, options?: C): Promise<GetChannelListQuery> {
-      return requester<GetChannelListQuery, GetChannelListQueryVariables>(GetChannelListDocument, variables, options) as Promise<GetChannelListQuery>;
-    },
-    GetChannelsByCustomerEmail(variables: GetChannelsByCustomerEmailQueryVariables, options?: C): Promise<GetChannelsByCustomerEmailQuery> {
-      return requester<GetChannelsByCustomerEmailQuery, GetChannelsByCustomerEmailQueryVariables>(GetChannelsByCustomerEmailDocument, variables, options) as Promise<GetChannelsByCustomerEmailQuery>;
-    },
-    GetPasswordResetToken(variables?: GetPasswordResetTokenQueryVariables, options?: C): Promise<GetPasswordResetTokenQuery> {
-      return requester<GetPasswordResetTokenQuery, GetPasswordResetTokenQueryVariables>(GetPasswordResetTokenDocument, variables, options) as Promise<GetPasswordResetTokenQuery>;
-    },
-    RequestPasswordReset(variables: RequestPasswordResetMutationVariables, options?: C): Promise<RequestPasswordResetMutation> {
-      return requester<RequestPasswordResetMutation, RequestPasswordResetMutationVariables>(RequestPasswordResetDocument, variables, options) as Promise<RequestPasswordResetMutation>;
-    },
-    ResetPassword(variables: ResetPasswordMutationVariables, options?: C): Promise<ResetPasswordMutation> {
-      return requester<ResetPasswordMutation, ResetPasswordMutationVariables>(ResetPasswordDocument, variables, options) as Promise<ResetPasswordMutation>;
-    },
-    SendPhoneOtp(variables: SendPhoneOtpMutationVariables, options?: C): Promise<SendPhoneOtpMutation> {
-      return requester<SendPhoneOtpMutation, SendPhoneOtpMutationVariables>(SendPhoneOtpDocument, variables, options) as Promise<SendPhoneOtpMutation>;
-    },
     activeCustomer(variables?: ActiveCustomerQueryVariables, options?: C): Promise<ActiveCustomerQuery> {
       return requester<ActiveCustomerQuery, ActiveCustomerQueryVariables>(ActiveCustomerDocument, variables, options) as Promise<ActiveCustomerQuery>;
     },
@@ -4625,6 +4589,15 @@ export function getSdk<C, E>(requester: Requester<C, E>) {
     },
     orderByCode(variables: OrderByCodeQueryVariables, options?: C): Promise<OrderByCodeQuery> {
       return requester<OrderByCodeQuery, OrderByCodeQueryVariables>(OrderByCodeDocument, variables, options) as Promise<OrderByCodeQuery>;
+    },
+    GetCouponCodeList(variables?: GetCouponCodeListQueryVariables, options?: C): Promise<GetCouponCodeListQuery> {
+      return requester<GetCouponCodeListQuery, GetCouponCodeListQueryVariables>(GetCouponCodeListDocument, variables, options) as Promise<GetCouponCodeListQuery>;
+    },
+    ApplyCouponCode(variables: ApplyCouponCodeMutationVariables, options?: C): Promise<ApplyCouponCodeMutation> {
+      return requester<ApplyCouponCodeMutation, ApplyCouponCodeMutationVariables>(ApplyCouponCodeDocument, variables, options) as Promise<ApplyCouponCodeMutation>;
+    },
+    RemoveCouponCode(variables: RemoveCouponCodeMutationVariables, options?: C): Promise<RemoveCouponCodeMutation> {
+      return requester<RemoveCouponCodeMutation, RemoveCouponCodeMutationVariables>(RemoveCouponCodeDocument, variables, options) as Promise<RemoveCouponCodeMutation>;
     },
     product(variables?: ProductQueryVariables, options?: C): Promise<ProductQuery> {
       return requester<ProductQuery, ProductQueryVariables>(ProductDocument, variables, options) as Promise<ProductQuery>;

@@ -16,14 +16,13 @@ import { BraintreeDropIn } from '~/components/checkout/braintree/BraintreePaymen
 import { getActiveOrder } from '~/providers/orders/order';
 import { getSessionStorage } from '~/sessions';
 import { useTranslation } from 'react-i18next';
-
+import { RazorpayPayments } from '~/components/checkout/razopay/RezopayPayments';
 export async function loader({ params, request }: DataFunctionArgs) {
   const session = await getSessionStorage().then((sessionStorage) =>
     sessionStorage.getSession(request?.headers.get('Cookie')),
   );
   const activeOrder = await getActiveOrder({ request });
 
-  //check if there is an active order if not redirect to homepage
   if (
     !session ||
     !activeOrder ||
@@ -40,6 +39,11 @@ export async function loader({ params, request }: DataFunctionArgs) {
   let stripePaymentIntent: string | undefined;
   let stripePublishableKey: string | undefined;
   let stripeError: string | undefined;
+  let razorpayOrderId: string | undefined;
+  let razorpayKeyId: string | undefined;
+  let razorpayError: string | undefined;
+
+  // Stripe handling
   if (eligiblePaymentMethods.find((method) => method.code.includes('stripe'))) {
     try {
       const stripePaymentIntentResult = await createStripePaymentIntent({
@@ -53,6 +57,7 @@ export async function loader({ params, request }: DataFunctionArgs) {
     }
   }
 
+  // Braintree handling
   let brainTreeKey: string | undefined;
   let brainTreeError: string | undefined;
   if (
@@ -68,6 +73,31 @@ export async function loader({ params, request }: DataFunctionArgs) {
       brainTreeError = e.message;
     }
   }
+
+  // Razorpay handling
+  const razorpayEnabled = eligiblePaymentMethods.some((m) =>
+    m.code.includes('razorpay'),
+  );
+  if (razorpayEnabled && activeOrder) {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/payments/razorpay/order/${activeOrder.id}`,
+        {
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+      if (!response.ok) {
+        throw new Error('Failed to create Razorpay order');
+      }
+  
+      const data: { orderId: string; keyId: string } = await response.json(); // <--- type added here
+      razorpayOrderId = data.orderId;
+      razorpayKeyId = data.keyId;
+    } catch (e: any) {
+      razorpayError = e.message;
+    }
+  }
+  
   return json({
     eligiblePaymentMethods,
     stripePaymentIntent,
@@ -76,47 +106,58 @@ export async function loader({ params, request }: DataFunctionArgs) {
     brainTreeKey,
     brainTreeError,
     error,
+    razorpayEnabled,
+    razorpayOrderId,
+    razorpayKeyId,
+    razorpayError,
   });
 }
-
 export async function action({ params, request }: DataFunctionArgs) {
   const body = await request.formData();
-  const paymentMethodCode = body.get('paymentMethodCode');
-  const paymentNonce = body.get('paymentNonce');
-  if (typeof paymentMethodCode === 'string') {
-    const { nextOrderStates } = await getNextOrderStates({
+  const paymentMethodCode = body.get('paymentMethodCode') as string;
+
+  if (!paymentMethodCode) {
+    throw new Response('Payment method code is required', { status: 400 });
+  }
+
+  const { nextOrderStates } = await getNextOrderStates({ request });
+  if (nextOrderStates.includes('ArrangingPayment')) {
+    const transitionResult = await transitionOrderToState('ArrangingPayment', {
       request,
     });
-    if (nextOrderStates.includes('ArrangingPayment')) {
-      const transitionResult = await transitionOrderToState(
-        'ArrangingPayment',
-        { request },
-      );
-      if (transitionResult.transitionOrderToState?.__typename !== 'Order') {
-        throw new Response('Not Found', {
-          status: 400,
-          statusText: transitionResult.transitionOrderToState?.message,
-        });
-      }
-    }
-
-    const result = await addPaymentToOrder(
-      { method: paymentMethodCode, metadata: { nonce: paymentNonce } },
-      { request },
-    );
-    if (result.addPaymentToOrder.__typename === 'Order') {
-      return redirect(
-        `/checkout/confirmation/${result.addPaymentToOrder.code}`,
-      );
-    } else {
-      throw new Response('Not Found', {
+    if (transitionResult.transitionOrderToState?.__typename !== 'Order') {
+      throw new Response('Order state transition failed', {
         status: 400,
-        statusText: result.addPaymentToOrder?.message,
+        statusText: transitionResult.transitionOrderToState?.message,
       });
     }
   }
-}
 
+  let metadata: Record<string, any> = {};
+  if (paymentMethodCode === 'razorpay') {
+    metadata = {
+      razorpay_payment_id: body.get('razorpay_payment_id'),
+      razorpay_order_id: body.get('razorpay_order_id'),
+      razorpay_signature: body.get('razorpay_signature'),
+    };
+  } else {
+    metadata = { nonce: body.get('paymentNonce') };
+  }
+
+  const result = await addPaymentToOrder(
+    { method: paymentMethodCode, metadata },
+    { request },
+  );
+
+  if (result.addPaymentToOrder.__typename === 'Order') {
+    return redirect(`/checkout/confirmation/${result.addPaymentToOrder.code}`);
+  } else {
+    throw new Response('Payment failed', {
+      status: 400,
+      statusText: result.addPaymentToOrder?.message,
+    });
+  }
+}
 export default function CheckoutPayment() {
   const {
     eligiblePaymentMethods,
@@ -126,6 +167,9 @@ export default function CheckoutPayment() {
     brainTreeKey,
     brainTreeError,
     error,
+    razorpayOrderId,
+    razorpayKeyId,
+    razorpayError,
   } = useLoaderData<typeof loader>();
   const { activeOrderFetcher, activeOrder } = useOutletContext<OutletContext>();
   const { t } = useTranslation();
@@ -169,15 +213,34 @@ export default function CheckoutPayment() {
                 orderCode={activeOrder?.code ?? ''}
                 clientSecret={stripePaymentIntent!}
                 publishableKey={stripePublishableKey!}
-              ></StripePayments>
+              />
+            )}
+          </div>
+        ) : paymentMethod.code.includes('razorpay') ? (
+          <div className="py-12" key={paymentMethod.id}>
+            {razorpayError ? (
+              <div>
+                <p className="text-red-700 font-bold">
+                  {t('checkout.razorpayError', { defaultValue: 'Razorpay Error' })}
+                </p>
+                <p className="text-sm">{razorpayError}</p>
+              </div>
+            ) : (
+              <RazorpayPayments
+                orderCode={activeOrder?.code ?? ''}
+                amount={activeOrder?.totalWithTax ?? 0}
+                currency={activeOrder?.currencyCode ?? 'INR'}
+              />
             )}
           </div>
         ) : (
           <div className="py-12" key={paymentMethod.id}>
-            <DummyPayments
+           <DummyPayments
               paymentMethod={paymentMethod}
               paymentError={paymentError}
-            />
+              order={activeOrder as any}
+           />
+
           </div>
         ),
       )}

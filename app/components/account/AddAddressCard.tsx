@@ -9,7 +9,7 @@ export default function AddAddressCard() {
     <>
       <Link
         preventScrollReset
-        className="border border-gray-200 p-5 min-h-[220px] h-full w-full flex flex-col justify-between"
+        className="border border-black-500 p-5 min-h-[100px] h-full w-full flex flex-col justify-between mt-3"
         to="/account/addresses/new"
       >
         <span className="text-base-semi">{t('address.new')}</span>
