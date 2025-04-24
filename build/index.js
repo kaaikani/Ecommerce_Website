@@ -1295,7 +1295,7 @@ import {
 } from "@remix-run/react";
 
 // app/tailwind.css
-var tailwind_default = "/build/_assets/tailwind-3BRWYT6O.css";
+var tailwind_default = "/build/_assets/tailwind-EGM2NF2Y.css";
 
 // app/components/header/Header.tsx
 import { Link } from "@remix-run/react";
@@ -13190,6 +13190,7 @@ __export(coupon_exports, {
 });
 import { json as json15 } from "@remix-run/node";
 import { useLoaderData as useLoaderData16, Form as Form7, useActionData as useActionData6 } from "@remix-run/react";
+import { useEffect as useEffect14, useState as useState14 } from "react";
 import { jsxDEV as jsxDEV58 } from "react/jsx-dev-runtime";
 var loader15 = async ({ request }) => {
   let options = { request }, couponCodes = await getCouponCodeList(options), activeOrder = await getActiveOrder(options);
@@ -13204,23 +13205,22 @@ var loader15 = async ({ request }) => {
       if (!coupon || !coupon.couponCode)
         return json15({ error: "Invalid coupon code." }, { status: 400 });
       let minAmountCondition = coupon.conditions.find(
-        (condition) => condition.code === "minimumAmount"
+        (c) => c.code === "minimum_order_amount" || c.code === "minimumOrderAmount" || c.code === "minimumAmount"
       );
       if (minAmountCondition) {
-        let minAmountArg = minAmountCondition.args.find((arg) => arg.name === "amount");
-        if (minAmountArg) {
-          let minAmount = parseFloat(minAmountArg.value), order = await getActiveOrder(options), totalWithTax = order?.totalWithTax ?? 0;
-          if (console.log(`Checking minimumAmount: Coupon requires ${minAmount} paise, order total is ${totalWithTax} paise`), !order || totalWithTax < minAmount)
-            return json15(
-              {
-                error: `Order total must be at least \u20B9${(minAmount / 100).toFixed(2)} to apply this coupon. Current total: \u20B9${(totalWithTax / 100).toFixed(2)}`
-              },
-              { status: 400 }
-            );
-        } else
-          console.warn("minimumAmount condition found but no amount arg provided");
-      } else
-        console.log("No minimumAmount condition for coupon", couponCode);
+        let amountArg = minAmountCondition.args.find((a) => a.name === "amount") ?? minAmountCondition.args[0], minAmountPaise = parseInt(amountArg.value, 10) || 0, totalWithTaxPaise = (await getActiveOrder(options))?.totalWithTax ?? 0;
+        if (console.log(
+          `Coupon requires \u2265 ${minAmountPaise} paise; order total is ${totalWithTaxPaise} paise.`
+        ), totalWithTaxPaise < minAmountPaise) {
+          let diffRupees = ((minAmountPaise - totalWithTaxPaise) / 100).toFixed(2);
+          return json15(
+            {
+              error: `Add \u20B9${diffRupees} more to apply this coupon. Current total: \u20B9${(totalWithTaxPaise / 100).toFixed(2)}.`
+            },
+            { status: 400 }
+          );
+        }
+      }
       let cartItems = (await getActiveOrder(options))?.lines ?? [], variantIds = [];
       if (cartItems.length === 0) {
         for (let condition of coupon.conditions)
@@ -13262,15 +13262,13 @@ var loader15 = async ({ request }) => {
           orderTotal: order.totalWithTax,
           appliedCoupon: couponCode
         });
-      } else if (result?.__typename === "CouponCodeExpiredError") {
-        let errorResult = result;
-        return console.warn(`Coupon expired: ${errorResult.message}`), json15({ error: errorResult.message || "Coupon code has expired." }, { status: 400 });
-      } else if (result?.__typename === "CouponCodeInvalidError") {
-        let errorResult = result;
-        return console.warn(`Invalid coupon: ${errorResult.message}`), json15({ error: errorResult.message || "Invalid coupon code." }, { status: 400 });
-      } else if (result?.__typename === "CouponCodeLimitError") {
-        let errorResult = result;
-        return console.warn(`Coupon limit reached: ${errorResult.message}`), json15({ error: errorResult.message || "Coupon usage limit reached." }, { status: 400 });
+      } else {
+        if (result?.__typename === "CouponCodeExpiredError")
+          return json15({ error: result.message || "Coupon code has expired." }, { status: 400 });
+        if (result?.__typename === "CouponCodeInvalidError")
+          return json15({ error: result.message || "Invalid coupon code." }, { status: 400 });
+        if (result?.__typename === "CouponCodeLimitError")
+          return json15({ error: result.message || "Coupon usage limit reached." }, { status: 400 });
       }
       return console.error("Unexpected response from applyCouponCode:", result), json15({ error: "Unexpected response from server." }, { status: 500 });
     } catch (error) {
@@ -13280,120 +13278,265 @@ var loader15 = async ({ request }) => {
     if (!couponCode)
       return json15({ error: "Coupon code is required for removal." }, { status: 400 });
     try {
+      let options = { request }, coupon = (await getCouponCodeList(options)).find((c) => c.couponCode === couponCode);
+      if (!coupon || !coupon.couponCode)
+        return json15({ error: "Invalid coupon code." }, { status: 400 });
+      let variantIdsToRemove = [];
+      for (let condition of coupon.conditions)
+        if (condition.code === "productVariantIds") {
+          for (let arg of condition.args)
+            if (arg.name === "productVariantIds")
+              try {
+                let parsedIds = JSON.parse(arg.value);
+                Array.isArray(parsedIds) ? variantIdsToRemove.push(...parsedIds.map((id) => id.toString())) : variantIdsToRemove.push(arg.value);
+              } catch {
+                variantIdsToRemove.push(arg.value);
+              }
+        }
+      let cartItems = (await getActiveOrder(options))?.lines ?? [];
+      for (let item of cartItems)
+        if (variantIdsToRemove.includes(item.productVariant.id)) {
+          console.log(`Removing variant ${item.productVariant.id} from cart`);
+          let removeFormData = new FormData();
+          removeFormData.append("action", "removeOrderLine"), removeFormData.append("orderLineId", item.id);
+          let removeResult = await (await fetch("/api/active-order", {
+            method: "POST",
+            body: removeFormData,
+            headers: { Cookie: request.headers.get("Cookie") || "" }
+          })).json();
+          if (removeResult.error)
+            return console.error(`Failed to remove variant ${item.productVariant.id}: ${removeResult.error}`), json15(
+              { error: `Failed to remove product variant ${item.productVariant.id} from cart: ${removeResult.error}` },
+              { status: 400 }
+            );
+        }
       console.log(`Removing coupon: ${couponCode}`);
       let result = await removeCouponCode(couponCode, { request });
-      if (result?.__typename === "Order") {
-        let order = result;
-        return console.log(`Coupon ${couponCode} removed successfully. New total: ${order.totalWithTax} paise`), json15({
-          success: !0,
-          message: "Coupon removed from your order.",
-          orderTotal: order.totalWithTax,
-          appliedCoupon: null
-        });
-      } else if (result?.__typename === "CouponCodeInvalidError" || result?.__typename === "CouponCodeExpiredError" || result?.__typename === "CouponCodeLimitError")
-        return console.warn("Failed to remove coupon:", result), json15({ error: "Failed to remove coupon." }, { status: 400 });
-      return console.error("Unexpected response from removeCouponCode:", result), json15({ error: "Unexpected response from server." }, { status: 500 });
+      return result?.__typename === "Order" ? json15({
+        success: !0,
+        message: "Coupon and associated products removed from your order.",
+        orderTotal: result.totalWithTax,
+        appliedCoupon: null
+      }) : json15({ error: "Failed to remove coupon." }, { status: 400 });
     } catch (error) {
       return console.error("Failed to remove coupon:", error), json15({ error: "An error occurred while removing the coupon." }, { status: 500 });
     }
   }
   return json15({ error: "Invalid action type." }, { status: 400 });
 };
-function CouponsComponent({
-  order
-}) {
-  let { couponCodes, activeOrder } = useLoaderData16(), actionData = useActionData6(), enabledCoupons = couponCodes.filter((coupon) => coupon.enabled && coupon.couponCode), appliedCoupon = actionData?.appliedCoupon || activeOrder?.couponCodes?.[0], rawTotal = actionData?.orderTotal ?? activeOrder?.totalWithTax ?? order?.totalWithTax ?? 0;
+function CouponsComponent({ order }) {
+  let { couponCodes, activeOrder } = useLoaderData16(), actionData = useActionData6(), [showErrorModal, setShowErrorModal] = useState14(!1), [errorMessage, setErrorMessage] = useState14(""), [showConfirmModal, setShowConfirmModal] = useState14(!1), [couponToRemove, setCouponToRemove] = useState14(null);
+  useEffect14(() => {
+    if (actionData?.error) {
+      let match = actionData.error.match(/Add ₹([\d.]+) more to apply this coupon/);
+      if (match) {
+        let extraAmount = match[1];
+        setErrorMessage(
+          `\u{1F6AB} Not eligible yet! You need to add \u20B9${extraAmount} more worth of products to activate this coupon code.`
+        );
+      } else
+        setErrorMessage(actionData.error);
+      setShowErrorModal(!0);
+    }
+  }, [actionData?.error]);
+  let closeErrorModal = () => {
+    setShowErrorModal(!1), setErrorMessage("");
+  }, openConfirmModal = (couponCode) => {
+    setCouponToRemove(couponCode), setShowConfirmModal(!0);
+  }, closeConfirmModal = () => {
+    setShowConfirmModal(!1), setCouponToRemove(null);
+  }, confirmRemoveCoupon = () => {
+    if (couponToRemove) {
+      let form = document.createElement("form");
+      form.method = "POST", form.style.display = "none";
+      let actionInput = document.createElement("input");
+      actionInput.type = "hidden", actionInput.name = "actionType", actionInput.value = "remove";
+      let couponInput = document.createElement("input");
+      couponInput.type = "hidden", couponInput.name = "couponCode", couponInput.value = couponToRemove, form.appendChild(actionInput), form.appendChild(couponInput), document.body.appendChild(form), form.submit(), closeConfirmModal();
+    }
+  }, enabledCoupons = couponCodes.filter((coupon) => coupon.enabled && coupon.couponCode), appliedCoupon = actionData?.appliedCoupon || activeOrder?.couponCodes?.[0], rawTotal = actionData?.orderTotal ?? activeOrder?.totalWithTax ?? order?.totalWithTax ?? 0;
   return /* @__PURE__ */ jsxDEV58("div", { className: "max-w-2xl mx-auto mt-8 p-6 bg-white rounded-xl shadow-lg", children: [
+    showErrorModal && /* @__PURE__ */ jsxDEV58("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50", children: /* @__PURE__ */ jsxDEV58("div", { className: "bg-white rounded-lg p-6 max-w-md w-full shadow-2xl transform transition-all duration-300 scale-100", children: [
+      /* @__PURE__ */ jsxDEV58("div", { className: "flex items-center gap-3 mb-4", children: [
+        /* @__PURE__ */ jsxDEV58("svg", { className: "w-6 h-6 text-red-500", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDEV58("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" }, void 0, !1, {
+          fileName: "app/routes/coupon.tsx",
+          lineNumber: 359,
+          columnNumber: 17
+        }, this) }, void 0, !1, {
+          fileName: "app/routes/coupon.tsx",
+          lineNumber: 358,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV58("h3", { className: "text-lg font-semibold text-gray-900", children: "Coupon Error" }, void 0, !1, {
+          fileName: "app/routes/coupon.tsx",
+          lineNumber: 361,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, !0, {
+        fileName: "app/routes/coupon.tsx",
+        lineNumber: 357,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV58("p", { className: "text-gray-600 mb-6", children: errorMessage }, void 0, !1, {
+        fileName: "app/routes/coupon.tsx",
+        lineNumber: 363,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV58(
+        "button",
+        {
+          onClick: closeErrorModal,
+          className: "w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors duration-200",
+          children: "Close"
+        },
+        void 0,
+        !1,
+        {
+          fileName: "app/routes/coupon.tsx",
+          lineNumber: 364,
+          columnNumber: 13
+        },
+        this
+      )
+    ] }, void 0, !0, {
+      fileName: "app/routes/coupon.tsx",
+      lineNumber: 356,
+      columnNumber: 11
+    }, this) }, void 0, !1, {
+      fileName: "app/routes/coupon.tsx",
+      lineNumber: 355,
+      columnNumber: 9
+    }, this),
+    showConfirmModal && /* @__PURE__ */ jsxDEV58("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50", children: /* @__PURE__ */ jsxDEV58("div", { className: "bg-white rounded-lg p-6 max-w-md w-full shadow-2xl transform transition-all duration-300 scale-100", children: [
+      /* @__PURE__ */ jsxDEV58("div", { className: "flex items-center gap-3 mb-4", children: [
+        /* @__PURE__ */ jsxDEV58("svg", { className: "w-6 h-6 text-red-500", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDEV58("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" }, void 0, !1, {
+          fileName: "app/routes/coupon.tsx",
+          lineNumber: 380,
+          columnNumber: 17
+        }, this) }, void 0, !1, {
+          fileName: "app/routes/coupon.tsx",
+          lineNumber: 379,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV58("h3", { className: "text-lg font-semibold text-gray-900", children: "Remove Coupon?" }, void 0, !1, {
+          fileName: "app/routes/coupon.tsx",
+          lineNumber: 382,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, !0, {
+        fileName: "app/routes/coupon.tsx",
+        lineNumber: 378,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV58("p", { className: "text-gray-600 mb-6", children: "This will remove the coupon and associated product(s) from your cart. Are you sure?" }, void 0, !1, {
+        fileName: "app/routes/coupon.tsx",
+        lineNumber: 384,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV58("div", { className: "flex justify-end gap-3", children: [
+        /* @__PURE__ */ jsxDEV58(
+          "button",
+          {
+            onClick: closeConfirmModal,
+            className: "px-4 py-2 rounded-md text-sm font-medium bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors",
+            children: "Cancel"
+          },
+          void 0,
+          !1,
+          {
+            fileName: "app/routes/coupon.tsx",
+            lineNumber: 388,
+            columnNumber: 15
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV58(
+          "button",
+          {
+            onClick: confirmRemoveCoupon,
+            className: "px-4 py-2 rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition-colors",
+            children: "Yes, Remove"
+          },
+          void 0,
+          !1,
+          {
+            fileName: "app/routes/coupon.tsx",
+            lineNumber: 394,
+            columnNumber: 15
+          },
+          this
+        )
+      ] }, void 0, !0, {
+        fileName: "app/routes/coupon.tsx",
+        lineNumber: 387,
+        columnNumber: 13
+      }, this)
+    ] }, void 0, !0, {
+      fileName: "app/routes/coupon.tsx",
+      lineNumber: 377,
+      columnNumber: 11
+    }, this) }, void 0, !1, {
+      fileName: "app/routes/coupon.tsx",
+      lineNumber: 376,
+      columnNumber: 9
+    }, this),
     /* @__PURE__ */ jsxDEV58("div", { className: "mb-6", children: /* @__PURE__ */ jsxDEV58("h2", { className: "text-4xl font-bold text-gray-900", children: [
       "Order Total: ",
       /* @__PURE__ */ jsxDEV58(Price, { priceWithTax: rawTotal, currencyCode: activeOrder?.currencyCode ?? "INR" /* Inr */ }, void 0, !1, {
         fileName: "app/routes/coupon.tsx",
-        lineNumber: 255,
+        lineNumber: 407,
         columnNumber: 24
       }, this)
     ] }, void 0, !0, {
       fileName: "app/routes/coupon.tsx",
-      lineNumber: 254,
+      lineNumber: 406,
       columnNumber: 9
     }, this) }, void 0, !1, {
       fileName: "app/routes/coupon.tsx",
-      lineNumber: 253,
+      lineNumber: 405,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDEV58("h3", { className: "text-2xl font-bold text-gray-900 mb-6", children: "Available Coupons" }, void 0, !1, {
       fileName: "app/routes/coupon.tsx",
-      lineNumber: 258,
+      lineNumber: 410,
       columnNumber: 7
     }, this),
     actionData?.message && /* @__PURE__ */ jsxDEV58(
       "div",
       {
         className: `mb-6 p-4 rounded-lg flex items-center gap-3 ${actionData.success ? "bg-green-100 text-green-800 border border-green-300" : "bg-red-100 text-red-800 border border-red-300"}`,
-        children: [
-          /* @__PURE__ */ jsxDEV58(
-            "svg",
-            {
-              className: "w-5 h-5",
-              fill: "none",
-              stroke: "currentColor",
-              viewBox: "0 0 24 24",
-              xmlns: "http://www.w3.org/2000/svg",
-              children: /* @__PURE__ */ jsxDEV58(
-                "path",
-                {
-                  strokeLinecap: "round",
-                  strokeLinejoin: "round",
-                  strokeWidth: "2",
-                  d: actionData.success ? "M5 13l4 4L19 7" : "M6 18L18 6M6 6l12 12"
-                },
-                void 0,
-                !1,
-                {
-                  fileName: "app/routes/coupon.tsx",
-                  lineNumber: 275,
-                  columnNumber: 13
-                },
-                this
-              )
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/coupon.tsx",
-              lineNumber: 268,
-              columnNumber: 11
-            },
-            this
-          ),
-          /* @__PURE__ */ jsxDEV58("span", { className: "flex-1", children: [
-            actionData.message,
-            actionData.success && actionData.orderTotal && /* @__PURE__ */ jsxDEV58("span", { className: "font-semibold", children: [
-              " ",
-              "New total: \u20B9",
-              (actionData.orderTotal / 100).toFixed(2)
-            ] }, void 0, !0, {
-              fileName: "app/routes/coupon.tsx",
-              lineNumber: 285,
-              columnNumber: 15
-            }, this)
-          ] }, void 0, !0, {
-            fileName: "app/routes/coupon.tsx",
-            lineNumber: 282,
-            columnNumber: 11
-          }, this)
-        ]
+        children: actionData.message
       },
       void 0,
-      !0,
+      !1,
       {
         fileName: "app/routes/coupon.tsx",
-        lineNumber: 261,
+        lineNumber: 413,
         columnNumber: 9
       },
       this
     ),
     enabledCoupons.length > 0 ? /* @__PURE__ */ jsxDEV58("div", { className: "space-y-4", children: enabledCoupons.map((coupon) => {
-      let isApplied = appliedCoupon === coupon.couponCode;
+      let isApplied = appliedCoupon === coupon.couponCode, variantNames = [];
+      for (let condition of coupon.conditions)
+        if (condition.code === "productVariantIds") {
+          for (let arg of condition.args)
+            if (arg.name === "productVariantIds")
+              try {
+                let variantIds = JSON.parse(arg.value), cartItems = activeOrder?.lines ?? [];
+                for (let variantId of Array.isArray(variantIds) ? variantIds : [arg.value]) {
+                  let matchingItem = cartItems.find(
+                    (item) => item.productVariant.id === variantId.toString()
+                  );
+                  matchingItem?.productVariant.name && variantNames.push(matchingItem.productVariant.name);
+                }
+              } catch {
+                let matchingItem = (activeOrder?.lines ?? []).find(
+                  (item) => item.productVariant.id === arg.value
+                );
+                matchingItem?.productVariant.name && variantNames.push(matchingItem.productVariant.name);
+              }
+        }
       return /* @__PURE__ */ jsxDEV58(
         "div",
         {
@@ -13403,7 +13546,7 @@ function CouponsComponent({
               /* @__PURE__ */ jsxDEV58("div", { children: [
                 /* @__PURE__ */ jsxDEV58("span", { className: "text-lg font-semibold text-gray-900", children: coupon.couponCode }, void 0, !1, {
                   fileName: "app/routes/coupon.tsx",
-                  lineNumber: 309,
+                  lineNumber: 471,
                   columnNumber: 21
                 }, this),
                 /* @__PURE__ */ jsxDEV58("span", { className: "ml-2 text-sm text-gray-600", children: [
@@ -13412,29 +13555,32 @@ function CouponsComponent({
                   ")"
                 ] }, void 0, !0, {
                   fileName: "app/routes/coupon.tsx",
-                  lineNumber: 312,
+                  lineNumber: 474,
                   columnNumber: 21
                 }, this)
               ] }, void 0, !0, {
                 fileName: "app/routes/coupon.tsx",
-                lineNumber: 308,
+                lineNumber: 470,
                 columnNumber: 19
               }, this),
               /* @__PURE__ */ jsxDEV58(Form7, { method: "post", children: [
                 /* @__PURE__ */ jsxDEV58("input", { type: "hidden", name: "actionType", value: isApplied ? "remove" : "apply" }, void 0, !1, {
                   fileName: "app/routes/coupon.tsx",
-                  lineNumber: 315,
+                  lineNumber: 477,
                   columnNumber: 21
                 }, this),
                 /* @__PURE__ */ jsxDEV58("input", { type: "hidden", name: "couponCode", value: coupon.couponCode ?? "" }, void 0, !1, {
                   fileName: "app/routes/coupon.tsx",
-                  lineNumber: 316,
+                  lineNumber: 478,
                   columnNumber: 21
                 }, this),
                 /* @__PURE__ */ jsxDEV58(
                   "button",
                   {
                     type: "submit",
+                    onClick: (e) => {
+                      isApplied && (e.preventDefault(), openConfirmModal(coupon.couponCode ?? ""));
+                    },
                     className: `px-4 py-2 rounded-md text-sm font-medium transition-colors ${isApplied ? "bg-red-600 hover:bg-red-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`,
                     children: isApplied ? "Remove" : "Apply"
                   },
@@ -13442,89 +13588,106 @@ function CouponsComponent({
                   !1,
                   {
                     fileName: "app/routes/coupon.tsx",
-                    lineNumber: 317,
+                    lineNumber: 479,
                     columnNumber: 21
                   },
                   this
                 )
               ] }, void 0, !0, {
                 fileName: "app/routes/coupon.tsx",
-                lineNumber: 314,
+                lineNumber: 476,
                 columnNumber: 19
               }, this)
             ] }, void 0, !0, {
               fileName: "app/routes/coupon.tsx",
-              lineNumber: 307,
+              lineNumber: 469,
               columnNumber: 17
             }, this),
             /* @__PURE__ */ jsxDEV58("div", { className: "text-sm text-gray-600 space-y-2", children: [
               /* @__PURE__ */ jsxDEV58("p", { children: [
                 /* @__PURE__ */ jsxDEV58("strong", { children: "Description:" }, void 0, !1, {
                   fileName: "app/routes/coupon.tsx",
-                  lineNumber: 331,
+                  lineNumber: 499,
                   columnNumber: 21
                 }, this),
                 " ",
-                coupon.description || "No description available."
+                /* @__PURE__ */ jsxDEV58("div", { dangerouslySetInnerHTML: { __html: coupon.description || "No discription  avalible" } }, void 0, !1, {
+                  fileName: "app/routes/coupon.tsx",
+                  lineNumber: 499,
+                  columnNumber: 51
+                }, this)
               ] }, void 0, !0, {
                 fileName: "app/routes/coupon.tsx",
-                lineNumber: 330,
+                lineNumber: 498,
                 columnNumber: 19
+              }, this),
+              variantNames.length > 0 && /* @__PURE__ */ jsxDEV58("p", { children: [
+                /* @__PURE__ */ jsxDEV58("strong", { children: "Products:" }, void 0, !1, {
+                  fileName: "app/routes/coupon.tsx",
+                  lineNumber: 504,
+                  columnNumber: 23
+                }, this),
+                " ",
+                variantNames.join(", ")
+              ] }, void 0, !0, {
+                fileName: "app/routes/coupon.tsx",
+                lineNumber: 503,
+                columnNumber: 21
               }, this),
               coupon.conditions.length > 0 && /* @__PURE__ */ jsxDEV58("div", { children: [
                 /* @__PURE__ */ jsxDEV58("strong", { children: "Conditions:" }, void 0, !1, {
                   fileName: "app/routes/coupon.tsx",
-                  lineNumber: 335,
-                  columnNumber: 23
+                  lineNumber: 509,
+                  columnNumber: 5
                 }, this),
                 /* @__PURE__ */ jsxDEV58("ul", { className: "list-disc list-inside ml-4", children: coupon.conditions.map((condition, index) => /* @__PURE__ */ jsxDEV58("li", { children: [
                   condition.code,
                   ": ",
                   " ",
-                  condition.args.map((arg) => `${arg.name}=${arg.value}`).join(", ")
+                  condition.args.map((arg, i) => condition.code === "minimum_order_amount" && i === 0 ? `\u20B9${(parseInt(arg.value) / 100).toFixed(2)}` : arg.value).join(", ")
                 ] }, index, !0, {
                   fileName: "app/routes/coupon.tsx",
-                  lineNumber: 338,
-                  columnNumber: 27
+                  lineNumber: 512,
+                  columnNumber: 9
                 }, this)) }, void 0, !1, {
                   fileName: "app/routes/coupon.tsx",
-                  lineNumber: 336,
-                  columnNumber: 23
+                  lineNumber: 510,
+                  columnNumber: 5
                 }, this)
               ] }, void 0, !0, {
                 fileName: "app/routes/coupon.tsx",
-                lineNumber: 334,
-                columnNumber: 21
+                lineNumber: 508,
+                columnNumber: 3
               }, this),
               coupon.endsAt && /* @__PURE__ */ jsxDEV58("p", { children: [
                 /* @__PURE__ */ jsxDEV58("strong", { children: "Expires:" }, void 0, !1, {
                   fileName: "app/routes/coupon.tsx",
-                  lineNumber: 348,
+                  lineNumber: 530,
                   columnNumber: 23
                 }, this),
                 " ",
                 new Date(coupon.endsAt).toLocaleDateString()
               ] }, void 0, !0, {
                 fileName: "app/routes/coupon.tsx",
-                lineNumber: 347,
+                lineNumber: 529,
                 columnNumber: 21
               }, this),
               coupon.usageLimit && /* @__PURE__ */ jsxDEV58("p", { children: [
                 /* @__PURE__ */ jsxDEV58("strong", { children: "Usage Limit:" }, void 0, !1, {
                   fileName: "app/routes/coupon.tsx",
-                  lineNumber: 354,
+                  lineNumber: 536,
                   columnNumber: 23
                 }, this),
                 " ",
                 coupon.usageLimit
               ] }, void 0, !0, {
                 fileName: "app/routes/coupon.tsx",
-                lineNumber: 353,
+                lineNumber: 535,
                 columnNumber: 21
               }, this)
             ] }, void 0, !0, {
               fileName: "app/routes/coupon.tsx",
-              lineNumber: 329,
+              lineNumber: 497,
               columnNumber: 17
             }, this)
           ]
@@ -13533,23 +13696,23 @@ function CouponsComponent({
         !0,
         {
           fileName: "app/routes/coupon.tsx",
-          lineNumber: 299,
+          lineNumber: 461,
           columnNumber: 15
         },
         this
       );
     }) }, void 0, !1, {
       fileName: "app/routes/coupon.tsx",
-      lineNumber: 294,
+      lineNumber: 425,
       columnNumber: 9
     }, this) : /* @__PURE__ */ jsxDEV58("p", { className: "text-center text-gray-500 py-4", children: "No enabled coupon codes available at the moment." }, void 0, !1, {
       fileName: "app/routes/coupon.tsx",
-      lineNumber: 363,
+      lineNumber: 545,
       columnNumber: 9
     }, this)
   ] }, void 0, !0, {
     fileName: "app/routes/coupon.tsx",
-    lineNumber: 252,
+    lineNumber: 352,
     columnNumber: 5
   }, this);
 }
@@ -13708,7 +13871,7 @@ function Checkout() {
               }, this),
               /* @__PURE__ */ jsxDEV59(CartTotals, { order: activeOrder }, void 0, !1, {
                 fileName: "app/routes/checkout.tsx",
-                lineNumber: 183,
+                lineNumber: 182,
                 columnNumber: 17
               }, this)
             ] }, void 0, !0, {
@@ -14275,7 +14438,7 @@ __export(search_exports, {
   loader: () => loader18
 });
 import { useLoaderData as useLoaderData19, useSubmit as useSubmit6 } from "@remix-run/react";
-import { useRef as useRef9, useState as useState14 } from "react";
+import { useRef as useRef9, useState as useState15 } from "react";
 import { ValidatedForm as ValidatedForm6 } from "remix-validated-form";
 import { useTranslation as useTranslation44 } from "react-i18next";
 import { jsxDEV as jsxDEV64 } from "react/jsx-dev-runtime";
@@ -14288,7 +14451,7 @@ var paginationLimitMinimumDefault3 = 25, allowedPaginationLimits3 = /* @__PURE__
   paginationLimitMinimumDefault3
 );
 function Search() {
-  let loaderData = useLoaderData19(), { result, resultWithoutFacetValueFilters, term, facetValueIds } = loaderData, [mobileFiltersOpen, setMobileFiltersOpen] = useState14(!1);
+  let loaderData = useLoaderData19(), { result, resultWithoutFacetValueFilters, term, facetValueIds } = loaderData, [mobileFiltersOpen, setMobileFiltersOpen] = useState15(!1);
   useRef9(new FacetFilterTracker()).current.update(
     result,
     resultWithoutFacetValueFilters,
@@ -14369,7 +14532,7 @@ __export(verify_exports, {
   default: () => VerifyTokenPage,
   loader: () => loader19
 });
-import { useEffect as useEffect14, useRef as useRef10 } from "react";
+import { useEffect as useEffect15, useRef as useRef10 } from "react";
 import { useLoaderData as useLoaderData20, useSearchParams as useSearchParams5 } from "@remix-run/react";
 import { redirect as redirect14 } from "@remix-run/server-runtime";
 import { CheckCircleIcon as CheckCircleIcon6, XCircleIcon as XCircleIcon8 } from "@heroicons/react/24/outline";
@@ -14398,7 +14561,7 @@ async function action16({ request }) {
 }
 function VerifyTokenPage() {
   let [searchParams] = useSearchParams5(), result = useLoaderData20(), btnRef = useRef10(null), { t } = useTranslation45();
-  return useEffect14(() => {
+  return useEffect15(() => {
     if (!result.success || !btnRef.current)
       return;
     let submitBtn = btnRef.current;
@@ -14795,7 +14958,7 @@ function Index() {
 }
 
 // server-assets-manifest:@remix-run/dev/assets-manifest
-var assets_manifest_default = { entry: { module: "/build/entry.client-T5C2XNBU.js", imports: ["/build/_shared/chunk-OAPPX4FA.js", "/build/_shared/chunk-7LRNVKNK.js", "/build/_shared/chunk-2PUAPMHX.js", "/build/_shared/chunk-7PHB3BFD.js", "/build/_shared/chunk-IL77MFZH.js", "/build/_shared/chunk-JR22VO6P.js", "/build/_shared/chunk-WEAPBHQG.js", "/build/_shared/chunk-CJ4MY3PQ.js", "/build/_shared/chunk-PZDJHGND.js"] }, routes: { root: { id: "root", parentId: void 0, path: "", index: void 0, caseSensitive: void 0, module: "/build/root-B6ADXC4O.js", imports: ["/build/_shared/chunk-G4FX3M25.js", "/build/_shared/chunk-MME7B2G5.js", "/build/_shared/chunk-DYN6EWA5.js", "/build/_shared/chunk-VJPBPB7U.js", "/build/_shared/chunk-2QJY4JOV.js", "/build/_shared/chunk-QZYG7WHP.js", "/build/_shared/chunk-65HDGKFV.js", "/build/_shared/chunk-R5BHNF67.js", "/build/_shared/chunk-4KYYPW5T.js", "/build/_shared/chunk-76TTLXDT.js", "/build/_shared/chunk-L7FVEPUN.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !0 }, "routes/account": { id: "routes/account", parentId: "root", path: "account", index: void 0, caseSensitive: void 0, module: "/build/routes/account-RHA3FA3D.js", imports: void 0, hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account._index": { id: "routes/account._index", parentId: "root", path: "account/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/account._index-PWJ7H34B.js", imports: ["/build/_shared/chunk-5CXR2TVW.js", "/build/_shared/chunk-VWA7GDXL.js", "/build/_shared/chunk-YXWGUDJM.js", "/build/_shared/chunk-7YLU2DAD.js", "/build/_shared/chunk-4DGX6SSC.js", "/build/_shared/chunk-M7P3TKQF.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses": { id: "routes/account.addresses", parentId: "root", path: "account/addresses", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses-47XDYD6H.js", imports: ["/build/_shared/chunk-LLB2Z6OP.js", "/build/_shared/chunk-4DGX6SSC.js", "/build/_shared/chunk-M7P3TKQF.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.$addressId": { id: "routes/account.addresses.$addressId", parentId: "root", path: "account/addresses/:addressId", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.$addressId-5KT6SIZF.js", imports: ["/build/_shared/chunk-FJ7A7FL3.js", "/build/_shared/chunk-LVP56BER.js", "/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-VWA7GDXL.js", "/build/_shared/chunk-YXWGUDJM.js", "/build/_shared/chunk-7YLU2DAD.js", "/build/_shared/chunk-M7P3TKQF.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.new": { id: "routes/account.addresses.new", parentId: "root", path: "account/addresses/new", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.new-MQ3CPMTC.js", imports: ["/build/_shared/chunk-FJ7A7FL3.js", "/build/_shared/chunk-LVP56BER.js", "/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-VWA7GDXL.js", "/build/_shared/chunk-YXWGUDJM.js", "/build/_shared/chunk-7YLU2DAD.js", "/build/_shared/chunk-M7P3TKQF.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.history": { id: "routes/account.history", parentId: "root", path: "account/history", index: void 0, caseSensitive: void 0, module: "/build/routes/account.history-QFX32D7F.js", imports: ["/build/_shared/chunk-CV6JFXQJ.js", "/build/_shared/chunk-LVP56BER.js", "/build/_shared/chunk-7YLU2DAD.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.password": { id: "routes/account.password", parentId: "root", path: "account/password", index: void 0, caseSensitive: void 0, module: "/build/routes/account.password-ES7K3NQS.js", imports: ["/build/_shared/chunk-YXWGUDJM.js", "/build/_shared/chunk-7YLU2DAD.js", "/build/_shared/chunk-4DGX6SSC.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.active-order": { id: "routes/api.active-order", parentId: "root", path: "api/active-order", index: void 0, caseSensitive: void 0, module: "/build/routes/api.active-order-VQJ67ND7.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.create-razorpay-order": { id: "routes/api.create-razorpay-order", parentId: "root", path: "api/create-razorpay-order", index: void 0, caseSensitive: void 0, module: "/build/routes/api.create-razorpay-order-OKLRUALR.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.logout": { id: "routes/api.logout", parentId: "root", path: "api/logout", index: void 0, caseSensitive: void 0, module: "/build/routes/api.logout-O22KF3EY.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout": { id: "routes/checkout", parentId: "root", path: "checkout", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout-5Y333BQB.js", imports: ["/build/_shared/chunk-STYGSMUW.js", "/build/_shared/chunk-4DWX7LRS.js", "/build/_shared/chunk-5CXR2TVW.js", "/build/_shared/chunk-2ZR7LTHW.js", "/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-LLB2Z6OP.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout._index": { id: "routes/checkout._index", parentId: "root", path: "checkout/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout._index-TVPC733E.js", imports: ["/build/_shared/chunk-4DWX7LRS.js", "/build/_shared/chunk-5CXR2TVW.js", "/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-LLB2Z6OP.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.confirmation.$orderCode": { id: "routes/checkout.confirmation.$orderCode", parentId: "root", path: "checkout/confirmation/:orderCode", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.confirmation.$orderCode-HNPNEFIT.js", imports: ["/build/_shared/chunk-2ZR7LTHW.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.payment": { id: "routes/checkout.payment", parentId: "root", path: "checkout/payment", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.payment-ZXN4M2FH.js", imports: ["/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/collections.$slug": { id: "routes/collections.$slug", parentId: "root", path: "collections/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/collections.$slug-CJ23D3V3.js", imports: ["/build/_shared/chunk-EQYV72WK.js", "/build/_shared/chunk-GTO7NBHF.js", "/build/_shared/chunk-SJE24KVT.js", "/build/_shared/chunk-V4CT6AUT.js", "/build/_shared/chunk-CV6JFXQJ.js", "/build/_shared/chunk-LVP56BER.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-7YLU2DAD.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/coupon": { id: "routes/coupon", parentId: "root", path: "coupon", index: void 0, caseSensitive: void 0, module: "/build/routes/coupon-BTOXCUWJ.js", imports: ["/build/_shared/chunk-STYGSMUW.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/index": { id: "routes/index", parentId: "root", path: void 0, index: !0, caseSensitive: void 0, module: "/build/routes/index-VPAGNYMX.js", imports: ["/build/_shared/chunk-EQYV72WK.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/products.$slug": { id: "routes/products.$slug", parentId: "root", path: "products/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/products.$slug-554RHGHV.js", imports: ["/build/_shared/chunk-GTO7NBHF.js", "/build/_shared/chunk-V4CT6AUT.js", "/build/_shared/chunk-4AREG525.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/search": { id: "routes/search", parentId: "root", path: "search", index: void 0, caseSensitive: void 0, module: "/build/routes/search-6QLPJNBB.js", imports: ["/build/_shared/chunk-SJE24KVT.js", "/build/_shared/chunk-V4CT6AUT.js", "/build/_shared/chunk-CV6JFXQJ.js", "/build/_shared/chunk-LVP56BER.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-7YLU2DAD.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-in": { id: "routes/sign-in", parentId: "root", path: "sign-in", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-in-4YXQWNGC.js", imports: ["/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.index": { id: "routes/sign-up.index", parentId: "root", path: "sign-up", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.index-YGWXG6ZO.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.success": { id: "routes/sign-up.success", parentId: "root", path: "sign-up/success", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.success-OUZEB67Q.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify": { id: "routes/verify", parentId: "root", path: "verify", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-PWGO3WS6.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify-email-address-change": { id: "routes/verify-email-address-change", parentId: "root", path: "verify-email-address-change", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-email-address-change-7PRVCHRI.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 } }, version: "15ef39fd", hmr: { runtime: "/build/_shared/chunk-IL77MFZH.js", timestamp: 1745411027173 }, url: "/build/manifest-15EF39FD.js" };
+var assets_manifest_default = { entry: { module: "/build/entry.client-HWFSSZYX.js", imports: ["/build/_shared/chunk-OAPPX4FA.js", "/build/_shared/chunk-7LRNVKNK.js", "/build/_shared/chunk-R6B7HXW6.js", "/build/_shared/chunk-7PHB3BFD.js", "/build/_shared/chunk-IL77MFZH.js", "/build/_shared/chunk-JR22VO6P.js", "/build/_shared/chunk-WEAPBHQG.js", "/build/_shared/chunk-CJ4MY3PQ.js", "/build/_shared/chunk-PZDJHGND.js"] }, routes: { root: { id: "root", parentId: void 0, path: "", index: void 0, caseSensitive: void 0, module: "/build/root-Z4O6RWYS.js", imports: ["/build/_shared/chunk-G4FX3M25.js", "/build/_shared/chunk-FFLUTPB2.js", "/build/_shared/chunk-DYN6EWA5.js", "/build/_shared/chunk-VJPBPB7U.js", "/build/_shared/chunk-2QJY4JOV.js", "/build/_shared/chunk-QZYG7WHP.js", "/build/_shared/chunk-65HDGKFV.js", "/build/_shared/chunk-R5BHNF67.js", "/build/_shared/chunk-4KYYPW5T.js", "/build/_shared/chunk-76TTLXDT.js", "/build/_shared/chunk-L7FVEPUN.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !0 }, "routes/account": { id: "routes/account", parentId: "root", path: "account", index: void 0, caseSensitive: void 0, module: "/build/routes/account-CQGX52OB.js", imports: void 0, hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account._index": { id: "routes/account._index", parentId: "root", path: "account/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/account._index-2QLVVQLL.js", imports: ["/build/_shared/chunk-5CXR2TVW.js", "/build/_shared/chunk-VWA7GDXL.js", "/build/_shared/chunk-WMBKO5J4.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-4DGX6SSC.js", "/build/_shared/chunk-M7P3TKQF.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses": { id: "routes/account.addresses", parentId: "root", path: "account/addresses", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses-TPZ5CTRX.js", imports: ["/build/_shared/chunk-OSLFIIIM.js", "/build/_shared/chunk-4DGX6SSC.js", "/build/_shared/chunk-M7P3TKQF.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.$addressId": { id: "routes/account.addresses.$addressId", parentId: "root", path: "account/addresses/:addressId", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.$addressId-VQNQG4N4.js", imports: ["/build/_shared/chunk-TSQXDFFW.js", "/build/_shared/chunk-S5VQQFJR.js", "/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-VWA7GDXL.js", "/build/_shared/chunk-WMBKO5J4.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-M7P3TKQF.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.new": { id: "routes/account.addresses.new", parentId: "root", path: "account/addresses/new", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.new-KWSH7RWI.js", imports: ["/build/_shared/chunk-TSQXDFFW.js", "/build/_shared/chunk-S5VQQFJR.js", "/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-VWA7GDXL.js", "/build/_shared/chunk-WMBKO5J4.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-M7P3TKQF.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.history": { id: "routes/account.history", parentId: "root", path: "account/history", index: void 0, caseSensitive: void 0, module: "/build/routes/account.history-KZPTFVTN.js", imports: ["/build/_shared/chunk-6LMZTMWA.js", "/build/_shared/chunk-S5VQQFJR.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.password": { id: "routes/account.password", parentId: "root", path: "account/password", index: void 0, caseSensitive: void 0, module: "/build/routes/account.password-6JZK2FGO.js", imports: ["/build/_shared/chunk-WMBKO5J4.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-4DGX6SSC.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.active-order": { id: "routes/api.active-order", parentId: "root", path: "api/active-order", index: void 0, caseSensitive: void 0, module: "/build/routes/api.active-order-VQJ67ND7.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.create-razorpay-order": { id: "routes/api.create-razorpay-order", parentId: "root", path: "api/create-razorpay-order", index: void 0, caseSensitive: void 0, module: "/build/routes/api.create-razorpay-order-OKLRUALR.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.logout": { id: "routes/api.logout", parentId: "root", path: "api/logout", index: void 0, caseSensitive: void 0, module: "/build/routes/api.logout-O22KF3EY.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout": { id: "routes/checkout", parentId: "root", path: "checkout", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout-A3RSZHSK.js", imports: ["/build/_shared/chunk-TVGSDJHK.js", "/build/_shared/chunk-MYXDBJLY.js", "/build/_shared/chunk-5CXR2TVW.js", "/build/_shared/chunk-2ZR7LTHW.js", "/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-OSLFIIIM.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout._index": { id: "routes/checkout._index", parentId: "root", path: "checkout/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout._index-BOG6QVC7.js", imports: ["/build/_shared/chunk-MYXDBJLY.js", "/build/_shared/chunk-5CXR2TVW.js", "/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-OSLFIIIM.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.confirmation.$orderCode": { id: "routes/checkout.confirmation.$orderCode", parentId: "root", path: "checkout/confirmation/:orderCode", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.confirmation.$orderCode-S4BAI4SP.js", imports: ["/build/_shared/chunk-2ZR7LTHW.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.payment": { id: "routes/checkout.payment", parentId: "root", path: "checkout/payment", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.payment-2KLA36TQ.js", imports: ["/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/collections.$slug": { id: "routes/collections.$slug", parentId: "root", path: "collections/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/collections.$slug-JWG6E52K.js", imports: ["/build/_shared/chunk-644AQX3J.js", "/build/_shared/chunk-UT3TQV5A.js", "/build/_shared/chunk-N7INIBU6.js", "/build/_shared/chunk-V4CT6AUT.js", "/build/_shared/chunk-6LMZTMWA.js", "/build/_shared/chunk-S5VQQFJR.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/coupon": { id: "routes/coupon", parentId: "root", path: "coupon", index: void 0, caseSensitive: void 0, module: "/build/routes/coupon-GF625F3J.js", imports: ["/build/_shared/chunk-TVGSDJHK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/index": { id: "routes/index", parentId: "root", path: void 0, index: !0, caseSensitive: void 0, module: "/build/routes/index-QYTMMFZM.js", imports: ["/build/_shared/chunk-644AQX3J.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/products.$slug": { id: "routes/products.$slug", parentId: "root", path: "products/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/products.$slug-JS7L4UOI.js", imports: ["/build/_shared/chunk-UT3TQV5A.js", "/build/_shared/chunk-V4CT6AUT.js", "/build/_shared/chunk-4AREG525.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/search": { id: "routes/search", parentId: "root", path: "search", index: void 0, caseSensitive: void 0, module: "/build/routes/search-AMLAM5V7.js", imports: ["/build/_shared/chunk-N7INIBU6.js", "/build/_shared/chunk-V4CT6AUT.js", "/build/_shared/chunk-6LMZTMWA.js", "/build/_shared/chunk-S5VQQFJR.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-in": { id: "routes/sign-in", parentId: "root", path: "sign-in", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-in-N27ZGLBY.js", imports: ["/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.index": { id: "routes/sign-up.index", parentId: "root", path: "sign-up", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.index-DU7ZB4RP.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.success": { id: "routes/sign-up.success", parentId: "root", path: "sign-up/success", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.success-T5IWIIEU.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify": { id: "routes/verify", parentId: "root", path: "verify", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-F4IVJ7BF.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify-email-address-change": { id: "routes/verify-email-address-change", parentId: "root", path: "verify-email-address-change", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-email-address-change-3IJDNB6S.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 } }, version: "dcfb5a44", hmr: { runtime: "/build/_shared/chunk-IL77MFZH.js", timestamp: 1745487285961 }, url: "/build/manifest-DCFB5A44.js" };
 
 // server-entry-module:@remix-run/dev/server-build
 var mode = "development", assetsBuildDirectory = "public/build", future = { v3_fetcherPersist: !1, v3_relativeSplatPath: !1 }, publicPath = "/build/", entry = { module: entry_server_exports }, routes = {

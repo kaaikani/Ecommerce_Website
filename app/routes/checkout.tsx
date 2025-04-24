@@ -179,9 +179,7 @@ export default function Checkout() {
                   adjustOrderLine={adjustOrderLine}
                 />
                 <CouponsComponent/>
-
                 <CartTotals order={activeOrder as any} />
-                
               </div>
             </div>
           )}
