@@ -56,7 +56,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   return json({ couponCodes, activeOrder });
 };
 
-// Action to handle coupon application, removal, and product variant addition/removal
+// Action to handle coupon application and removal
 export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
   const couponCode = formData.get('couponCode') as string;
@@ -76,45 +76,26 @@ export const action: ActionFunction = async ({ request }) => {
         return json({ error: 'Invalid coupon code.' }, { status: 400 });
       }
 
-      // --- Fixed minimum amount condition check ---
       const minAmountCondition = coupon.conditions.find(
-        (c) =>
-          c.code === 'minimum_order_amount' ||
-          c.code === 'minimumOrderAmount' ||
-          c.code === 'minimumAmount'
+        (c) => c.code === 'minimum_order_amount' || c.code === 'minimumOrderAmount' || c.code === 'minimumAmount'
       );
 
       if (minAmountCondition) {
-        // Prefer arg named 'amount', fallback to first arg
-        const amountArg =
-          minAmountCondition.args.find((a) => a.name === 'amount') ??
-          minAmountCondition.args[0];
+        const amountArg = minAmountCondition.args.find((a) => a.name === 'amount') ?? minAmountCondition.args[0];
         const minAmountPaise = parseInt(amountArg.value, 10) || 0;
-
-        // Fetch current order totalWithTax in paise
         const order = await getActiveOrder(options);
         const totalWithTaxPaise = order?.totalWithTax ?? 0;
-
-        console.log(
-          `Coupon requires ≥ ${minAmountPaise} paise; order total is ${totalWithTaxPaise} paise.`
-        );
 
         if (totalWithTaxPaise < minAmountPaise) {
           const diffPaise = minAmountPaise - totalWithTaxPaise;
           const diffRupees = (diffPaise / 100).toFixed(2);
           return json(
-            {
-              error: `Add ₹${diffRupees} more to apply this coupon. Current total: ₹${(
-                totalWithTaxPaise / 100
-              ).toFixed(2)}.`,
-            },
+            { error: `Add ₹${diffRupees} more to apply this coupon. Current total: ₹${(totalWithTaxPaise / 100).toFixed(2)}.` },
             { status: 400 }
           );
         }
       }
-      // -----------------------------------------
 
-      // Check if cart is empty and add product variants if needed
       const activeOrder = await getActiveOrder(options);
       const cartItems = activeOrder?.lines ?? [];
       const variantIds: string[] = [];
@@ -138,11 +119,9 @@ export const action: ActionFunction = async ({ request }) => {
           }
         }
 
-        // Add unique variants to cart via /api/active-order
         const existingVariantIds = new Set(cartItems.map(item => item.productVariant.id));
         for (const variantId of variantIds) {
           if (!existingVariantIds.has(variantId)) {
-            console.log(`Adding variant ${variantId} to cart`);
             const addFormData = new FormData();
             addFormData.append('action', 'addItemToOrder');
             addFormData.append('variantId', variantId);
@@ -153,7 +132,6 @@ export const action: ActionFunction = async ({ request }) => {
             });
             const addResult: ActiveOrderResponse = await addResponse.json();
             if (addResult.error) {
-              console.error(`Failed to add variant ${variantId}: ${addResult.error}`);
               return json(
                 { error: `Failed to add product variant ${variantId} to cart: ${addResult.error}` },
                 { status: 400 }
@@ -163,12 +141,9 @@ export const action: ActionFunction = async ({ request }) => {
         }
       }
 
-      // Apply the coupon
-      console.log(`Applying coupon: ${couponCode}`);
       const result = await applyCouponCode(couponCode, options);
       if (result?.__typename === 'Order') {
         const order = result as Order;
-        console.log(`Coupon ${couponCode} applied successfully. New total: ${order.totalWithTax} paise`);
         return json({
           success: true,
           message: `Coupon "${couponCode}" applied to your order!${
@@ -188,14 +163,12 @@ export const action: ActionFunction = async ({ request }) => {
         return json({ error: err.message || 'Coupon usage limit reached.' }, { status: 400 });
       }
 
-      console.error('Unexpected response from applyCouponCode:', result);
       return json({ error: 'Unexpected response from server.' }, { status: 500 });
     } catch (error) {
       console.error('Failed to apply coupon:', error);
       return json({ error: 'An error occurred while applying the coupon.' }, { status: 500 });
     }
   } else if (actionType === 'remove') {
-    // ... (remove logic unchanged) ...
     if (!couponCode) {
       return json({ error: 'Coupon code is required for removal.' }, { status: 400 });
     }
@@ -209,7 +182,6 @@ export const action: ActionFunction = async ({ request }) => {
         return json({ error: 'Invalid coupon code.' }, { status: 400 });
       }
 
-      // Collect variant IDs associated with the coupon
       const variantIdsToRemove: string[] = [];
       for (const condition of coupon.conditions) {
         if (condition.code === 'productVariantIds') {
@@ -234,7 +206,6 @@ export const action: ActionFunction = async ({ request }) => {
       const cartItems = activeOrder?.lines ?? [];
       for (const item of cartItems) {
         if (variantIdsToRemove.includes(item.productVariant.id)) {
-          console.log(`Removing variant ${item.productVariant.id} from cart`);
           const removeFormData = new FormData();
           removeFormData.append('action', 'removeOrderLine');
           removeFormData.append('orderLineId', item.id);
@@ -245,7 +216,6 @@ export const action: ActionFunction = async ({ request }) => {
           });
           const removeResult: ActiveOrderResponse = await removeResponse.json();
           if (removeResult.error) {
-            console.error(`Failed to remove variant ${item.productVariant.id}: ${removeResult.error}`);
             return json(
               { error: `Failed to remove product variant ${item.productVariant.id} from cart: ${removeResult.error}` },
               { status: 400 }
@@ -254,7 +224,6 @@ export const action: ActionFunction = async ({ request }) => {
         }
       }
 
-      console.log(`Removing coupon: ${couponCode}`);
       const result = await removeCouponCode(couponCode, { request });
       if (result?.__typename === 'Order') {
         const order = result as Order;
@@ -276,22 +245,37 @@ export const action: ActionFunction = async ({ request }) => {
   return json({ error: 'Invalid action type.' }, { status: 400 });
 };
 
-export default function CouponsComponent({ order, }: { order?: OrderDetailFragment | null; }) {
-  const { couponCodes, activeOrder } = useLoaderData<{ couponCodes: Coupon[]; activeOrder: Order | null; }>();
-  const actionData = useActionData<{ success?: boolean; message?: string; error?: string; orderTotal?: number; appliedCoupon?: string | null; }>();
- 
+// Gradient color pairs for a luxurious feel
+const couponGradients = [
+  ['#FF6F61', '#DE1A82'], // Coral to Magenta
+  ['#6B7280', '#1F2937'], // Gray to Dark Gray
+  ['#FBBF24', '#F59E0B'], // Amber to Deep Orange
+  ['#34D399', '#059669'], // Teal to Emerald
+  ['#A78BFA', '#7C3AED'], // Lavender to Purple
+];
+
+export default function CouponsComponent({ order }: { order?: OrderDetailFragment | null }) {
+  const { couponCodes, activeOrder } = useLoaderData<{ couponCodes: Coupon[]; activeOrder: Order | null }>();
+  const actionData = useActionData<{
+    success?: boolean;
+    message?: string;
+    error?: string;
+    orderTotal?: number;
+    appliedCoupon?: string | null;
+  }>();
+
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [couponToRemove, setCouponToRemove] = useState<string | null>(null);
+
   useEffect(() => {
     if (actionData?.error) {
-      // Custom logic to detect "add ₹XXX more" error and format it
       const match = actionData.error.match(/Add ₹([\d.]+) more to apply this coupon/);
       if (match) {
         const extraAmount = match[1];
         setErrorMessage(
-          `🚫 Not eligible yet! You need to add ₹${extraAmount} more worth of products to activate this coupon code.`
+          `🚫 Not eligible yet! Add ₹${extraAmount} more to unlock this coupon.`
         );
       } else {
         setErrorMessage(actionData.error);
@@ -299,13 +283,6 @@ export default function CouponsComponent({ order, }: { order?: OrderDetailFragme
       setShowErrorModal(true);
     }
   }, [actionData?.error]);
-  
-  // useEffect(() => {
-  //   if (actionData?.error) {
-  //     setErrorMessage(actionData.error);
-  //     setShowErrorModal(true);
-  //   }
-  // }, [actionData?.error]);
 
   const closeErrorModal = () => {
     setShowErrorModal(false);
@@ -324,7 +301,6 @@ export default function CouponsComponent({ order, }: { order?: OrderDetailFragme
 
   const confirmRemoveCoupon = () => {
     if (couponToRemove) {
-      // Submit the removal form programmatically
       const form = document.createElement('form');
       form.method = 'POST';
       form.style.display = 'none';
@@ -349,23 +325,23 @@ export default function CouponsComponent({ order, }: { order?: OrderDetailFragme
   const rawTotal = actionData?.orderTotal ?? activeOrder?.totalWithTax ?? order?.totalWithTax ?? 0;
 
   return (
-    <div className="max-w-2xl mx-auto mt-8 p-6 bg-white rounded-xl shadow-lg">
+    <div className="max-w-5xl mx-auto mt-10 p-8 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-2xl">
+      {/* Load Google Fonts */}
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400&display=swap" rel="stylesheet" />
+
       {/* Error Modal */}
       {showErrorModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl transform transition-all duration-300 scale-100">
-            <div className="flex items-center gap-3 mb-4">
-              <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <h3 className="text-lg font-semibold text-gray-900">Coupon Error</h3>
-            </div>
-            <p className="text-gray-600 mb-6">{errorMessage}</p>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-lg backdrop-blur-md bg-opacity-90">
+            <h3 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+              <span className="text-red-500">⚠️</span> Oops!
+            </h3>
+            <p className="text-gray-700 mb-4">{errorMessage}</p>
             <button
               onClick={closeErrorModal}
-              className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors duration-200"
+              className="w-full py-2 px-4 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
             >
-              Close
+              Got It
             </button>
           </div>
         </div>
@@ -373,60 +349,57 @@ export default function CouponsComponent({ order, }: { order?: OrderDetailFragme
 
       {/* Confirmation Modal */}
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl transform transition-all duration-300 scale-100">
-            <div className="flex items-center gap-3 mb-4">
-              <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <h3 className="text-lg font-semibold text-gray-900">Remove Coupon?</h3>
-            </div>
-            <p className="text-gray-600 mb-6">
-              This will remove the coupon and associated product(s) from your cart. Are you sure?
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-lg backdrop-blur-md bg-opacity-90">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Confirm Removal</h3>
+            <p className="text-gray-700 mb-4">
+              Remove this coupon and its products from your cart?
             </p>
-            <div className="flex justify-end gap-3">
+            <div className="flex gap-3">
               <button
                 onClick={closeConfirmModal}
-                className="px-4 py-2 rounded-md text-sm font-medium bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors"
+                className="flex-1 py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmRemoveCoupon}
-                className="px-4 py-2 rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
+                className="flex-1 py-2 px-4 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
               >
-                Yes, Remove
+                Remove
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <div className="mb-6">
-        <h2 className="text-4xl font-bold text-gray-900">
+      <div className="mb-8 text-center">
+        <h2 className="text-3xl font-bold text-gray-800 ">
           Order Total: <Price priceWithTax={rawTotal} currencyCode={activeOrder?.currencyCode ?? CurrencyCode.Inr} />
         </h2>
       </div>
-      <h3 className="text-2xl font-bold text-gray-900 mb-6">Available Coupons</h3>
+      <h3 className="text-2xl font-semibold text-gray-800 mb-6  text-center">
+        Exclusive Offers
+      </h3>
 
       {actionData?.message && (
         <div
-          className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${
+          className={`mb-6 p-4 rounded-lg flex items-center gap-2 text-sm ${
             actionData.success
-              ? 'bg-green-100 text-green-800 border border-green-300'
-              : 'bg-red-100 text-red-800 border border-red-300'
-          }`}
+              ? 'bg-green-100 text-green-800 border-green-300'
+              : 'bg-red-100 text-red-800 border-red-300'
+          } border`}
         >
-          {actionData.message}
+          <span>{actionData.success ? '✅' : '❌'}</span> {actionData.message}
         </div>
       )}
 
       {enabledCoupons.length > 0 ? (
-        <div className="space-y-4">
-          {enabledCoupons.map((coupon) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {enabledCoupons.map((coupon, index) => {
             const isApplied = appliedCoupon === coupon.couponCode;
+            const gradient = couponGradients[index % couponGradients.length];
 
-            // Get product variant names for display
             const variantNames: string[] = [];
             for (const condition of coupon.conditions) {
               if (condition.code === 'productVariantIds') {
@@ -459,19 +432,23 @@ export default function CouponsComponent({ order, }: { order?: OrderDetailFragme
 
             return (
               <div
-                key={coupon.id}
-                className={`p-4 rounded-lg border transition-all duration-200 ${
-                  isApplied
-                    ? 'bg-green-50 border-green-200'
-                    : 'bg-gray-50 border-gray-200 hover:shadow-md'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-3">
+              key={coupon.id}
+              className={`coupon-ticket relative p-6 rounded-xl shadow-xl overflow-hidden transform transition-all duration-300 hover:scale-105 backdrop-blur-md ${isApplied ? 'ring-2 ring-green-500' : 'ring-1 ring-gray-200'}`}
+              style={{
+                background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})`,
+              }}
+            >
+              {/* Ticket Cutouts */}
+              <div className="absolute -left-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-gray-100 rounded-full"></div>
+              <div className="absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-gray-100 rounded-full"></div>
+            
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
                   <div>
-                    <span className="text-lg font-semibold text-gray-900">
+                    <span className="coupon-code text-xl font-bold text-white tracking-wide">
                       {coupon.couponCode}
                     </span>
-                    <span className="ml-2 text-sm text-gray-600">({coupon.name})</span>
+                    <span className="ml-2 text-sm text-white/90">({coupon.name})</span>
                   </div>
                   <Form method="post">
                     <input type="hidden" name="actionType" value={isApplied ? 'remove' : 'apply'} />
@@ -484,68 +461,97 @@ export default function CouponsComponent({ order, }: { order?: OrderDetailFragme
                           openConfirmModal(coupon.couponCode ?? '');
                         }
                       }}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        isApplied
-                          ? 'bg-red-600 hover:bg-red-700 text-white'
-                          : 'bg-blue-600 hover:bg-blue-700 text-white'
-                      }`}
+                      className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 shadow-md ${isApplied ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-white hover:bg-gray-100 text-gray-800'}`}
                     >
                       {isApplied ? 'Remove' : 'Apply'}
                     </button>
                   </Form>
                 </div>
-                <div className="text-sm text-gray-600 space-y-2">
+                <div className="text-sm text-white/90 space-y-2 ">
                   <p>
-                    <strong>Description:</strong> <div dangerouslySetInnerHTML={{ __html: coupon.description  || "No discription  avalible" }} />
-
+                    <strong className="">Details:</strong>{' '}
+                    <span dangerouslySetInnerHTML={{ __html: coupon.description || 'No details' }} />
                   </p>
                   {variantNames.length > 0 && (
                     <p>
-                      <strong>Products:</strong> {variantNames.join(', ')}
+                      <strong className="">Products:</strong> {variantNames.join(', ')}
                     </p>
                   )}
-                {coupon.conditions.length > 0 && (
-  <div>
-    <strong>Conditions:</strong>
-    <ul className="list-disc list-inside ml-4">
-      {coupon.conditions.map((condition, index) => (
-        <li key={index}>
-          {condition.code}: {' '}
-          {condition.args.map((arg, i) => {
-            if (condition.code === 'minimum_order_amount' && i === 0) {
-              // Convert only the first arg of 'minimum_order_amount'
-              return `₹${(parseInt(arg.value) / 100).toFixed(2)}`;
-            } else {
-              return arg.value;
-            }
-          }).join(', ')}
-        </li>
-      ))}
-    </ul>
-  </div>
-)}
-
+                  {coupon.conditions.length > 0 && (
+                    <div>
+                      {/* <strong className="">Conditions:</strong>
+                      <ul className="list-disc list-inside ml-2">
+                        {coupon.conditions.map((condition, index) => (
+                          <li key={index}>
+                            {condition.code}:{' '}
+                            {condition.args.map((arg, i) => {
+                              if (condition.code === 'minimum_order_amount' && i === 0) {
+                                return `₹${(parseInt(arg.value) / 100).toFixed(2)}`;
+                              } else {
+                                return arg.value;
+                              }
+                            }).join(', ')}
+                          </li>
+                        ))}
+                      </ul> */}
+                    </div>
+                  )}
                   {coupon.endsAt && (
                     <p>
-                      <strong>Expires:</strong>{' '}
-                      {new Date(coupon.endsAt).toLocaleDateString()}
-                    </p>
-                  )}
-                  {coupon.usageLimit && (
-                    <p>
-                      <strong>Usage Limit:</strong> {coupon.usageLimit}
+                      <strong className="">Expires:</strong> {new Date(coupon.endsAt).toLocaleDateString()}
                     </p>
                   )}
                 </div>
               </div>
+            </div>
             );
           })}
         </div>
       ) : (
-        <p className="text-center text-gray-500 py-4">
-          No enabled coupon codes available at the moment.
-        </p>
+        <p className="text-center text-gray-600 py-4 ">No exclusive offers available right now.</p>
       )}
+      <style>
+        {`
+          .coupon-ticket {
+            position: relative;
+            background-size: 200% 200%;
+            animation: gradientShift 8s ease-in-out infinite;
+          }
+          .coupon-ticket::before,
+          .coupon-ticket::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            opacity: 0;
+            animation: particle 3s infinite ease-in-out;
+          }
+          .coupon-ticket::before {
+            top: 15%;
+            left: 10%;
+            animation-delay: 0.5s;
+          }
+          .coupon-ticket::after {
+            bottom: 20%;
+            right: 15%;
+            animation-delay: 1.5s;
+          }
+          @keyframes gradientShift {
+            0% { background-position: 0% 0%; }
+            50% { background-position: 100% 100%; }
+            100% { background-position: 0% 0%; }
+          }
+          @keyframes particle {
+            0%, 100% { opacity: 0; transform: scale(0.5) translateY(10px); }
+            50% { opacity: 1; transform: scale(1) translateY(0); }
+          }
+          .coupon-code {
+            font-family: '['Playfair_Display']', serif;
+          }
+        `}
+      </style>
     </div>
   );
 }

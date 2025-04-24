@@ -13,7 +13,8 @@ import { OutletContext } from '~/types';
 import { classNames } from '~/utils/class-names';
 import CheckoutShipping from '~/routes/checkout._index'; // Import CheckoutShipping component
 import CouponsComponent from './coupon';
-  
+import { Link } from '@remix-run/react';
+
 // Define the type for the loader data
 type LoaderData = {
   availableCountries: any; // Replace with actual type
@@ -178,7 +179,16 @@ export default function Checkout() {
                   removeItem={removeItem}
                   adjustOrderLine={adjustOrderLine}
                 />
-                <CouponsComponent/>
+               <div className="mt-4">
+  <Link to="/coupon">
+    <button
+      type="button"
+      className="w-full bg-primary-600 text-white font-medium py-2 px-4 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
+    >
+      {t('checkout.availOffer')} {/* Assuming you have a translation key for "Avail Our Offers" */}
+    </button>
+  </Link>
+</div>
                 <CartTotals order={activeOrder as any} />
               </div>
             </div>

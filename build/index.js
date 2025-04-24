@@ -1295,7 +1295,7 @@ import {
 } from "@remix-run/react";
 
 // app/tailwind.css
-var tailwind_default = "/build/_assets/tailwind-EGM2NF2Y.css";
+var tailwind_default = "/build/_assets/tailwind-DSGOW3AB.css";
 
 // app/components/header/Header.tsx
 import { Link } from "@remix-run/react";
@@ -5968,7 +5968,7 @@ function AddAddressCard() {
     Link6,
     {
       preventScrollReset: !0,
-      className: "border border-green-500 p-5 min-h-[100px] h-full w-full flex flex-col justify-between mt-3",
+      className: "border border-black-500 p-5 min-h-[100px] h-full w-full flex flex-col justify-between mt-3",
       to: "/account/addresses/new",
       children: [
         /* @__PURE__ */ jsxDEV22("span", { className: "text-base-semi", children: t("address.new") }, void 0, !1, {
@@ -13171,561 +13171,24 @@ async function loader14() {
 // app/routes/checkout.tsx
 var checkout_exports = {};
 __export(checkout_exports, {
-  action: () => action14,
+  action: () => action13,
   default: () => Checkout,
-  loader: () => loader16
+  loader: () => loader15
 });
-import { useLoaderData as useLoaderData17 } from "@remix-run/react";
-import { json as json16, redirect as redirect11 } from "@remix-run/node";
+import { useLoaderData as useLoaderData16 } from "@remix-run/react";
+import { json as json15, redirect as redirect11 } from "@remix-run/node";
 import { useTranslation as useTranslation41 } from "react-i18next";
 import { ChevronRightIcon as ChevronRightIcon2 } from "@heroicons/react/24/solid";
 import { useLocation as useLocation2, useOutletContext as useOutletContext4 } from "@remix-run/react";
-
-// app/routes/coupon.tsx
-var coupon_exports = {};
-__export(coupon_exports, {
-  action: () => action13,
-  default: () => CouponsComponent,
-  loader: () => loader15
-});
-import { json as json15 } from "@remix-run/node";
-import { useLoaderData as useLoaderData16, Form as Form7, useActionData as useActionData6 } from "@remix-run/react";
-import { useEffect as useEffect14, useState as useState14 } from "react";
+import { Link as Link13 } from "@remix-run/react";
 import { jsxDEV as jsxDEV58 } from "react/jsx-dev-runtime";
-var loader15 = async ({ request }) => {
-  let options = { request }, couponCodes = await getCouponCodeList(options), activeOrder = await getActiveOrder(options);
-  return json15({ couponCodes, activeOrder });
-}, action13 = async ({ request }) => {
-  let formData = await request.formData(), couponCode = formData.get("couponCode"), actionType = formData.get("actionType");
-  if (actionType === "apply") {
-    if (!couponCode)
-      return json15({ error: "Coupon code is required." }, { status: 400 });
-    try {
-      let options = { request }, coupon = (await getCouponCodeList(options)).find((c) => c.couponCode === couponCode);
-      if (!coupon || !coupon.couponCode)
-        return json15({ error: "Invalid coupon code." }, { status: 400 });
-      let minAmountCondition = coupon.conditions.find(
-        (c) => c.code === "minimum_order_amount" || c.code === "minimumOrderAmount" || c.code === "minimumAmount"
-      );
-      if (minAmountCondition) {
-        let amountArg = minAmountCondition.args.find((a) => a.name === "amount") ?? minAmountCondition.args[0], minAmountPaise = parseInt(amountArg.value, 10) || 0, totalWithTaxPaise = (await getActiveOrder(options))?.totalWithTax ?? 0;
-        if (console.log(
-          `Coupon requires \u2265 ${minAmountPaise} paise; order total is ${totalWithTaxPaise} paise.`
-        ), totalWithTaxPaise < minAmountPaise) {
-          let diffRupees = ((minAmountPaise - totalWithTaxPaise) / 100).toFixed(2);
-          return json15(
-            {
-              error: `Add \u20B9${diffRupees} more to apply this coupon. Current total: \u20B9${(totalWithTaxPaise / 100).toFixed(2)}.`
-            },
-            { status: 400 }
-          );
-        }
-      }
-      let cartItems = (await getActiveOrder(options))?.lines ?? [], variantIds = [];
-      if (cartItems.length === 0) {
-        for (let condition of coupon.conditions)
-          if (condition.code === "productVariantIds") {
-            for (let arg of condition.args)
-              if (arg.name === "productVariantIds")
-                try {
-                  let parsedIds = JSON.parse(arg.value);
-                  Array.isArray(parsedIds) ? variantIds.push(...parsedIds.map((id) => id.toString())) : variantIds.push(arg.value);
-                } catch {
-                  variantIds.push(arg.value);
-                }
-          }
-        let existingVariantIds = new Set(cartItems.map((item) => item.productVariant.id));
-        for (let variantId of variantIds)
-          if (!existingVariantIds.has(variantId)) {
-            console.log(`Adding variant ${variantId} to cart`);
-            let addFormData = new FormData();
-            addFormData.append("action", "addItemToOrder"), addFormData.append("variantId", variantId);
-            let addResult = await (await fetch("/api/active-order", {
-              method: "POST",
-              body: addFormData,
-              headers: { Cookie: request.headers.get("Cookie") || "" }
-            })).json();
-            if (addResult.error)
-              return console.error(`Failed to add variant ${variantId}: ${addResult.error}`), json15(
-                { error: `Failed to add product variant ${variantId} to cart: ${addResult.error}` },
-                { status: 400 }
-              );
-          }
-      }
-      console.log(`Applying coupon: ${couponCode}`);
-      let result = await applyCouponCode(couponCode, options);
-      if (result?.__typename === "Order") {
-        let order = result;
-        return console.log(`Coupon ${couponCode} applied successfully. New total: ${order.totalWithTax} paise`), json15({
-          success: !0,
-          message: `Coupon "${couponCode}" applied to your order!${cartItems.length === 0 && variantIds.length > 0 ? " Required products added to cart." : ""}`,
-          orderTotal: order.totalWithTax,
-          appliedCoupon: couponCode
-        });
-      } else {
-        if (result?.__typename === "CouponCodeExpiredError")
-          return json15({ error: result.message || "Coupon code has expired." }, { status: 400 });
-        if (result?.__typename === "CouponCodeInvalidError")
-          return json15({ error: result.message || "Invalid coupon code." }, { status: 400 });
-        if (result?.__typename === "CouponCodeLimitError")
-          return json15({ error: result.message || "Coupon usage limit reached." }, { status: 400 });
-      }
-      return console.error("Unexpected response from applyCouponCode:", result), json15({ error: "Unexpected response from server." }, { status: 500 });
-    } catch (error) {
-      return console.error("Failed to apply coupon:", error), json15({ error: "An error occurred while applying the coupon." }, { status: 500 });
-    }
-  } else if (actionType === "remove") {
-    if (!couponCode)
-      return json15({ error: "Coupon code is required for removal." }, { status: 400 });
-    try {
-      let options = { request }, coupon = (await getCouponCodeList(options)).find((c) => c.couponCode === couponCode);
-      if (!coupon || !coupon.couponCode)
-        return json15({ error: "Invalid coupon code." }, { status: 400 });
-      let variantIdsToRemove = [];
-      for (let condition of coupon.conditions)
-        if (condition.code === "productVariantIds") {
-          for (let arg of condition.args)
-            if (arg.name === "productVariantIds")
-              try {
-                let parsedIds = JSON.parse(arg.value);
-                Array.isArray(parsedIds) ? variantIdsToRemove.push(...parsedIds.map((id) => id.toString())) : variantIdsToRemove.push(arg.value);
-              } catch {
-                variantIdsToRemove.push(arg.value);
-              }
-        }
-      let cartItems = (await getActiveOrder(options))?.lines ?? [];
-      for (let item of cartItems)
-        if (variantIdsToRemove.includes(item.productVariant.id)) {
-          console.log(`Removing variant ${item.productVariant.id} from cart`);
-          let removeFormData = new FormData();
-          removeFormData.append("action", "removeOrderLine"), removeFormData.append("orderLineId", item.id);
-          let removeResult = await (await fetch("/api/active-order", {
-            method: "POST",
-            body: removeFormData,
-            headers: { Cookie: request.headers.get("Cookie") || "" }
-          })).json();
-          if (removeResult.error)
-            return console.error(`Failed to remove variant ${item.productVariant.id}: ${removeResult.error}`), json15(
-              { error: `Failed to remove product variant ${item.productVariant.id} from cart: ${removeResult.error}` },
-              { status: 400 }
-            );
-        }
-      console.log(`Removing coupon: ${couponCode}`);
-      let result = await removeCouponCode(couponCode, { request });
-      return result?.__typename === "Order" ? json15({
-        success: !0,
-        message: "Coupon and associated products removed from your order.",
-        orderTotal: result.totalWithTax,
-        appliedCoupon: null
-      }) : json15({ error: "Failed to remove coupon." }, { status: 400 });
-    } catch (error) {
-      return console.error("Failed to remove coupon:", error), json15({ error: "An error occurred while removing the coupon." }, { status: 500 });
-    }
-  }
-  return json15({ error: "Invalid action type." }, { status: 400 });
-};
-function CouponsComponent({ order }) {
-  let { couponCodes, activeOrder } = useLoaderData16(), actionData = useActionData6(), [showErrorModal, setShowErrorModal] = useState14(!1), [errorMessage, setErrorMessage] = useState14(""), [showConfirmModal, setShowConfirmModal] = useState14(!1), [couponToRemove, setCouponToRemove] = useState14(null);
-  useEffect14(() => {
-    if (actionData?.error) {
-      let match = actionData.error.match(/Add ₹([\d.]+) more to apply this coupon/);
-      if (match) {
-        let extraAmount = match[1];
-        setErrorMessage(
-          `\u{1F6AB} Not eligible yet! You need to add \u20B9${extraAmount} more worth of products to activate this coupon code.`
-        );
-      } else
-        setErrorMessage(actionData.error);
-      setShowErrorModal(!0);
-    }
-  }, [actionData?.error]);
-  let closeErrorModal = () => {
-    setShowErrorModal(!1), setErrorMessage("");
-  }, openConfirmModal = (couponCode) => {
-    setCouponToRemove(couponCode), setShowConfirmModal(!0);
-  }, closeConfirmModal = () => {
-    setShowConfirmModal(!1), setCouponToRemove(null);
-  }, confirmRemoveCoupon = () => {
-    if (couponToRemove) {
-      let form = document.createElement("form");
-      form.method = "POST", form.style.display = "none";
-      let actionInput = document.createElement("input");
-      actionInput.type = "hidden", actionInput.name = "actionType", actionInput.value = "remove";
-      let couponInput = document.createElement("input");
-      couponInput.type = "hidden", couponInput.name = "couponCode", couponInput.value = couponToRemove, form.appendChild(actionInput), form.appendChild(couponInput), document.body.appendChild(form), form.submit(), closeConfirmModal();
-    }
-  }, enabledCoupons = couponCodes.filter((coupon) => coupon.enabled && coupon.couponCode), appliedCoupon = actionData?.appliedCoupon || activeOrder?.couponCodes?.[0], rawTotal = actionData?.orderTotal ?? activeOrder?.totalWithTax ?? order?.totalWithTax ?? 0;
-  return /* @__PURE__ */ jsxDEV58("div", { className: "max-w-2xl mx-auto mt-8 p-6 bg-white rounded-xl shadow-lg", children: [
-    showErrorModal && /* @__PURE__ */ jsxDEV58("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50", children: /* @__PURE__ */ jsxDEV58("div", { className: "bg-white rounded-lg p-6 max-w-md w-full shadow-2xl transform transition-all duration-300 scale-100", children: [
-      /* @__PURE__ */ jsxDEV58("div", { className: "flex items-center gap-3 mb-4", children: [
-        /* @__PURE__ */ jsxDEV58("svg", { className: "w-6 h-6 text-red-500", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDEV58("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" }, void 0, !1, {
-          fileName: "app/routes/coupon.tsx",
-          lineNumber: 359,
-          columnNumber: 17
-        }, this) }, void 0, !1, {
-          fileName: "app/routes/coupon.tsx",
-          lineNumber: 358,
-          columnNumber: 15
-        }, this),
-        /* @__PURE__ */ jsxDEV58("h3", { className: "text-lg font-semibold text-gray-900", children: "Coupon Error" }, void 0, !1, {
-          fileName: "app/routes/coupon.tsx",
-          lineNumber: 361,
-          columnNumber: 15
-        }, this)
-      ] }, void 0, !0, {
-        fileName: "app/routes/coupon.tsx",
-        lineNumber: 357,
-        columnNumber: 13
-      }, this),
-      /* @__PURE__ */ jsxDEV58("p", { className: "text-gray-600 mb-6", children: errorMessage }, void 0, !1, {
-        fileName: "app/routes/coupon.tsx",
-        lineNumber: 363,
-        columnNumber: 13
-      }, this),
-      /* @__PURE__ */ jsxDEV58(
-        "button",
-        {
-          onClick: closeErrorModal,
-          className: "w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors duration-200",
-          children: "Close"
-        },
-        void 0,
-        !1,
-        {
-          fileName: "app/routes/coupon.tsx",
-          lineNumber: 364,
-          columnNumber: 13
-        },
-        this
-      )
-    ] }, void 0, !0, {
-      fileName: "app/routes/coupon.tsx",
-      lineNumber: 356,
-      columnNumber: 11
-    }, this) }, void 0, !1, {
-      fileName: "app/routes/coupon.tsx",
-      lineNumber: 355,
-      columnNumber: 9
-    }, this),
-    showConfirmModal && /* @__PURE__ */ jsxDEV58("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50", children: /* @__PURE__ */ jsxDEV58("div", { className: "bg-white rounded-lg p-6 max-w-md w-full shadow-2xl transform transition-all duration-300 scale-100", children: [
-      /* @__PURE__ */ jsxDEV58("div", { className: "flex items-center gap-3 mb-4", children: [
-        /* @__PURE__ */ jsxDEV58("svg", { className: "w-6 h-6 text-red-500", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDEV58("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" }, void 0, !1, {
-          fileName: "app/routes/coupon.tsx",
-          lineNumber: 380,
-          columnNumber: 17
-        }, this) }, void 0, !1, {
-          fileName: "app/routes/coupon.tsx",
-          lineNumber: 379,
-          columnNumber: 15
-        }, this),
-        /* @__PURE__ */ jsxDEV58("h3", { className: "text-lg font-semibold text-gray-900", children: "Remove Coupon?" }, void 0, !1, {
-          fileName: "app/routes/coupon.tsx",
-          lineNumber: 382,
-          columnNumber: 15
-        }, this)
-      ] }, void 0, !0, {
-        fileName: "app/routes/coupon.tsx",
-        lineNumber: 378,
-        columnNumber: 13
-      }, this),
-      /* @__PURE__ */ jsxDEV58("p", { className: "text-gray-600 mb-6", children: "This will remove the coupon and associated product(s) from your cart. Are you sure?" }, void 0, !1, {
-        fileName: "app/routes/coupon.tsx",
-        lineNumber: 384,
-        columnNumber: 13
-      }, this),
-      /* @__PURE__ */ jsxDEV58("div", { className: "flex justify-end gap-3", children: [
-        /* @__PURE__ */ jsxDEV58(
-          "button",
-          {
-            onClick: closeConfirmModal,
-            className: "px-4 py-2 rounded-md text-sm font-medium bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors",
-            children: "Cancel"
-          },
-          void 0,
-          !1,
-          {
-            fileName: "app/routes/coupon.tsx",
-            lineNumber: 388,
-            columnNumber: 15
-          },
-          this
-        ),
-        /* @__PURE__ */ jsxDEV58(
-          "button",
-          {
-            onClick: confirmRemoveCoupon,
-            className: "px-4 py-2 rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition-colors",
-            children: "Yes, Remove"
-          },
-          void 0,
-          !1,
-          {
-            fileName: "app/routes/coupon.tsx",
-            lineNumber: 394,
-            columnNumber: 15
-          },
-          this
-        )
-      ] }, void 0, !0, {
-        fileName: "app/routes/coupon.tsx",
-        lineNumber: 387,
-        columnNumber: 13
-      }, this)
-    ] }, void 0, !0, {
-      fileName: "app/routes/coupon.tsx",
-      lineNumber: 377,
-      columnNumber: 11
-    }, this) }, void 0, !1, {
-      fileName: "app/routes/coupon.tsx",
-      lineNumber: 376,
-      columnNumber: 9
-    }, this),
-    /* @__PURE__ */ jsxDEV58("div", { className: "mb-6", children: /* @__PURE__ */ jsxDEV58("h2", { className: "text-4xl font-bold text-gray-900", children: [
-      "Order Total: ",
-      /* @__PURE__ */ jsxDEV58(Price, { priceWithTax: rawTotal, currencyCode: activeOrder?.currencyCode ?? "INR" /* Inr */ }, void 0, !1, {
-        fileName: "app/routes/coupon.tsx",
-        lineNumber: 407,
-        columnNumber: 24
-      }, this)
-    ] }, void 0, !0, {
-      fileName: "app/routes/coupon.tsx",
-      lineNumber: 406,
-      columnNumber: 9
-    }, this) }, void 0, !1, {
-      fileName: "app/routes/coupon.tsx",
-      lineNumber: 405,
-      columnNumber: 7
-    }, this),
-    /* @__PURE__ */ jsxDEV58("h3", { className: "text-2xl font-bold text-gray-900 mb-6", children: "Available Coupons" }, void 0, !1, {
-      fileName: "app/routes/coupon.tsx",
-      lineNumber: 410,
-      columnNumber: 7
-    }, this),
-    actionData?.message && /* @__PURE__ */ jsxDEV58(
-      "div",
-      {
-        className: `mb-6 p-4 rounded-lg flex items-center gap-3 ${actionData.success ? "bg-green-100 text-green-800 border border-green-300" : "bg-red-100 text-red-800 border border-red-300"}`,
-        children: actionData.message
-      },
-      void 0,
-      !1,
-      {
-        fileName: "app/routes/coupon.tsx",
-        lineNumber: 413,
-        columnNumber: 9
-      },
-      this
-    ),
-    enabledCoupons.length > 0 ? /* @__PURE__ */ jsxDEV58("div", { className: "space-y-4", children: enabledCoupons.map((coupon) => {
-      let isApplied = appliedCoupon === coupon.couponCode, variantNames = [];
-      for (let condition of coupon.conditions)
-        if (condition.code === "productVariantIds") {
-          for (let arg of condition.args)
-            if (arg.name === "productVariantIds")
-              try {
-                let variantIds = JSON.parse(arg.value), cartItems = activeOrder?.lines ?? [];
-                for (let variantId of Array.isArray(variantIds) ? variantIds : [arg.value]) {
-                  let matchingItem = cartItems.find(
-                    (item) => item.productVariant.id === variantId.toString()
-                  );
-                  matchingItem?.productVariant.name && variantNames.push(matchingItem.productVariant.name);
-                }
-              } catch {
-                let matchingItem = (activeOrder?.lines ?? []).find(
-                  (item) => item.productVariant.id === arg.value
-                );
-                matchingItem?.productVariant.name && variantNames.push(matchingItem.productVariant.name);
-              }
-        }
-      return /* @__PURE__ */ jsxDEV58(
-        "div",
-        {
-          className: `p-4 rounded-lg border transition-all duration-200 ${isApplied ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200 hover:shadow-md"}`,
-          children: [
-            /* @__PURE__ */ jsxDEV58("div", { className: "flex items-center justify-between mb-3", children: [
-              /* @__PURE__ */ jsxDEV58("div", { children: [
-                /* @__PURE__ */ jsxDEV58("span", { className: "text-lg font-semibold text-gray-900", children: coupon.couponCode }, void 0, !1, {
-                  fileName: "app/routes/coupon.tsx",
-                  lineNumber: 471,
-                  columnNumber: 21
-                }, this),
-                /* @__PURE__ */ jsxDEV58("span", { className: "ml-2 text-sm text-gray-600", children: [
-                  "(",
-                  coupon.name,
-                  ")"
-                ] }, void 0, !0, {
-                  fileName: "app/routes/coupon.tsx",
-                  lineNumber: 474,
-                  columnNumber: 21
-                }, this)
-              ] }, void 0, !0, {
-                fileName: "app/routes/coupon.tsx",
-                lineNumber: 470,
-                columnNumber: 19
-              }, this),
-              /* @__PURE__ */ jsxDEV58(Form7, { method: "post", children: [
-                /* @__PURE__ */ jsxDEV58("input", { type: "hidden", name: "actionType", value: isApplied ? "remove" : "apply" }, void 0, !1, {
-                  fileName: "app/routes/coupon.tsx",
-                  lineNumber: 477,
-                  columnNumber: 21
-                }, this),
-                /* @__PURE__ */ jsxDEV58("input", { type: "hidden", name: "couponCode", value: coupon.couponCode ?? "" }, void 0, !1, {
-                  fileName: "app/routes/coupon.tsx",
-                  lineNumber: 478,
-                  columnNumber: 21
-                }, this),
-                /* @__PURE__ */ jsxDEV58(
-                  "button",
-                  {
-                    type: "submit",
-                    onClick: (e) => {
-                      isApplied && (e.preventDefault(), openConfirmModal(coupon.couponCode ?? ""));
-                    },
-                    className: `px-4 py-2 rounded-md text-sm font-medium transition-colors ${isApplied ? "bg-red-600 hover:bg-red-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`,
-                    children: isApplied ? "Remove" : "Apply"
-                  },
-                  void 0,
-                  !1,
-                  {
-                    fileName: "app/routes/coupon.tsx",
-                    lineNumber: 479,
-                    columnNumber: 21
-                  },
-                  this
-                )
-              ] }, void 0, !0, {
-                fileName: "app/routes/coupon.tsx",
-                lineNumber: 476,
-                columnNumber: 19
-              }, this)
-            ] }, void 0, !0, {
-              fileName: "app/routes/coupon.tsx",
-              lineNumber: 469,
-              columnNumber: 17
-            }, this),
-            /* @__PURE__ */ jsxDEV58("div", { className: "text-sm text-gray-600 space-y-2", children: [
-              /* @__PURE__ */ jsxDEV58("p", { children: [
-                /* @__PURE__ */ jsxDEV58("strong", { children: "Description:" }, void 0, !1, {
-                  fileName: "app/routes/coupon.tsx",
-                  lineNumber: 499,
-                  columnNumber: 21
-                }, this),
-                " ",
-                /* @__PURE__ */ jsxDEV58("div", { dangerouslySetInnerHTML: { __html: coupon.description || "No discription  avalible" } }, void 0, !1, {
-                  fileName: "app/routes/coupon.tsx",
-                  lineNumber: 499,
-                  columnNumber: 51
-                }, this)
-              ] }, void 0, !0, {
-                fileName: "app/routes/coupon.tsx",
-                lineNumber: 498,
-                columnNumber: 19
-              }, this),
-              variantNames.length > 0 && /* @__PURE__ */ jsxDEV58("p", { children: [
-                /* @__PURE__ */ jsxDEV58("strong", { children: "Products:" }, void 0, !1, {
-                  fileName: "app/routes/coupon.tsx",
-                  lineNumber: 504,
-                  columnNumber: 23
-                }, this),
-                " ",
-                variantNames.join(", ")
-              ] }, void 0, !0, {
-                fileName: "app/routes/coupon.tsx",
-                lineNumber: 503,
-                columnNumber: 21
-              }, this),
-              coupon.conditions.length > 0 && /* @__PURE__ */ jsxDEV58("div", { children: [
-                /* @__PURE__ */ jsxDEV58("strong", { children: "Conditions:" }, void 0, !1, {
-                  fileName: "app/routes/coupon.tsx",
-                  lineNumber: 509,
-                  columnNumber: 5
-                }, this),
-                /* @__PURE__ */ jsxDEV58("ul", { className: "list-disc list-inside ml-4", children: coupon.conditions.map((condition, index) => /* @__PURE__ */ jsxDEV58("li", { children: [
-                  condition.code,
-                  ": ",
-                  " ",
-                  condition.args.map((arg, i) => condition.code === "minimum_order_amount" && i === 0 ? `\u20B9${(parseInt(arg.value) / 100).toFixed(2)}` : arg.value).join(", ")
-                ] }, index, !0, {
-                  fileName: "app/routes/coupon.tsx",
-                  lineNumber: 512,
-                  columnNumber: 9
-                }, this)) }, void 0, !1, {
-                  fileName: "app/routes/coupon.tsx",
-                  lineNumber: 510,
-                  columnNumber: 5
-                }, this)
-              ] }, void 0, !0, {
-                fileName: "app/routes/coupon.tsx",
-                lineNumber: 508,
-                columnNumber: 3
-              }, this),
-              coupon.endsAt && /* @__PURE__ */ jsxDEV58("p", { children: [
-                /* @__PURE__ */ jsxDEV58("strong", { children: "Expires:" }, void 0, !1, {
-                  fileName: "app/routes/coupon.tsx",
-                  lineNumber: 530,
-                  columnNumber: 23
-                }, this),
-                " ",
-                new Date(coupon.endsAt).toLocaleDateString()
-              ] }, void 0, !0, {
-                fileName: "app/routes/coupon.tsx",
-                lineNumber: 529,
-                columnNumber: 21
-              }, this),
-              coupon.usageLimit && /* @__PURE__ */ jsxDEV58("p", { children: [
-                /* @__PURE__ */ jsxDEV58("strong", { children: "Usage Limit:" }, void 0, !1, {
-                  fileName: "app/routes/coupon.tsx",
-                  lineNumber: 536,
-                  columnNumber: 23
-                }, this),
-                " ",
-                coupon.usageLimit
-              ] }, void 0, !0, {
-                fileName: "app/routes/coupon.tsx",
-                lineNumber: 535,
-                columnNumber: 21
-              }, this)
-            ] }, void 0, !0, {
-              fileName: "app/routes/coupon.tsx",
-              lineNumber: 497,
-              columnNumber: 17
-            }, this)
-          ]
-        },
-        coupon.id,
-        !0,
-        {
-          fileName: "app/routes/coupon.tsx",
-          lineNumber: 461,
-          columnNumber: 15
-        },
-        this
-      );
-    }) }, void 0, !1, {
-      fileName: "app/routes/coupon.tsx",
-      lineNumber: 425,
-      columnNumber: 9
-    }, this) : /* @__PURE__ */ jsxDEV58("p", { className: "text-center text-gray-500 py-4", children: "No enabled coupon codes available at the moment." }, void 0, !1, {
-      fileName: "app/routes/coupon.tsx",
-      lineNumber: 545,
-      columnNumber: 9
-    }, this)
-  ] }, void 0, !0, {
-    fileName: "app/routes/coupon.tsx",
-    lineNumber: 352,
-    columnNumber: 5
-  }, this);
-}
-
-// app/routes/checkout.tsx
-import { jsxDEV as jsxDEV59 } from "react/jsx-dev-runtime";
-async function loader16({ request }) {
+async function loader15({ request }) {
   let session = await getSessionStorage().then(
     (sessionStorage2) => sessionStorage2.getSession(request?.headers.get("Cookie"))
   ), activeOrder = await getActiveOrder({ request }), couponCodes = await getCouponCodeList({ request });
   (!session || !activeOrder || !activeOrder.active || activeOrder.lines.length === 0) && console.log("Redirect would occur, but bypassed for debugging");
   let { availableCountries } = await getAvailableCountries({ request }), { eligibleShippingMethods } = await getEligibleShippingMethods({ request }), { activeCustomer } = await getActiveCustomerAddresses({ request }), error = session.get("activeOrderError");
-  return json16({
+  return json15({
     availableCountries,
     eligibleShippingMethods,
     activeCustomer,
@@ -13734,27 +13197,27 @@ async function loader16({ request }) {
     couponCodes
   });
 }
-async function action14({ request }) {
+async function action13({ request }) {
   let formData = await request.formData(), actionType = formData.get("actionType"), couponCode = formData.get("couponCode");
   if (actionType === "apply") {
     if (!couponCode)
-      return json16({ couponError: "Coupon code is required." }, { status: 400 });
+      return json15({ couponError: "Coupon code is required." }, { status: 400 });
     try {
       let result = await applyCouponCode(couponCode, { request });
-      return result?.__typename === "Order" ? redirect11("/checkout") : result?.__typename === "CouponCodeInvalidError" ? json16({ couponError: result.message || "Invalid coupon code." }, { status: 400 }) : json16({ couponError: "Failed to apply coupon." }, { status: 500 });
+      return result?.__typename === "Order" ? redirect11("/checkout") : result?.__typename === "CouponCodeInvalidError" ? json15({ couponError: result.message || "Invalid coupon code." }, { status: 400 }) : json15({ couponError: "Failed to apply coupon." }, { status: 500 });
     } catch (error) {
-      return console.error("Failed to apply coupon:", error), json16({ couponError: "An error occurred while applying the coupon." }, { status: 500 });
+      return console.error("Failed to apply coupon:", error), json15({ couponError: "An error occurred while applying the coupon." }, { status: 500 });
     }
   } else if (actionType === "remove") {
     if (!couponCode)
-      return json16({ couponError: "Coupon code is required for removal." }, { status: 400 });
+      return json15({ couponError: "Coupon code is required for removal." }, { status: 400 });
     try {
-      return (await removeCouponCode(couponCode, { request }))?.__typename === "Order" ? redirect11("/checkout") : json16({ couponError: "Failed to remove coupon." }, { status: 500 });
+      return (await removeCouponCode(couponCode, { request }))?.__typename === "Order" ? redirect11("/checkout") : json15({ couponError: "Failed to remove coupon." }, { status: 500 });
     } catch (error) {
-      return console.error("Failed to remove coupon:", error), json16({ couponError: "An error occurred while removing the coupon." }, { status: 500 });
+      return console.error("Failed to remove coupon:", error), json15({ couponError: "An error occurred while removing the coupon." }, { status: 500 });
     }
   }
-  return json16({ couponError: "Invalid action type." }, { status: 400 });
+  return json15({ couponError: "Invalid action type." }, { status: 400 });
 }
 function Checkout() {
   let {
@@ -13764,10 +13227,10 @@ function Checkout() {
     error,
     activeOrder,
     couponCodes
-  } = useLoaderData17(), { activeOrderFetcher, removeItem, adjustOrderLine: adjustOrderLine2, refresh } = useOutletContext4(), location2 = useLocation2(), { t } = useTranslation41(), state = "shipping";
+  } = useLoaderData16(), { activeOrderFetcher, removeItem, adjustOrderLine: adjustOrderLine2, refresh } = useOutletContext4(), location2 = useLocation2(), { t } = useTranslation41(), state = "shipping";
   location2.pathname === "/checkout/payment" ? state = "payment" : location2.pathname.startsWith("/checkout/confirmation") && (state = "confirmation");
   let isConfirmationPage = state === "confirmation";
-  return /* @__PURE__ */ jsxDEV59("div", { className: "bg-gray-50", children: /* @__PURE__ */ jsxDEV59(
+  return /* @__PURE__ */ jsxDEV58("div", { className: "bg-gray-50", children: /* @__PURE__ */ jsxDEV58(
     "div",
     {
       className: classNames(
@@ -13775,27 +13238,27 @@ function Checkout() {
         "max-w-2xl mx-auto pt-8 pb-24 px-4 sm:px-6 lg:px-8"
       ),
       children: [
-        /* @__PURE__ */ jsxDEV59("h2", { className: "sr-only", children: t("cart.checkout") }, void 0, !1, {
+        /* @__PURE__ */ jsxDEV58("h2", { className: "sr-only", children: t("cart.checkout") }, void 0, !1, {
           fileName: "app/routes/checkout.tsx",
-          lineNumber: 138,
+          lineNumber: 139,
           columnNumber: 9
         }, this),
-        /* @__PURE__ */ jsxDEV59(
+        /* @__PURE__ */ jsxDEV58(
           "nav",
           {
             "aria-label": t("cart.progress"),
             className: "hidden sm:block pb-8 mb-8 border-b border-gray-200",
-            children: /* @__PURE__ */ jsxDEV59("ol", { role: "list", className: "flex space-x-4 justify-center", children: steps.map((step, stepIdx) => /* @__PURE__ */ jsxDEV59("li", { className: "flex items-center", children: [
-              step === state ? /* @__PURE__ */ jsxDEV59("span", { "aria-current": "page", className: "text-primary-600 font-medium", children: t(`checkout.steps.${step}`) }, void 0, !1, {
+            children: /* @__PURE__ */ jsxDEV58("ol", { role: "list", className: "flex space-x-4 justify-center", children: steps.map((step, stepIdx) => /* @__PURE__ */ jsxDEV58("li", { className: "flex items-center", children: [
+              step === state ? /* @__PURE__ */ jsxDEV58("span", { "aria-current": "page", className: "text-primary-600 font-medium", children: t(`checkout.steps.${step}`) }, void 0, !1, {
                 fileName: "app/routes/checkout.tsx",
-                lineNumber: 147,
+                lineNumber: 148,
                 columnNumber: 19
-              }, this) : /* @__PURE__ */ jsxDEV59("span", { className: "text-gray-500", children: t(`checkout.steps.${step}`) }, void 0, !1, {
+              }, this) : /* @__PURE__ */ jsxDEV58("span", { className: "text-gray-500", children: t(`checkout.steps.${step}`) }, void 0, !1, {
                 fileName: "app/routes/checkout.tsx",
-                lineNumber: 151,
+                lineNumber: 152,
                 columnNumber: 19
               }, this),
-              stepIdx !== steps.length - 1 ? /* @__PURE__ */ jsxDEV59(
+              stepIdx !== steps.length - 1 ? /* @__PURE__ */ jsxDEV58(
                 ChevronRightIcon2,
                 {
                   className: "w-5 h-5 text-gray-300 ml-4",
@@ -13805,18 +13268,18 @@ function Checkout() {
                 !1,
                 {
                   fileName: "app/routes/checkout.tsx",
-                  lineNumber: 154,
+                  lineNumber: 155,
                   columnNumber: 19
                 },
                 this
               ) : null
             ] }, step, !0, {
               fileName: "app/routes/checkout.tsx",
-              lineNumber: 145,
+              lineNumber: 146,
               columnNumber: 15
             }, this)) }, void 0, !1, {
               fileName: "app/routes/checkout.tsx",
-              lineNumber: 143,
+              lineNumber: 144,
               columnNumber: 11
             }, this)
           },
@@ -13824,29 +13287,29 @@ function Checkout() {
           !1,
           {
             fileName: "app/routes/checkout.tsx",
-            lineNumber: 139,
+            lineNumber: 140,
             columnNumber: 9
           },
           this
         ),
-        /* @__PURE__ */ jsxDEV59("div", { className: "lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16", children: [
-          /* @__PURE__ */ jsxDEV59("div", { className: isConfirmationPage ? "lg:col-span-2" : "", children: /* @__PURE__ */ jsxDEV59(CheckoutShipping, {}, void 0, !1, {
+        /* @__PURE__ */ jsxDEV58("div", { className: "lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16", children: [
+          /* @__PURE__ */ jsxDEV58("div", { className: isConfirmationPage ? "lg:col-span-2" : "", children: /* @__PURE__ */ jsxDEV58(CheckoutShipping, {}, void 0, !1, {
             fileName: "app/routes/checkout.tsx",
-            lineNumber: 166,
+            lineNumber: 167,
             columnNumber: 13
           }, this) }, void 0, !1, {
             fileName: "app/routes/checkout.tsx",
-            lineNumber: 164,
+            lineNumber: 165,
             columnNumber: 11
           }, this),
-          !isConfirmationPage && /* @__PURE__ */ jsxDEV59("div", { className: "mt-10 lg:mt-0", children: [
-            /* @__PURE__ */ jsxDEV59("h2", { className: "text-lg font-medium text-gray-900 mb-6", children: t("order.summary") }, void 0, !1, {
+          !isConfirmationPage && /* @__PURE__ */ jsxDEV58("div", { className: "mt-10 lg:mt-0", children: [
+            /* @__PURE__ */ jsxDEV58("h2", { className: "text-lg font-medium text-gray-900 mb-6", children: t("order.summary") }, void 0, !1, {
               fileName: "app/routes/checkout.tsx",
-              lineNumber: 172,
+              lineNumber: 173,
               columnNumber: 15
             }, this),
-            /* @__PURE__ */ jsxDEV59("div", { className: "bg-white p-6 rounded-lg shadow-sm border border-gray-200", children: [
-              /* @__PURE__ */ jsxDEV59(
+            /* @__PURE__ */ jsxDEV58("div", { className: "bg-white p-6 rounded-lg shadow-sm border border-gray-200", children: [
+              /* @__PURE__ */ jsxDEV58(
                 CartContents,
                 {
                   orderLines: activeOrder?.lines ?? [],
@@ -13859,34 +13322,56 @@ function Checkout() {
                 !1,
                 {
                   fileName: "app/routes/checkout.tsx",
-                  lineNumber: 174,
+                  lineNumber: 175,
                   columnNumber: 17
                 },
                 this
               ),
-              /* @__PURE__ */ jsxDEV59(CouponsComponent, {}, void 0, !1, {
+              /* @__PURE__ */ jsxDEV58("div", { className: "mt-4", children: /* @__PURE__ */ jsxDEV58(Link13, { to: "/coupon", children: /* @__PURE__ */ jsxDEV58(
+                "button",
+                {
+                  type: "button",
+                  className: "w-full bg-primary-600 text-white font-medium py-2 px-4 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200",
+                  children: [
+                    t("checkout.availOffer"),
+                    " "
+                  ]
+                },
+                void 0,
+                !0,
+                {
+                  fileName: "app/routes/checkout.tsx",
+                  lineNumber: 184,
+                  columnNumber: 5
+                },
+                this
+              ) }, void 0, !1, {
                 fileName: "app/routes/checkout.tsx",
-                lineNumber: 181,
-                columnNumber: 17
-              }, this),
-              /* @__PURE__ */ jsxDEV59(CartTotals, { order: activeOrder }, void 0, !1, {
+                lineNumber: 183,
+                columnNumber: 3
+              }, this) }, void 0, !1, {
                 fileName: "app/routes/checkout.tsx",
                 lineNumber: 182,
+                columnNumber: 16
+              }, this),
+              /* @__PURE__ */ jsxDEV58(CartTotals, { order: activeOrder }, void 0, !1, {
+                fileName: "app/routes/checkout.tsx",
+                lineNumber: 192,
                 columnNumber: 17
               }, this)
             ] }, void 0, !0, {
               fileName: "app/routes/checkout.tsx",
-              lineNumber: 173,
+              lineNumber: 174,
               columnNumber: 15
             }, this)
           ] }, void 0, !0, {
             fileName: "app/routes/checkout.tsx",
-            lineNumber: 171,
+            lineNumber: 172,
             columnNumber: 13
           }, this)
         ] }, void 0, !0, {
           fileName: "app/routes/checkout.tsx",
-          lineNumber: 163,
+          lineNumber: 164,
           columnNumber: 9
         }, this)
       ]
@@ -13895,13 +13380,13 @@ function Checkout() {
     !0,
     {
       fileName: "app/routes/checkout.tsx",
-      lineNumber: 132,
+      lineNumber: 133,
       columnNumber: 7
     },
     this
   ) }, void 0, !1, {
     fileName: "app/routes/checkout.tsx",
-    lineNumber: 131,
+    lineNumber: 132,
     columnNumber: 5
   }, this);
 }
@@ -13911,7 +13396,7 @@ var steps = ["shipping", "payment", "confirmation"];
 var account_exports = {};
 __export(account_exports, {
   default: () => AccountDashboard,
-  loader: () => loader17
+  loader: () => loader16
 });
 import {
   HashtagIcon,
@@ -13919,21 +13404,21 @@ import {
   ShoppingBagIcon as ShoppingBagIcon2,
   UserCircleIcon
 } from "@heroicons/react/24/solid";
-import { Form as Form9, Outlet as Outlet3, useLoaderData as useLoaderData18 } from "@remix-run/react";
-import { json as json17, redirect as redirect12 } from "@remix-run/server-runtime";
+import { Form as Form8, Outlet as Outlet3, useLoaderData as useLoaderData17 } from "@remix-run/react";
+import { json as json16, redirect as redirect12 } from "@remix-run/server-runtime";
 
 // app/components/tabs/Tab.tsx
 import { NavLink, useMatches as useMatches3, useResolvedPath } from "@remix-run/react";
-import { jsxDEV as jsxDEV60 } from "react/jsx-dev-runtime";
+import { jsxDEV as jsxDEV59 } from "react/jsx-dev-runtime";
 function Tab({ Icon, text, to }) {
   let resolved = useResolvedPath(to), isActive = useMatches3().find((m) => m.pathname === resolved.pathname);
-  return /* @__PURE__ */ jsxDEV60("li", { className: isActive ? "cursor-default" : "cursor-pointer", children: /* @__PURE__ */ jsxDEV60(
+  return /* @__PURE__ */ jsxDEV59("li", { className: isActive ? "cursor-default" : "cursor-pointer", children: /* @__PURE__ */ jsxDEV59(
     NavLink,
     {
       to,
       className: `group w-full gap-x-2 max-w-[12rem] inline-flex items-center justify-around p-4 rounded-t-lg border-b-2 ${isActive ? "text-primary-500 border-primary-500" : "border-transparent hover:text-gray-600 hover:border-gray-300"}`,
       children: [
-        /* @__PURE__ */ jsxDEV60(
+        /* @__PURE__ */ jsxDEV59(
           Icon,
           {
             className: `w-5 h-5 ${isActive ? "text-primary-500" : "text-gray-400 group-hover:text-gray-500"}`
@@ -13947,7 +13432,7 @@ function Tab({ Icon, text, to }) {
           },
           this
         ),
-        /* @__PURE__ */ jsxDEV60("p", { className: "flex-1", children: text }, void 0, !1, {
+        /* @__PURE__ */ jsxDEV59("p", { className: "flex-1", children: text }, void 0, !1, {
           fileName: "app/components/tabs/Tab.tsx",
           lineNumber: 37,
           columnNumber: 9
@@ -13970,13 +13455,13 @@ function Tab({ Icon, text, to }) {
 }
 
 // app/components/tabs/TabsContainer.tsx
-import { Fragment as Fragment15, jsxDEV as jsxDEV61 } from "react/jsx-dev-runtime";
+import { Fragment as Fragment15, jsxDEV as jsxDEV60 } from "react/jsx-dev-runtime";
 function TabsContainer({
   tabs,
   children
 }) {
-  return /* @__PURE__ */ jsxDEV61(Fragment15, { children: [
-    /* @__PURE__ */ jsxDEV61("div", { className: "border-b border-gray-200 mt-4", children: /* @__PURE__ */ jsxDEV61("ul", { className: "gap-x-4 grid grid-cols-2 sm:grid-0 sm:flex sm:flex-wrap -mb-px text-sm font-medium text-center text-gray-500", children: tabs.map((props) => /* @__PURE__ */ jsxDEV61(
+  return /* @__PURE__ */ jsxDEV60(Fragment15, { children: [
+    /* @__PURE__ */ jsxDEV60("div", { className: "border-b border-gray-200 mt-4", children: /* @__PURE__ */ jsxDEV60("ul", { className: "gap-x-4 grid grid-cols-2 sm:grid-0 sm:flex sm:flex-wrap -mb-px text-sm font-medium text-center text-gray-500", children: tabs.map((props) => /* @__PURE__ */ jsxDEV60(
       Tab,
       {
         Icon: props.Icon,
@@ -14010,13 +13495,13 @@ function TabsContainer({
 
 // app/routes/account.tsx
 import { useTranslation as useTranslation42 } from "react-i18next";
-import { jsxDEV as jsxDEV62 } from "react/jsx-dev-runtime";
-async function loader17({ request }) {
+import { jsxDEV as jsxDEV61 } from "react/jsx-dev-runtime";
+async function loader16({ request }) {
   let { activeCustomer } = await getActiveCustomerDetails({ request });
-  return activeCustomer ? json17({ activeCustomer }) : redirect12("/sign-in");
+  return activeCustomer ? json16({ activeCustomer }) : redirect12("/sign-in");
 }
 function AccountDashboard() {
-  let { activeCustomer } = useLoaderData18(), { firstName, lastName } = activeCustomer, { t } = useTranslation42(), tabs = [
+  let { activeCustomer } = useLoaderData17(), { firstName, lastName } = activeCustomer, { t } = useTranslation42(), tabs = [
     {
       Icon: UserCircleIcon,
       text: t("account.details"),
@@ -14038,13 +13523,13 @@ function AccountDashboard() {
       to: "./password"
     }
   ];
-  return /* @__PURE__ */ jsxDEV62("div", { className: "max-w-6xl xl:mx-auto px-4", children: [
-    /* @__PURE__ */ jsxDEV62("h2", { className: "text-3xl sm:text-5xl font-light text-gray-900 my-8", children: t("account.myAccount") }, void 0, !1, {
+  return /* @__PURE__ */ jsxDEV61("div", { className: "max-w-6xl xl:mx-auto px-4", children: [
+    /* @__PURE__ */ jsxDEV61("h2", { className: "text-3xl sm:text-5xl font-light text-gray-900 my-8", children: t("account.myAccount") }, void 0, !1, {
       fileName: "app/routes/account.tsx",
       lineNumber: 52,
       columnNumber: 7
     }, this),
-    /* @__PURE__ */ jsxDEV62("p", { className: "text-gray-700 text-lg -mt-4", children: [
+    /* @__PURE__ */ jsxDEV61("p", { className: "text-gray-700 text-lg -mt-4", children: [
       t("account.welcomeBack"),
       ", ",
       firstName,
@@ -14055,7 +13540,7 @@ function AccountDashboard() {
       lineNumber: 55,
       columnNumber: 7
     }, this),
-    /* @__PURE__ */ jsxDEV62(Form9, { method: "post", action: "/api/logout", children: /* @__PURE__ */ jsxDEV62(
+    /* @__PURE__ */ jsxDEV61(Form8, { method: "post", action: "/api/logout", children: /* @__PURE__ */ jsxDEV61(
       "button",
       {
         type: "submit",
@@ -14075,7 +13560,7 @@ function AccountDashboard() {
       lineNumber: 58,
       columnNumber: 7
     }, this),
-    /* @__PURE__ */ jsxDEV62(TabsContainer, { tabs, children: /* @__PURE__ */ jsxDEV62(Outlet3, {}, void 0, !1, {
+    /* @__PURE__ */ jsxDEV61(TabsContainer, { tabs, children: /* @__PURE__ */ jsxDEV61(Outlet3, {}, void 0, !1, {
       fileName: "app/routes/account.tsx",
       lineNumber: 67,
       columnNumber: 9
@@ -14094,38 +13579,38 @@ function AccountDashboard() {
 // app/routes/sign-in.tsx
 var sign_in_exports = {};
 __export(sign_in_exports, {
-  action: () => action15,
+  action: () => action14,
   default: () => SignInPage
 });
-import { Link as Link13, useFetcher as useFetcher4, useSearchParams as useSearchParams4 } from "@remix-run/react";
-import { json as json18, redirect as redirect13 } from "@remix-run/server-runtime";
+import { Link as Link14, useFetcher as useFetcher4, useSearchParams as useSearchParams4 } from "@remix-run/react";
+import { json as json17, redirect as redirect13 } from "@remix-run/server-runtime";
 import { XCircleIcon as XCircleIcon7 } from "@heroicons/react/24/solid";
 import { ArrowPathIcon as ArrowPathIcon4 } from "@heroicons/react/24/solid";
 import { useTranslation as useTranslation43 } from "react-i18next";
-import { Fragment as Fragment16, jsxDEV as jsxDEV63 } from "react/jsx-dev-runtime";
-async function action15({ params, request }) {
+import { Fragment as Fragment16, jsxDEV as jsxDEV62 } from "react/jsx-dev-runtime";
+async function action14({ params, request }) {
   let body = await request.formData(), email = body.get("email"), password = body.get("password");
   if (typeof email == "string" && typeof password == "string") {
     let rememberMe = !!body.get("rememberMe"), redirectTo = body.get("redirectTo") || "/account", result = await login(email, password, rememberMe, { request });
-    return result.__typename === "CurrentUser" ? redirect13(redirectTo, { headers: result._headers }) : json18(result, {
+    return result.__typename === "CurrentUser" ? redirect13(redirectTo, { headers: result._headers }) : json17(result, {
       status: 401
     });
   }
 }
 function SignInPage() {
   let [searchParams] = useSearchParams4(), login2 = useFetcher4(), { t } = useTranslation43();
-  return /* @__PURE__ */ jsxDEV63(Fragment16, { children: /* @__PURE__ */ jsxDEV63("div", { className: "flex flex-col justify-center py-12 sm:px-6 lg:px-8", children: [
-    /* @__PURE__ */ jsxDEV63("div", { className: "sm:mx-auto sm:w-full sm:max-w-md", children: [
-      /* @__PURE__ */ jsxDEV63("h2", { className: "mt-6 text-center text-3xl text-gray-900", children: t("account.signInTitle") }, void 0, !1, {
+  return /* @__PURE__ */ jsxDEV62(Fragment16, { children: /* @__PURE__ */ jsxDEV62("div", { className: "flex flex-col justify-center py-12 sm:px-6 lg:px-8", children: [
+    /* @__PURE__ */ jsxDEV62("div", { className: "sm:mx-auto sm:w-full sm:max-w-md", children: [
+      /* @__PURE__ */ jsxDEV62("h2", { className: "mt-6 text-center text-3xl text-gray-900", children: t("account.signInTitle") }, void 0, !1, {
         fileName: "app/routes/sign-in.tsx",
         lineNumber: 37,
         columnNumber: 11
       }, this),
-      /* @__PURE__ */ jsxDEV63("p", { className: "mt-2 text-center text-sm text-gray-600", children: [
+      /* @__PURE__ */ jsxDEV62("p", { className: "mt-2 text-center text-sm text-gray-600", children: [
         t("common.or"),
         " ",
-        /* @__PURE__ */ jsxDEV63(
-          Link13,
+        /* @__PURE__ */ jsxDEV62(
+          Link14,
           {
             to: "/sign-up",
             className: "font-medium text-primary-600 hover:text-primary-500",
@@ -14150,8 +13635,8 @@ function SignInPage() {
       lineNumber: 36,
       columnNumber: 9
     }, this),
-    /* @__PURE__ */ jsxDEV63("div", { className: "mt-8 sm:mx-auto sm:w-full sm:max-w-md", children: /* @__PURE__ */ jsxDEV63("div", { className: "bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10", children: /* @__PURE__ */ jsxDEV63(login2.Form, { method: "post", children: /* @__PURE__ */ jsxDEV63("fieldset", { disabled: login2.state !== "idle", className: "space-y-6", children: [
-      /* @__PURE__ */ jsxDEV63(
+    /* @__PURE__ */ jsxDEV62("div", { className: "mt-8 sm:mx-auto sm:w-full sm:max-w-md", children: /* @__PURE__ */ jsxDEV62("div", { className: "bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10", children: /* @__PURE__ */ jsxDEV62(login2.Form, { method: "post", children: /* @__PURE__ */ jsxDEV62("fieldset", { disabled: login2.state !== "idle", className: "space-y-6", children: [
+      /* @__PURE__ */ jsxDEV62(
         "input",
         {
           type: "hidden",
@@ -14167,8 +13652,8 @@ function SignInPage() {
         },
         this
       ),
-      /* @__PURE__ */ jsxDEV63("div", { children: [
-        /* @__PURE__ */ jsxDEV63(
+      /* @__PURE__ */ jsxDEV62("div", { children: [
+        /* @__PURE__ */ jsxDEV62(
           "label",
           {
             htmlFor: "email",
@@ -14184,7 +13669,7 @@ function SignInPage() {
           },
           this
         ),
-        /* @__PURE__ */ jsxDEV63("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV63(
+        /* @__PURE__ */ jsxDEV62("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV62(
           "input",
           {
             id: "email",
@@ -14214,8 +13699,8 @@ function SignInPage() {
         lineNumber: 71,
         columnNumber: 17
       }, this),
-      /* @__PURE__ */ jsxDEV63("div", { children: [
-        /* @__PURE__ */ jsxDEV63(
+      /* @__PURE__ */ jsxDEV62("div", { children: [
+        /* @__PURE__ */ jsxDEV62(
           "label",
           {
             htmlFor: "password",
@@ -14231,7 +13716,7 @@ function SignInPage() {
           },
           this
         ),
-        /* @__PURE__ */ jsxDEV63("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV63(
+        /* @__PURE__ */ jsxDEV62("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV62(
           "input",
           {
             id: "password",
@@ -14261,9 +13746,9 @@ function SignInPage() {
         lineNumber: 92,
         columnNumber: 17
       }, this),
-      /* @__PURE__ */ jsxDEV63("div", { className: "flex items-center justify-between", children: [
-        /* @__PURE__ */ jsxDEV63("div", { className: "flex items-center", children: [
-          /* @__PURE__ */ jsxDEV63(
+      /* @__PURE__ */ jsxDEV62("div", { className: "flex items-center justify-between", children: [
+        /* @__PURE__ */ jsxDEV62("div", { className: "flex items-center", children: [
+          /* @__PURE__ */ jsxDEV62(
             "input",
             {
               id: "rememberMe",
@@ -14281,7 +13766,7 @@ function SignInPage() {
             },
             this
           ),
-          /* @__PURE__ */ jsxDEV63(
+          /* @__PURE__ */ jsxDEV62(
             "label",
             {
               htmlFor: "rememberMe",
@@ -14302,7 +13787,7 @@ function SignInPage() {
           lineNumber: 114,
           columnNumber: 19
         }, this),
-        /* @__PURE__ */ jsxDEV63("div", { className: "text-sm", children: /* @__PURE__ */ jsxDEV63(
+        /* @__PURE__ */ jsxDEV62("div", { className: "text-sm", children: /* @__PURE__ */ jsxDEV62(
           "a",
           {
             href: "#",
@@ -14327,8 +13812,8 @@ function SignInPage() {
         lineNumber: 113,
         columnNumber: 17
       }, this),
-      login2.data && login2.state === "idle" && /* @__PURE__ */ jsxDEV63("div", { className: "rounded-md bg-red-50 p-4", children: /* @__PURE__ */ jsxDEV63("div", { className: "flex", children: [
-        /* @__PURE__ */ jsxDEV63("div", { className: "flex-shrink-0", children: /* @__PURE__ */ jsxDEV63(
+      login2.data && login2.state === "idle" && /* @__PURE__ */ jsxDEV62("div", { className: "rounded-md bg-red-50 p-4", children: /* @__PURE__ */ jsxDEV62("div", { className: "flex", children: [
+        /* @__PURE__ */ jsxDEV62("div", { className: "flex-shrink-0", children: /* @__PURE__ */ jsxDEV62(
           XCircleIcon7,
           {
             className: "h-5 w-5 text-red-400",
@@ -14347,13 +13832,13 @@ function SignInPage() {
           lineNumber: 143,
           columnNumber: 23
         }, this),
-        /* @__PURE__ */ jsxDEV63("div", { className: "ml-3", children: [
-          /* @__PURE__ */ jsxDEV63("h3", { className: "text-sm font-medium text-red-800", children: t("account.errorSignIn") }, void 0, !1, {
+        /* @__PURE__ */ jsxDEV62("div", { className: "ml-3", children: [
+          /* @__PURE__ */ jsxDEV62("h3", { className: "text-sm font-medium text-red-800", children: t("account.errorSignIn") }, void 0, !1, {
             fileName: "app/routes/sign-in.tsx",
             lineNumber: 150,
             columnNumber: 25
           }, this),
-          /* @__PURE__ */ jsxDEV63("p", { className: "text-sm text-red-700 mt-2", children: login2.data.message }, void 0, !1, {
+          /* @__PURE__ */ jsxDEV62("p", { className: "text-sm text-red-700 mt-2", children: login2.data.message }, void 0, !1, {
             fileName: "app/routes/sign-in.tsx",
             lineNumber: 153,
             columnNumber: 25
@@ -14372,13 +13857,13 @@ function SignInPage() {
         lineNumber: 141,
         columnNumber: 19
       }, this),
-      /* @__PURE__ */ jsxDEV63("div", { children: /* @__PURE__ */ jsxDEV63(
+      /* @__PURE__ */ jsxDEV62("div", { children: /* @__PURE__ */ jsxDEV62(
         Button,
         {
           type: "submit",
           className: "w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500",
-          children: /* @__PURE__ */ jsxDEV63("span", { className: "flex gap-4 items-center", children: [
-            login2.state !== "idle" && /* @__PURE__ */ jsxDEV63(ArrowPathIcon4, { className: "animate-spin h-5 w-5 text-gray-500" }, void 0, !1, {
+          children: /* @__PURE__ */ jsxDEV62("span", { className: "flex gap-4 items-center", children: [
+            login2.state !== "idle" && /* @__PURE__ */ jsxDEV62(ArrowPathIcon4, { className: "animate-spin h-5 w-5 text-gray-500" }, void 0, !1, {
               fileName: "app/routes/sign-in.tsx",
               lineNumber: 168,
               columnNumber: 25
@@ -14427,6 +13912,565 @@ function SignInPage() {
   }, this) }, void 0, !1, {
     fileName: "app/routes/sign-in.tsx",
     lineNumber: 34,
+    columnNumber: 5
+  }, this);
+}
+
+// app/routes/coupon.tsx
+var coupon_exports = {};
+__export(coupon_exports, {
+  action: () => action15,
+  default: () => CouponsComponent,
+  loader: () => loader17
+});
+import { json as json18 } from "@remix-run/node";
+import { useLoaderData as useLoaderData18, Form as Form9, useActionData as useActionData7 } from "@remix-run/react";
+import { useEffect as useEffect14, useState as useState14 } from "react";
+import { jsxDEV as jsxDEV63 } from "react/jsx-dev-runtime";
+var loader17 = async ({ request }) => {
+  let options = { request }, couponCodes = await getCouponCodeList(options), activeOrder = await getActiveOrder(options);
+  return json18({ couponCodes, activeOrder });
+}, action15 = async ({ request }) => {
+  let formData = await request.formData(), couponCode = formData.get("couponCode"), actionType = formData.get("actionType");
+  if (actionType === "apply") {
+    if (!couponCode)
+      return json18({ error: "Coupon code is required." }, { status: 400 });
+    try {
+      let options = { request }, coupon = (await getCouponCodeList(options)).find((c) => c.couponCode === couponCode);
+      if (!coupon || !coupon.couponCode)
+        return json18({ error: "Invalid coupon code." }, { status: 400 });
+      let minAmountCondition = coupon.conditions.find(
+        (c) => c.code === "minimum_order_amount" || c.code === "minimumOrderAmount" || c.code === "minimumAmount"
+      );
+      if (minAmountCondition) {
+        let amountArg = minAmountCondition.args.find((a) => a.name === "amount") ?? minAmountCondition.args[0], minAmountPaise = parseInt(amountArg.value, 10) || 0, totalWithTaxPaise = (await getActiveOrder(options))?.totalWithTax ?? 0;
+        if (totalWithTaxPaise < minAmountPaise) {
+          let diffRupees = ((minAmountPaise - totalWithTaxPaise) / 100).toFixed(2);
+          return json18(
+            { error: `Add \u20B9${diffRupees} more to apply this coupon. Current total: \u20B9${(totalWithTaxPaise / 100).toFixed(2)}.` },
+            { status: 400 }
+          );
+        }
+      }
+      let cartItems = (await getActiveOrder(options))?.lines ?? [], variantIds = [];
+      if (cartItems.length === 0) {
+        for (let condition of coupon.conditions)
+          if (condition.code === "productVariantIds") {
+            for (let arg of condition.args)
+              if (arg.name === "productVariantIds")
+                try {
+                  let parsedIds = JSON.parse(arg.value);
+                  Array.isArray(parsedIds) ? variantIds.push(...parsedIds.map((id) => id.toString())) : variantIds.push(arg.value);
+                } catch {
+                  variantIds.push(arg.value);
+                }
+          }
+        let existingVariantIds = new Set(cartItems.map((item) => item.productVariant.id));
+        for (let variantId of variantIds)
+          if (!existingVariantIds.has(variantId)) {
+            let addFormData = new FormData();
+            addFormData.append("action", "addItemToOrder"), addFormData.append("variantId", variantId);
+            let addResult = await (await fetch("/api/active-order", {
+              method: "POST",
+              body: addFormData,
+              headers: { Cookie: request.headers.get("Cookie") || "" }
+            })).json();
+            if (addResult.error)
+              return json18(
+                { error: `Failed to add product variant ${variantId} to cart: ${addResult.error}` },
+                { status: 400 }
+              );
+          }
+      }
+      let result = await applyCouponCode(couponCode, options);
+      if (result?.__typename === "Order") {
+        let order = result;
+        return json18({
+          success: !0,
+          message: `Coupon "${couponCode}" applied to your order!${cartItems.length === 0 && variantIds.length > 0 ? " Required products added to cart." : ""}`,
+          orderTotal: order.totalWithTax,
+          appliedCoupon: couponCode
+        });
+      } else {
+        if (result?.__typename === "CouponCodeExpiredError")
+          return json18({ error: result.message || "Coupon code has expired." }, { status: 400 });
+        if (result?.__typename === "CouponCodeInvalidError")
+          return json18({ error: result.message || "Invalid coupon code." }, { status: 400 });
+        if (result?.__typename === "CouponCodeLimitError")
+          return json18({ error: result.message || "Coupon usage limit reached." }, { status: 400 });
+      }
+      return json18({ error: "Unexpected response from server." }, { status: 500 });
+    } catch (error) {
+      return console.error("Failed to apply coupon:", error), json18({ error: "An error occurred while applying the coupon." }, { status: 500 });
+    }
+  } else if (actionType === "remove") {
+    if (!couponCode)
+      return json18({ error: "Coupon code is required for removal." }, { status: 400 });
+    try {
+      let options = { request }, coupon = (await getCouponCodeList(options)).find((c) => c.couponCode === couponCode);
+      if (!coupon || !coupon.couponCode)
+        return json18({ error: "Invalid coupon code." }, { status: 400 });
+      let variantIdsToRemove = [];
+      for (let condition of coupon.conditions)
+        if (condition.code === "productVariantIds") {
+          for (let arg of condition.args)
+            if (arg.name === "productVariantIds")
+              try {
+                let parsedIds = JSON.parse(arg.value);
+                Array.isArray(parsedIds) ? variantIdsToRemove.push(...parsedIds.map((id) => id.toString())) : variantIdsToRemove.push(arg.value);
+              } catch {
+                variantIdsToRemove.push(arg.value);
+              }
+        }
+      let cartItems = (await getActiveOrder(options))?.lines ?? [];
+      for (let item of cartItems)
+        if (variantIdsToRemove.includes(item.productVariant.id)) {
+          let removeFormData = new FormData();
+          removeFormData.append("action", "removeOrderLine"), removeFormData.append("orderLineId", item.id);
+          let removeResult = await (await fetch("/api/active-order", {
+            method: "POST",
+            body: removeFormData,
+            headers: { Cookie: request.headers.get("Cookie") || "" }
+          })).json();
+          if (removeResult.error)
+            return json18(
+              { error: `Failed to remove product variant ${item.productVariant.id} from cart: ${removeResult.error}` },
+              { status: 400 }
+            );
+        }
+      let result = await removeCouponCode(couponCode, { request });
+      return result?.__typename === "Order" ? json18({
+        success: !0,
+        message: "Coupon and associated products removed from your order.",
+        orderTotal: result.totalWithTax,
+        appliedCoupon: null
+      }) : json18({ error: "Failed to remove coupon." }, { status: 400 });
+    } catch (error) {
+      return console.error("Failed to remove coupon:", error), json18({ error: "An error occurred while removing the coupon." }, { status: 500 });
+    }
+  }
+  return json18({ error: "Invalid action type." }, { status: 400 });
+}, couponGradients = [
+  ["#FF6F61", "#DE1A82"],
+  // Coral to Magenta
+  ["#6B7280", "#1F2937"],
+  // Gray to Dark Gray
+  ["#FBBF24", "#F59E0B"],
+  // Amber to Deep Orange
+  ["#34D399", "#059669"],
+  // Teal to Emerald
+  ["#A78BFA", "#7C3AED"]
+  // Lavender to Purple
+];
+function CouponsComponent({ order }) {
+  let { couponCodes, activeOrder } = useLoaderData18(), actionData = useActionData7(), [showErrorModal, setShowErrorModal] = useState14(!1), [errorMessage, setErrorMessage] = useState14(""), [showConfirmModal, setShowConfirmModal] = useState14(!1), [couponToRemove, setCouponToRemove] = useState14(null);
+  useEffect14(() => {
+    if (actionData?.error) {
+      let match = actionData.error.match(/Add ₹([\d.]+) more to apply this coupon/);
+      if (match) {
+        let extraAmount = match[1];
+        setErrorMessage(
+          `\u{1F6AB} Not eligible yet! Add \u20B9${extraAmount} more to unlock this coupon.`
+        );
+      } else
+        setErrorMessage(actionData.error);
+      setShowErrorModal(!0);
+    }
+  }, [actionData?.error]);
+  let closeErrorModal = () => {
+    setShowErrorModal(!1), setErrorMessage("");
+  }, openConfirmModal = (couponCode) => {
+    setCouponToRemove(couponCode), setShowConfirmModal(!0);
+  }, closeConfirmModal = () => {
+    setShowConfirmModal(!1), setCouponToRemove(null);
+  }, confirmRemoveCoupon = () => {
+    if (couponToRemove) {
+      let form = document.createElement("form");
+      form.method = "POST", form.style.display = "none";
+      let actionInput = document.createElement("input");
+      actionInput.type = "hidden", actionInput.name = "actionType", actionInput.value = "remove";
+      let couponInput = document.createElement("input");
+      couponInput.type = "hidden", couponInput.name = "couponCode", couponInput.value = couponToRemove, form.appendChild(actionInput), form.appendChild(couponInput), document.body.appendChild(form), form.submit(), closeConfirmModal();
+    }
+  }, enabledCoupons = couponCodes.filter((coupon) => coupon.enabled && coupon.couponCode), appliedCoupon = actionData?.appliedCoupon || activeOrder?.couponCodes?.[0], rawTotal = actionData?.orderTotal ?? activeOrder?.totalWithTax ?? order?.totalWithTax ?? 0;
+  return /* @__PURE__ */ jsxDEV63("div", { className: "max-w-5xl mx-auto mt-10 p-8 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-2xl", children: [
+    /* @__PURE__ */ jsxDEV63("link", { href: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400&display=swap", rel: "stylesheet" }, void 0, !1, {
+      fileName: "app/routes/coupon.tsx",
+      lineNumber: 330,
+      columnNumber: 7
+    }, this),
+    showErrorModal && /* @__PURE__ */ jsxDEV63("div", { className: "fixed inset-0 bg-black/60 flex items-center justify-center z-50", children: /* @__PURE__ */ jsxDEV63("div", { className: "bg-white rounded-xl p-6 max-w-sm w-full shadow-lg backdrop-blur-md bg-opacity-90", children: [
+      /* @__PURE__ */ jsxDEV63("h3", { className: "text-xl font-bold text-gray-900 mb-2 flex items-center gap-2", children: [
+        /* @__PURE__ */ jsxDEV63("span", { className: "text-red-500", children: "\u26A0\uFE0F" }, void 0, !1, {
+          fileName: "app/routes/coupon.tsx",
+          lineNumber: 337,
+          columnNumber: 15
+        }, this),
+        " Oops!"
+      ] }, void 0, !0, {
+        fileName: "app/routes/coupon.tsx",
+        lineNumber: 336,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV63("p", { className: "text-gray-700 mb-4", children: errorMessage }, void 0, !1, {
+        fileName: "app/routes/coupon.tsx",
+        lineNumber: 339,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV63(
+        "button",
+        {
+          onClick: closeErrorModal,
+          className: "w-full py-2 px-4 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors",
+          children: "Got It"
+        },
+        void 0,
+        !1,
+        {
+          fileName: "app/routes/coupon.tsx",
+          lineNumber: 340,
+          columnNumber: 13
+        },
+        this
+      )
+    ] }, void 0, !0, {
+      fileName: "app/routes/coupon.tsx",
+      lineNumber: 335,
+      columnNumber: 11
+    }, this) }, void 0, !1, {
+      fileName: "app/routes/coupon.tsx",
+      lineNumber: 334,
+      columnNumber: 9
+    }, this),
+    showConfirmModal && /* @__PURE__ */ jsxDEV63("div", { className: "fixed inset-0 bg-black/60 flex items-center justify-center z-50", children: /* @__PURE__ */ jsxDEV63("div", { className: "bg-white rounded-xl p-6 max-w-sm w-full shadow-lg backdrop-blur-md bg-opacity-90", children: [
+      /* @__PURE__ */ jsxDEV63("h3", { className: "text-xl font-bold text-gray-900 mb-2", children: "Confirm Removal" }, void 0, !1, {
+        fileName: "app/routes/coupon.tsx",
+        lineNumber: 354,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV63("p", { className: "text-gray-700 mb-4", children: "Remove this coupon and its products from your cart?" }, void 0, !1, {
+        fileName: "app/routes/coupon.tsx",
+        lineNumber: 355,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV63("div", { className: "flex gap-3", children: [
+        /* @__PURE__ */ jsxDEV63(
+          "button",
+          {
+            onClick: closeConfirmModal,
+            className: "flex-1 py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors",
+            children: "Cancel"
+          },
+          void 0,
+          !1,
+          {
+            fileName: "app/routes/coupon.tsx",
+            lineNumber: 359,
+            columnNumber: 15
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV63(
+          "button",
+          {
+            onClick: confirmRemoveCoupon,
+            className: "flex-1 py-2 px-4 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors",
+            children: "Remove"
+          },
+          void 0,
+          !1,
+          {
+            fileName: "app/routes/coupon.tsx",
+            lineNumber: 365,
+            columnNumber: 15
+          },
+          this
+        )
+      ] }, void 0, !0, {
+        fileName: "app/routes/coupon.tsx",
+        lineNumber: 358,
+        columnNumber: 13
+      }, this)
+    ] }, void 0, !0, {
+      fileName: "app/routes/coupon.tsx",
+      lineNumber: 353,
+      columnNumber: 11
+    }, this) }, void 0, !1, {
+      fileName: "app/routes/coupon.tsx",
+      lineNumber: 352,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV63("div", { className: "mb-8 text-center", children: /* @__PURE__ */ jsxDEV63("h2", { className: "text-3xl font-bold text-gray-800 ", children: [
+      "Order Total: ",
+      /* @__PURE__ */ jsxDEV63(Price, { priceWithTax: rawTotal, currencyCode: activeOrder?.currencyCode ?? "INR" /* Inr */ }, void 0, !1, {
+        fileName: "app/routes/coupon.tsx",
+        lineNumber: 378,
+        columnNumber: 24
+      }, this)
+    ] }, void 0, !0, {
+      fileName: "app/routes/coupon.tsx",
+      lineNumber: 377,
+      columnNumber: 9
+    }, this) }, void 0, !1, {
+      fileName: "app/routes/coupon.tsx",
+      lineNumber: 376,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV63("h3", { className: "text-2xl font-semibold text-gray-800 mb-6  text-center", children: "Exclusive Offers" }, void 0, !1, {
+      fileName: "app/routes/coupon.tsx",
+      lineNumber: 381,
+      columnNumber: 7
+    }, this),
+    actionData?.message && /* @__PURE__ */ jsxDEV63(
+      "div",
+      {
+        className: `mb-6 p-4 rounded-lg flex items-center gap-2 text-sm ${actionData.success ? "bg-green-100 text-green-800 border-green-300" : "bg-red-100 text-red-800 border-red-300"} border`,
+        children: [
+          /* @__PURE__ */ jsxDEV63("span", { children: actionData.success ? "\u2705" : "\u274C" }, void 0, !1, {
+            fileName: "app/routes/coupon.tsx",
+            lineNumber: 393,
+            columnNumber: 11
+          }, this),
+          " ",
+          actionData.message
+        ]
+      },
+      void 0,
+      !0,
+      {
+        fileName: "app/routes/coupon.tsx",
+        lineNumber: 386,
+        columnNumber: 9
+      },
+      this
+    ),
+    enabledCoupons.length > 0 ? /* @__PURE__ */ jsxDEV63("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-6", children: enabledCoupons.map((coupon, index) => {
+      let isApplied = appliedCoupon === coupon.couponCode, gradient = couponGradients[index % couponGradients.length], variantNames = [];
+      for (let condition of coupon.conditions)
+        if (condition.code === "productVariantIds") {
+          for (let arg of condition.args)
+            if (arg.name === "productVariantIds")
+              try {
+                let variantIds = JSON.parse(arg.value), cartItems = activeOrder?.lines ?? [];
+                for (let variantId of Array.isArray(variantIds) ? variantIds : [arg.value]) {
+                  let matchingItem = cartItems.find(
+                    (item) => item.productVariant.id === variantId.toString()
+                  );
+                  matchingItem?.productVariant.name && variantNames.push(matchingItem.productVariant.name);
+                }
+              } catch {
+                let matchingItem = (activeOrder?.lines ?? []).find(
+                  (item) => item.productVariant.id === arg.value
+                );
+                matchingItem?.productVariant.name && variantNames.push(matchingItem.productVariant.name);
+              }
+        }
+      return /* @__PURE__ */ jsxDEV63(
+        "div",
+        {
+          className: `coupon-ticket relative p-6 rounded-xl shadow-xl overflow-hidden transform transition-all duration-300 hover:scale-105 backdrop-blur-md ${isApplied ? "ring-2 ring-green-500" : "ring-1 ring-gray-200"}`,
+          style: {
+            background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})`
+          },
+          children: [
+            /* @__PURE__ */ jsxDEV63("div", { className: "absolute -left-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-gray-100 rounded-full" }, void 0, !1, {
+              fileName: "app/routes/coupon.tsx",
+              lineNumber: 442,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV63("div", { className: "absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-gray-100 rounded-full" }, void 0, !1, {
+              fileName: "app/routes/coupon.tsx",
+              lineNumber: 443,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV63("div", { className: "relative z-10", children: [
+              /* @__PURE__ */ jsxDEV63("div", { className: "flex items-center justify-between mb-4", children: [
+                /* @__PURE__ */ jsxDEV63("div", { children: [
+                  /* @__PURE__ */ jsxDEV63("span", { className: "coupon-code text-xl font-bold text-white tracking-wide", children: coupon.couponCode }, void 0, !1, {
+                    fileName: "app/routes/coupon.tsx",
+                    lineNumber: 448,
+                    columnNumber: 21
+                  }, this),
+                  /* @__PURE__ */ jsxDEV63("span", { className: "ml-2 text-sm text-white/90", children: [
+                    "(",
+                    coupon.name,
+                    ")"
+                  ] }, void 0, !0, {
+                    fileName: "app/routes/coupon.tsx",
+                    lineNumber: 451,
+                    columnNumber: 21
+                  }, this)
+                ] }, void 0, !0, {
+                  fileName: "app/routes/coupon.tsx",
+                  lineNumber: 447,
+                  columnNumber: 19
+                }, this),
+                /* @__PURE__ */ jsxDEV63(Form9, { method: "post", children: [
+                  /* @__PURE__ */ jsxDEV63("input", { type: "hidden", name: "actionType", value: isApplied ? "remove" : "apply" }, void 0, !1, {
+                    fileName: "app/routes/coupon.tsx",
+                    lineNumber: 454,
+                    columnNumber: 21
+                  }, this),
+                  /* @__PURE__ */ jsxDEV63("input", { type: "hidden", name: "couponCode", value: coupon.couponCode ?? "" }, void 0, !1, {
+                    fileName: "app/routes/coupon.tsx",
+                    lineNumber: 455,
+                    columnNumber: 21
+                  }, this),
+                  /* @__PURE__ */ jsxDEV63(
+                    "button",
+                    {
+                      type: "submit",
+                      onClick: (e) => {
+                        isApplied && (e.preventDefault(), openConfirmModal(coupon.couponCode ?? ""));
+                      },
+                      className: `px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 shadow-md ${isApplied ? "bg-red-500 hover:bg-red-600 text-white" : "bg-white hover:bg-gray-100 text-gray-800"}`,
+                      children: isApplied ? "Remove" : "Apply"
+                    },
+                    void 0,
+                    !1,
+                    {
+                      fileName: "app/routes/coupon.tsx",
+                      lineNumber: 456,
+                      columnNumber: 21
+                    },
+                    this
+                  )
+                ] }, void 0, !0, {
+                  fileName: "app/routes/coupon.tsx",
+                  lineNumber: 453,
+                  columnNumber: 19
+                }, this)
+              ] }, void 0, !0, {
+                fileName: "app/routes/coupon.tsx",
+                lineNumber: 446,
+                columnNumber: 17
+              }, this),
+              /* @__PURE__ */ jsxDEV63("div", { className: "text-sm text-white/90 space-y-2 ", children: [
+                /* @__PURE__ */ jsxDEV63("p", { children: [
+                  /* @__PURE__ */ jsxDEV63("strong", { className: "", children: "Details:" }, void 0, !1, {
+                    fileName: "app/routes/coupon.tsx",
+                    lineNumber: 472,
+                    columnNumber: 21
+                  }, this),
+                  " ",
+                  /* @__PURE__ */ jsxDEV63("span", { dangerouslySetInnerHTML: { __html: coupon.description || "No details" } }, void 0, !1, {
+                    fileName: "app/routes/coupon.tsx",
+                    lineNumber: 473,
+                    columnNumber: 21
+                  }, this)
+                ] }, void 0, !0, {
+                  fileName: "app/routes/coupon.tsx",
+                  lineNumber: 471,
+                  columnNumber: 19
+                }, this),
+                variantNames.length > 0 && /* @__PURE__ */ jsxDEV63("p", { children: [
+                  /* @__PURE__ */ jsxDEV63("strong", { className: "", children: "Products:" }, void 0, !1, {
+                    fileName: "app/routes/coupon.tsx",
+                    lineNumber: 477,
+                    columnNumber: 23
+                  }, this),
+                  " ",
+                  variantNames.join(", ")
+                ] }, void 0, !0, {
+                  fileName: "app/routes/coupon.tsx",
+                  lineNumber: 476,
+                  columnNumber: 21
+                }, this),
+                coupon.conditions.length > 0 && /* @__PURE__ */ jsxDEV63("div", {}, void 0, !1, {
+                  fileName: "app/routes/coupon.tsx",
+                  lineNumber: 481,
+                  columnNumber: 21
+                }, this),
+                coupon.endsAt && /* @__PURE__ */ jsxDEV63("p", { children: [
+                  /* @__PURE__ */ jsxDEV63("strong", { className: "", children: "Expires:" }, void 0, !1, {
+                    fileName: "app/routes/coupon.tsx",
+                    lineNumber: 501,
+                    columnNumber: 23
+                  }, this),
+                  " ",
+                  new Date(coupon.endsAt).toLocaleDateString()
+                ] }, void 0, !0, {
+                  fileName: "app/routes/coupon.tsx",
+                  lineNumber: 500,
+                  columnNumber: 21
+                }, this)
+              ] }, void 0, !0, {
+                fileName: "app/routes/coupon.tsx",
+                lineNumber: 470,
+                columnNumber: 17
+              }, this)
+            ] }, void 0, !0, {
+              fileName: "app/routes/coupon.tsx",
+              lineNumber: 445,
+              columnNumber: 15
+            }, this)
+          ]
+        },
+        coupon.id,
+        !0,
+        {
+          fileName: "app/routes/coupon.tsx",
+          lineNumber: 434,
+          columnNumber: 15
+        },
+        this
+      );
+    }) }, void 0, !1, {
+      fileName: "app/routes/coupon.tsx",
+      lineNumber: 398,
+      columnNumber: 9
+    }, this) : /* @__PURE__ */ jsxDEV63("p", { className: "text-center text-gray-600 py-4 ", children: "No exclusive offers available right now." }, void 0, !1, {
+      fileName: "app/routes/coupon.tsx",
+      lineNumber: 511,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV63("style", { children: `
+          .coupon-ticket {
+            position: relative;
+            background-size: 200% 200%;
+            animation: gradientShift 8s ease-in-out infinite;
+          }
+          .coupon-ticket::before,
+          .coupon-ticket::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            opacity: 0;
+            animation: particle 3s infinite ease-in-out;
+          }
+          .coupon-ticket::before {
+            top: 15%;
+            left: 10%;
+            animation-delay: 0.5s;
+          }
+          .coupon-ticket::after {
+            bottom: 20%;
+            right: 15%;
+            animation-delay: 1.5s;
+          }
+          @keyframes gradientShift {
+            0% { background-position: 0% 0%; }
+            50% { background-position: 100% 100%; }
+            100% { background-position: 0% 0%; }
+          }
+          @keyframes particle {
+            0%, 100% { opacity: 0; transform: scale(0.5) translateY(10px); }
+            50% { opacity: 1; transform: scale(1) translateY(0); }
+          }
+          .coupon-code {
+            font-family: '['Playfair_Display']', serif;
+          }
+        ` }, void 0, !1, {
+      fileName: "app/routes/coupon.tsx",
+      lineNumber: 513,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, !0, {
+    fileName: "app/routes/coupon.tsx",
+    lineNumber: 328,
     columnNumber: 5
   }, this);
 }
@@ -14958,7 +15002,7 @@ function Index() {
 }
 
 // server-assets-manifest:@remix-run/dev/assets-manifest
-var assets_manifest_default = { entry: { module: "/build/entry.client-HWFSSZYX.js", imports: ["/build/_shared/chunk-OAPPX4FA.js", "/build/_shared/chunk-7LRNVKNK.js", "/build/_shared/chunk-R6B7HXW6.js", "/build/_shared/chunk-7PHB3BFD.js", "/build/_shared/chunk-IL77MFZH.js", "/build/_shared/chunk-JR22VO6P.js", "/build/_shared/chunk-WEAPBHQG.js", "/build/_shared/chunk-CJ4MY3PQ.js", "/build/_shared/chunk-PZDJHGND.js"] }, routes: { root: { id: "root", parentId: void 0, path: "", index: void 0, caseSensitive: void 0, module: "/build/root-Z4O6RWYS.js", imports: ["/build/_shared/chunk-G4FX3M25.js", "/build/_shared/chunk-FFLUTPB2.js", "/build/_shared/chunk-DYN6EWA5.js", "/build/_shared/chunk-VJPBPB7U.js", "/build/_shared/chunk-2QJY4JOV.js", "/build/_shared/chunk-QZYG7WHP.js", "/build/_shared/chunk-65HDGKFV.js", "/build/_shared/chunk-R5BHNF67.js", "/build/_shared/chunk-4KYYPW5T.js", "/build/_shared/chunk-76TTLXDT.js", "/build/_shared/chunk-L7FVEPUN.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !0 }, "routes/account": { id: "routes/account", parentId: "root", path: "account", index: void 0, caseSensitive: void 0, module: "/build/routes/account-CQGX52OB.js", imports: void 0, hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account._index": { id: "routes/account._index", parentId: "root", path: "account/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/account._index-2QLVVQLL.js", imports: ["/build/_shared/chunk-5CXR2TVW.js", "/build/_shared/chunk-VWA7GDXL.js", "/build/_shared/chunk-WMBKO5J4.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-4DGX6SSC.js", "/build/_shared/chunk-M7P3TKQF.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses": { id: "routes/account.addresses", parentId: "root", path: "account/addresses", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses-TPZ5CTRX.js", imports: ["/build/_shared/chunk-OSLFIIIM.js", "/build/_shared/chunk-4DGX6SSC.js", "/build/_shared/chunk-M7P3TKQF.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.$addressId": { id: "routes/account.addresses.$addressId", parentId: "root", path: "account/addresses/:addressId", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.$addressId-VQNQG4N4.js", imports: ["/build/_shared/chunk-TSQXDFFW.js", "/build/_shared/chunk-S5VQQFJR.js", "/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-VWA7GDXL.js", "/build/_shared/chunk-WMBKO5J4.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-M7P3TKQF.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.new": { id: "routes/account.addresses.new", parentId: "root", path: "account/addresses/new", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.new-KWSH7RWI.js", imports: ["/build/_shared/chunk-TSQXDFFW.js", "/build/_shared/chunk-S5VQQFJR.js", "/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-VWA7GDXL.js", "/build/_shared/chunk-WMBKO5J4.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-M7P3TKQF.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.history": { id: "routes/account.history", parentId: "root", path: "account/history", index: void 0, caseSensitive: void 0, module: "/build/routes/account.history-KZPTFVTN.js", imports: ["/build/_shared/chunk-6LMZTMWA.js", "/build/_shared/chunk-S5VQQFJR.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.password": { id: "routes/account.password", parentId: "root", path: "account/password", index: void 0, caseSensitive: void 0, module: "/build/routes/account.password-6JZK2FGO.js", imports: ["/build/_shared/chunk-WMBKO5J4.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-4DGX6SSC.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.active-order": { id: "routes/api.active-order", parentId: "root", path: "api/active-order", index: void 0, caseSensitive: void 0, module: "/build/routes/api.active-order-VQJ67ND7.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.create-razorpay-order": { id: "routes/api.create-razorpay-order", parentId: "root", path: "api/create-razorpay-order", index: void 0, caseSensitive: void 0, module: "/build/routes/api.create-razorpay-order-OKLRUALR.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.logout": { id: "routes/api.logout", parentId: "root", path: "api/logout", index: void 0, caseSensitive: void 0, module: "/build/routes/api.logout-O22KF3EY.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout": { id: "routes/checkout", parentId: "root", path: "checkout", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout-A3RSZHSK.js", imports: ["/build/_shared/chunk-TVGSDJHK.js", "/build/_shared/chunk-MYXDBJLY.js", "/build/_shared/chunk-5CXR2TVW.js", "/build/_shared/chunk-2ZR7LTHW.js", "/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-OSLFIIIM.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout._index": { id: "routes/checkout._index", parentId: "root", path: "checkout/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout._index-BOG6QVC7.js", imports: ["/build/_shared/chunk-MYXDBJLY.js", "/build/_shared/chunk-5CXR2TVW.js", "/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-OSLFIIIM.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.confirmation.$orderCode": { id: "routes/checkout.confirmation.$orderCode", parentId: "root", path: "checkout/confirmation/:orderCode", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.confirmation.$orderCode-S4BAI4SP.js", imports: ["/build/_shared/chunk-2ZR7LTHW.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.payment": { id: "routes/checkout.payment", parentId: "root", path: "checkout/payment", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.payment-2KLA36TQ.js", imports: ["/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/collections.$slug": { id: "routes/collections.$slug", parentId: "root", path: "collections/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/collections.$slug-JWG6E52K.js", imports: ["/build/_shared/chunk-644AQX3J.js", "/build/_shared/chunk-UT3TQV5A.js", "/build/_shared/chunk-N7INIBU6.js", "/build/_shared/chunk-V4CT6AUT.js", "/build/_shared/chunk-6LMZTMWA.js", "/build/_shared/chunk-S5VQQFJR.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/coupon": { id: "routes/coupon", parentId: "root", path: "coupon", index: void 0, caseSensitive: void 0, module: "/build/routes/coupon-GF625F3J.js", imports: ["/build/_shared/chunk-TVGSDJHK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/index": { id: "routes/index", parentId: "root", path: void 0, index: !0, caseSensitive: void 0, module: "/build/routes/index-QYTMMFZM.js", imports: ["/build/_shared/chunk-644AQX3J.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/products.$slug": { id: "routes/products.$slug", parentId: "root", path: "products/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/products.$slug-JS7L4UOI.js", imports: ["/build/_shared/chunk-UT3TQV5A.js", "/build/_shared/chunk-V4CT6AUT.js", "/build/_shared/chunk-4AREG525.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/search": { id: "routes/search", parentId: "root", path: "search", index: void 0, caseSensitive: void 0, module: "/build/routes/search-AMLAM5V7.js", imports: ["/build/_shared/chunk-N7INIBU6.js", "/build/_shared/chunk-V4CT6AUT.js", "/build/_shared/chunk-6LMZTMWA.js", "/build/_shared/chunk-S5VQQFJR.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-in": { id: "routes/sign-in", parentId: "root", path: "sign-in", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-in-N27ZGLBY.js", imports: ["/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.index": { id: "routes/sign-up.index", parentId: "root", path: "sign-up", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.index-DU7ZB4RP.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.success": { id: "routes/sign-up.success", parentId: "root", path: "sign-up/success", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.success-T5IWIIEU.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify": { id: "routes/verify", parentId: "root", path: "verify", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-F4IVJ7BF.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify-email-address-change": { id: "routes/verify-email-address-change", parentId: "root", path: "verify-email-address-change", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-email-address-change-3IJDNB6S.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 } }, version: "dcfb5a44", hmr: { runtime: "/build/_shared/chunk-IL77MFZH.js", timestamp: 1745487285961 }, url: "/build/manifest-DCFB5A44.js" };
+var assets_manifest_default = { entry: { module: "/build/entry.client-HWFSSZYX.js", imports: ["/build/_shared/chunk-OAPPX4FA.js", "/build/_shared/chunk-7LRNVKNK.js", "/build/_shared/chunk-R6B7HXW6.js", "/build/_shared/chunk-7PHB3BFD.js", "/build/_shared/chunk-IL77MFZH.js", "/build/_shared/chunk-JR22VO6P.js", "/build/_shared/chunk-WEAPBHQG.js", "/build/_shared/chunk-CJ4MY3PQ.js", "/build/_shared/chunk-PZDJHGND.js"] }, routes: { root: { id: "root", parentId: void 0, path: "", index: void 0, caseSensitive: void 0, module: "/build/root-KFMW3N5X.js", imports: ["/build/_shared/chunk-G4FX3M25.js", "/build/_shared/chunk-FFLUTPB2.js", "/build/_shared/chunk-DYN6EWA5.js", "/build/_shared/chunk-VJPBPB7U.js", "/build/_shared/chunk-2QJY4JOV.js", "/build/_shared/chunk-QZYG7WHP.js", "/build/_shared/chunk-65HDGKFV.js", "/build/_shared/chunk-R5BHNF67.js", "/build/_shared/chunk-4KYYPW5T.js", "/build/_shared/chunk-76TTLXDT.js", "/build/_shared/chunk-L7FVEPUN.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !0 }, "routes/account": { id: "routes/account", parentId: "root", path: "account", index: void 0, caseSensitive: void 0, module: "/build/routes/account-CQGX52OB.js", imports: void 0, hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account._index": { id: "routes/account._index", parentId: "root", path: "account/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/account._index-2QLVVQLL.js", imports: ["/build/_shared/chunk-5CXR2TVW.js", "/build/_shared/chunk-VWA7GDXL.js", "/build/_shared/chunk-WMBKO5J4.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-4DGX6SSC.js", "/build/_shared/chunk-M7P3TKQF.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses": { id: "routes/account.addresses", parentId: "root", path: "account/addresses", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses-RR66KNND.js", imports: ["/build/_shared/chunk-UK3THWQT.js", "/build/_shared/chunk-4DGX6SSC.js", "/build/_shared/chunk-M7P3TKQF.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.$addressId": { id: "routes/account.addresses.$addressId", parentId: "root", path: "account/addresses/:addressId", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.$addressId-VQNQG4N4.js", imports: ["/build/_shared/chunk-TSQXDFFW.js", "/build/_shared/chunk-S5VQQFJR.js", "/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-VWA7GDXL.js", "/build/_shared/chunk-WMBKO5J4.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-M7P3TKQF.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.new": { id: "routes/account.addresses.new", parentId: "root", path: "account/addresses/new", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.new-KWSH7RWI.js", imports: ["/build/_shared/chunk-TSQXDFFW.js", "/build/_shared/chunk-S5VQQFJR.js", "/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-VWA7GDXL.js", "/build/_shared/chunk-WMBKO5J4.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-M7P3TKQF.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.history": { id: "routes/account.history", parentId: "root", path: "account/history", index: void 0, caseSensitive: void 0, module: "/build/routes/account.history-KZPTFVTN.js", imports: ["/build/_shared/chunk-6LMZTMWA.js", "/build/_shared/chunk-S5VQQFJR.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.password": { id: "routes/account.password", parentId: "root", path: "account/password", index: void 0, caseSensitive: void 0, module: "/build/routes/account.password-6JZK2FGO.js", imports: ["/build/_shared/chunk-WMBKO5J4.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-4DGX6SSC.js", "/build/_shared/chunk-IF5DKD3W.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.active-order": { id: "routes/api.active-order", parentId: "root", path: "api/active-order", index: void 0, caseSensitive: void 0, module: "/build/routes/api.active-order-VQJ67ND7.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.create-razorpay-order": { id: "routes/api.create-razorpay-order", parentId: "root", path: "api/create-razorpay-order", index: void 0, caseSensitive: void 0, module: "/build/routes/api.create-razorpay-order-OKLRUALR.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.logout": { id: "routes/api.logout", parentId: "root", path: "api/logout", index: void 0, caseSensitive: void 0, module: "/build/routes/api.logout-O22KF3EY.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout": { id: "routes/checkout", parentId: "root", path: "checkout", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout-3KLQLOCB.js", imports: ["/build/_shared/chunk-NBEH4DGX.js", "/build/_shared/chunk-U7EXLWMY.js", "/build/_shared/chunk-5CXR2TVW.js", "/build/_shared/chunk-2ZR7LTHW.js", "/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-UK3THWQT.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout._index": { id: "routes/checkout._index", parentId: "root", path: "checkout/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout._index-TGNZ2PNP.js", imports: ["/build/_shared/chunk-U7EXLWMY.js", "/build/_shared/chunk-5CXR2TVW.js", "/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-UK3THWQT.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.confirmation.$orderCode": { id: "routes/checkout.confirmation.$orderCode", parentId: "root", path: "checkout/confirmation/:orderCode", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.confirmation.$orderCode-S4BAI4SP.js", imports: ["/build/_shared/chunk-2ZR7LTHW.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.payment": { id: "routes/checkout.payment", parentId: "root", path: "checkout/payment", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.payment-2KLA36TQ.js", imports: ["/build/_shared/chunk-5XA5FETG.js", "/build/_shared/chunk-4AREG525.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/collections.$slug": { id: "routes/collections.$slug", parentId: "root", path: "collections/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/collections.$slug-JWG6E52K.js", imports: ["/build/_shared/chunk-644AQX3J.js", "/build/_shared/chunk-UT3TQV5A.js", "/build/_shared/chunk-N7INIBU6.js", "/build/_shared/chunk-V4CT6AUT.js", "/build/_shared/chunk-6LMZTMWA.js", "/build/_shared/chunk-S5VQQFJR.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/coupon": { id: "routes/coupon", parentId: "root", path: "coupon", index: void 0, caseSensitive: void 0, module: "/build/routes/coupon-DREI2JI3.js", imports: ["/build/_shared/chunk-NBEH4DGX.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/index": { id: "routes/index", parentId: "root", path: void 0, index: !0, caseSensitive: void 0, module: "/build/routes/index-QYTMMFZM.js", imports: ["/build/_shared/chunk-644AQX3J.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/products.$slug": { id: "routes/products.$slug", parentId: "root", path: "products/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/products.$slug-JS7L4UOI.js", imports: ["/build/_shared/chunk-UT3TQV5A.js", "/build/_shared/chunk-V4CT6AUT.js", "/build/_shared/chunk-4AREG525.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/search": { id: "routes/search", parentId: "root", path: "search", index: void 0, caseSensitive: void 0, module: "/build/routes/search-AMLAM5V7.js", imports: ["/build/_shared/chunk-N7INIBU6.js", "/build/_shared/chunk-V4CT6AUT.js", "/build/_shared/chunk-6LMZTMWA.js", "/build/_shared/chunk-S5VQQFJR.js", "/build/_shared/chunk-4AREG525.js", "/build/_shared/chunk-DDSMDN2F.js", "/build/_shared/chunk-GSW4U3VK.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-in": { id: "routes/sign-in", parentId: "root", path: "sign-in", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-in-N27ZGLBY.js", imports: ["/build/_shared/chunk-GSW4U3VK.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.index": { id: "routes/sign-up.index", parentId: "root", path: "sign-up", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.index-DU7ZB4RP.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.success": { id: "routes/sign-up.success", parentId: "root", path: "sign-up/success", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.success-T5IWIIEU.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify": { id: "routes/verify", parentId: "root", path: "verify", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-F4IVJ7BF.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify-email-address-change": { id: "routes/verify-email-address-change", parentId: "root", path: "verify-email-address-change", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-email-address-change-3IJDNB6S.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 } }, version: "cddf03a7", hmr: { runtime: "/build/_shared/chunk-IL77MFZH.js", timestamp: 1745494571905 }, url: "/build/manifest-CDDF03A7.js" };
 
 // server-entry-module:@remix-run/dev/server-build
 var mode = "development", assetsBuildDirectory = "public/build", future = { v3_fetcherPersist: !1, v3_relativeSplatPath: !1 }, publicPath = "/build/", entry = { module: entry_server_exports }, routes = {
