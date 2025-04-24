@@ -1295,7 +1295,7 @@ import {
 } from "@remix-run/react";
 
 // app/tailwind.css
-var tailwind_default = "/build/_assets/tailwind-BAVMJVC2.css";
+var tailwind_default = "/build/_assets/tailwind-4CGGGAHM.css";
 
 // app/components/header/Header.tsx
 import { Link } from "@remix-run/react";
@@ -1532,11 +1532,17 @@ import gql2 from "graphql-tag";
 import { print } from "graphql";
 
 // app/constants.ts
-var APP_META_TITLE = "Vendure Remix Storefront", APP_META_DESCRIPTION = "A headless commerce storefront starter kit built with Remix & Vendure", DEMO_API_URL = "http://localhost:3000/shop-api", API_URL = typeof process < "u" ? process.env.VENDURE_API_URL ?? DEMO_API_URL : DEMO_API_URL;
+var APP_META_TITLE = "Vendure Remix Storefront", APP_META_DESCRIPTION = "A headless commerce storefront starter kit built with Remix & Vendure", DEMO_API_URL = "https://readonlydemo.vendure.io/shop-api", API_URL = typeof process < "u" ? process.env.VENDURE_API_URL ?? DEMO_API_URL : DEMO_API_URL;
 
 // app/generated/graphql.ts
 import gql from "graphql-tag";
-var OrderDetailFragmentDoc = gql`
+var ErrorResultFragmentDoc = gql`
+    fragment ErrorResult on ErrorResult {
+  errorCode
+  message
+  __typename
+}
+    `, OrderDetailFragmentDoc = gql`
     fragment OrderDetail on Order {
   __typename
   id
@@ -1890,6 +1896,52 @@ var OrderDetailFragmentDoc = gql`
     }
   }
 }
+    `, GetChannelListDocument = gql`
+    query getChannelList {
+  getChannelList {
+    id
+    token
+    code
+  }
+}
+    `, GetChannelsByCustomerEmailDocument = gql`
+    query GetChannelsByCustomerEmail($email: String!) {
+  getChannelsByCustomerEmail(email: $email) {
+    id
+    code
+    token
+    defaultCurrencyCode
+  }
+}
+    `, GetPasswordResetTokenDocument = gql`
+    query GetPasswordResetToken {
+  getPasswordResetToken
+}
+    `, RequestPasswordResetDocument = gql`
+    mutation RequestPasswordReset($email: String!) {
+  requestPasswordReset(emailAddress: $email) {
+    __typename
+  }
+}
+    `, ResetPasswordDocument = gql`
+    mutation ResetPassword($token: String!, $password: String!) {
+  resetPassword(token: $token, password: $password) {
+    ... on CurrentUser {
+      id
+      channels {
+        token
+        code
+        permissions
+      }
+    }
+    ...ErrorResult
+    __typename
+  }
+}
+    ${ErrorResultFragmentDoc}`, SendPhoneOtpDocument = gql`
+    mutation SendPhoneOtp($phoneNumber: String!) {
+  sendPhoneOtp(phoneNumber: $phoneNumber)
+}
     `, ActiveCustomerDocument = gql`
     query activeCustomer {
   activeCustomer {
@@ -2175,6 +2227,24 @@ function getSdk(requester2) {
     collection(variables, options) {
       return requester2(CollectionDocument, variables, options);
     },
+    getChannelList(variables, options) {
+      return requester2(GetChannelListDocument, variables, options);
+    },
+    GetChannelsByCustomerEmail(variables, options) {
+      return requester2(GetChannelsByCustomerEmailDocument, variables, options);
+    },
+    GetPasswordResetToken(variables, options) {
+      return requester2(GetPasswordResetTokenDocument, variables, options);
+    },
+    RequestPasswordReset(variables, options) {
+      return requester2(RequestPasswordResetDocument, variables, options);
+    },
+    ResetPassword(variables, options) {
+      return requester2(ResetPasswordDocument, variables, options);
+    },
+    SendPhoneOtp(variables, options) {
+      return requester2(SendPhoneOtpDocument, variables, options);
+    },
     activeCustomer(variables, options) {
       return requester2(ActiveCustomerDocument, variables, options);
     },
@@ -2234,58 +2304,67 @@ var sessionStorage;
 async function getSessionStorage() {
   return sessionStorage || (sessionStorage = (await getCookieSessionStorageFactory())({
     cookie: {
-      name: "vendure_remix_session",
+      // name: 'vendure_remix_session',
+      // httpOnly: true,
+      // path: '/',
+      // sameSite: 'lax',
+      // secrets: ['awdbhbjahdbaw'],
+      name: "vendureSession",
+      // ✅ must match what Vendure is setting or what you're using
       httpOnly: !0,
-      path: "/",
       sameSite: "lax",
-      secrets: ["awdbhbjahdbaw"]
+      path: "/",
+      secrets: ["your-secret"],
+      secure: !1
     }
   }), sessionStorage);
 }
 
 // app/graphqlWrapper.ts
-var AUTH_TOKEN_SESSION_KEY = "authToken";
+var AUTH_TOKEN_SESSION_KEY = "authToken", CHANNEL_TOKEN_SESSION_KEY = "channelToken";
 async function sendQuery(options) {
-  let headers = new Headers(options.headers), req = options.request;
-  headers.append("Content-Type", "application/json");
-  let session = await getSessionStorage().then(
-    (sessionStorage2) => sessionStorage2.getSession(options.request?.headers.get("Cookie"))
-  );
-  if (session) {
-    let token = session.get(AUTH_TOKEN_SESSION_KEY);
-    token && headers.append("Authorization", `Bearer ${token}`);
-  }
-  return fetch(API_URL, {
+  let headers = new Headers(options.headers), session = await (await getSessionStorage()).getSession(
+    options.request?.headers.get("Cookie")
+  ), customChannelToken = options.customHeaders?.["vendure-token"], sessionChannelToken = session?.get(CHANNEL_TOKEN_SESSION_KEY);
+  customChannelToken ? headers.set("vendure-token", customChannelToken) : !headers.has("vendure-token") && sessionChannelToken && headers.set("vendure-token", sessionChannelToken);
+  let authToken = session?.get(AUTH_TOKEN_SESSION_KEY);
+  authToken && headers.set("Authorization", `Bearer ${authToken}`), headers.set("Content-Type", "application/json");
+  let res = await fetch(API_URL, {
     method: "POST",
-    body: JSON.stringify(options),
-    headers
-  }).then(async (res) => ({
+    headers,
+    body: JSON.stringify({
+      query: options.query,
+      variables: options.variables
+    })
+  });
+  return {
     ...await res.json(),
     headers: res.headers
-  }));
+  };
 }
-var baseSdk = getSdk(requester), sdk = baseSdk;
 function requester(doc, vars, options) {
   return sendQuery({
     query: print(doc),
     variables: vars,
     ...options
   }).then(async (response) => {
-    let token = response.headers.get("vendure-auth-token"), headers = {};
-    if (token) {
-      let sessionStorage2 = await getSessionStorage(), session = await sessionStorage2.getSession(
-        options?.request?.headers.get("Cookie")
-      );
-      session && (session.set(AUTH_TOKEN_SESSION_KEY, token), headers["Set-Cookie"] = await sessionStorage2.commitSession(session));
+    let vendureAuthToken = response.headers.get("vendure-auth-token"), headers = new Headers(), sessionStorage2 = await getSessionStorage(), session = await sessionStorage2.getSession(
+      options?.request?.headers.get("Cookie")
+    );
+    if (vendureAuthToken && session) {
+      session.set(AUTH_TOKEN_SESSION_KEY, vendureAuthToken);
+      let setCookie = await sessionStorage2.commitSession(session);
+      headers.set("Set-Cookie", setCookie);
     }
-    if (headers["x-vendure-api-url"] = API_URL, response.errors)
-      throw console.log(
-        response.errors[0].extensions?.exception?.stacktrace.join(`
+    if (headers.set("x-vendure-api-url", API_URL), response.errors?.length)
+      throw console.error(
+        response.errors[0].extensions?.exception?.stacktrace?.join(`
 `) ?? response.errors
       ), new Error(JSON.stringify(response.errors[0]));
-    return { ...response.data, _headers: new Headers(headers) };
+    return { ...response.data, _headers: headers };
   });
 }
+var baseSdk = getSdk(requester), sdk = baseSdk;
 
 // app/providers/collections/collections.ts
 function getCollections(request, options) {
@@ -3341,45 +3420,49 @@ async function loader({ request, params, context }) {
   return json(loaderData, { headers: activeCustomer._headers });
 }
 function App() {
-  let [open, setOpen] = useState2(!1), loaderData = useLoaderData2(), { collections } = loaderData, { locale } = useLoaderData2(), { i18n } = useTranslation7(), {
+  let [open, setOpen] = useState2(!1), loaderData = useLoaderData2(), { collections, activeCustomer } = loaderData, { locale } = loaderData, { i18n } = useTranslation7(), {
     activeOrderFetcher,
     activeOrder,
     adjustOrderLine: adjustOrderLine2,
     removeItem,
     refresh
-  } = useActiveOrder();
-  return useChangeLanguage(locale), useEffect4(() => {
+  } = useActiveOrder(), [isSignedIn, setIsSignedIn] = useState2(
+    !!activeCustomer.activeCustomer?.id
+  );
+  return useEffect4(() => {
+    setIsSignedIn(!!loaderData.activeCustomer.activeCustomer?.id);
+  }, [loaderData.activeCustomer.activeCustomer?.id]), useChangeLanguage(locale), useEffect4(() => {
     refresh();
   }, [loaderData]), /* @__PURE__ */ jsxDEV8("html", { lang: locale, dir: i18n.dir(), id: "app", children: [
     /* @__PURE__ */ jsxDEV8("head", { children: [
       /* @__PURE__ */ jsxDEV8("meta", { charSet: "utf-8" }, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 119,
+        lineNumber: 125,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDEV8("meta", { name: "viewport", content: "width=device-width,initial-scale=1" }, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 120,
+        lineNumber: 126,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDEV8("link", { rel: "icon", href: "/favicon.ico", type: "image/png" }, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 121,
+        lineNumber: 127,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDEV8(Meta, {}, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 122,
+        lineNumber: 128,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDEV8(Links, {}, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 123,
+        lineNumber: 129,
         columnNumber: 9
       }, this)
     ] }, void 0, !0, {
       fileName: "app/root.tsx",
-      lineNumber: 118,
+      lineNumber: 124,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDEV8("body", { children: [
@@ -3387,18 +3470,20 @@ function App() {
         Header,
         {
           onCartIconClick: () => setOpen(!open),
-          cartQuantity: activeOrder?.totalQuantity ?? 0
+          cartQuantity: activeOrder?.totalQuantity ?? 0,
+          isSignedIn,
+          collections
         },
         void 0,
         !1,
         {
           fileName: "app/root.tsx",
-          lineNumber: 126,
+          lineNumber: 132,
           columnNumber: 9
         },
         this
       ),
-      /* @__PURE__ */ jsxDEV8("main", { className: "", children: /* @__PURE__ */ jsxDEV8(
+      /* @__PURE__ */ jsxDEV8("main", { children: /* @__PURE__ */ jsxDEV8(
         Outlet,
         {
           context: {
@@ -3412,13 +3497,13 @@ function App() {
         !1,
         {
           fileName: "app/root.tsx",
-          lineNumber: 131,
+          lineNumber: 139,
           columnNumber: 11
         },
         this
       ) }, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 130,
+        lineNumber: 138,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDEV8(
@@ -3434,39 +3519,39 @@ function App() {
         !1,
         {
           fileName: "app/root.tsx",
-          lineNumber: 140,
+          lineNumber: 148,
           columnNumber: 9
         },
         this
       ),
       /* @__PURE__ */ jsxDEV8(ScrollRestoration, {}, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 147,
+        lineNumber: 155,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDEV8(Scripts, {}, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 148,
+        lineNumber: 156,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDEV8(Footer, { collections }, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 149,
+        lineNumber: 157,
         columnNumber: 9
       }, this),
       devMode && /* @__PURE__ */ jsxDEV8(LiveReload, {}, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 151,
+        lineNumber: 159,
         columnNumber: 21
       }, this)
     ] }, void 0, !0, {
       fileName: "app/root.tsx",
-      lineNumber: 125,
+      lineNumber: 131,
       columnNumber: 7
     }, this)
   ] }, void 0, !0, {
     fileName: "app/root.tsx",
-    lineNumber: 117,
+    lineNumber: 123,
     columnNumber: 5
   }, this);
 }
@@ -3479,49 +3564,49 @@ function DefaultSparseErrorPage({
     /* @__PURE__ */ jsxDEV8("head", { children: [
       /* @__PURE__ */ jsxDEV8("meta", { charSet: "utf-8" }, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 177,
+        lineNumber: 186,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDEV8("meta", { name: "viewport", content: "width=device-width,initial-scale=1" }, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 178,
+        lineNumber: 187,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDEV8("link", { rel: "icon", href: "/favicon.ico", type: "image/png" }, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 179,
+        lineNumber: 188,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDEV8(Meta, {}, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 180,
+        lineNumber: 189,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDEV8(Links, {}, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 181,
+        lineNumber: 190,
         columnNumber: 9
       }, this)
     ] }, void 0, !0, {
       fileName: "app/root.tsx",
-      lineNumber: 176,
+      lineNumber: 185,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDEV8("body", { children: [
       /* @__PURE__ */ jsxDEV8("main", { className: "flex flex-col items-center px-4 py-16 sm:py-32 text-center", children: [
         /* @__PURE__ */ jsxDEV8("span", { className: "text-sm font-semibold text-gray-500 uppercase tracking-wide", children: tagline }, void 0, !1, {
           fileName: "app/root.tsx",
-          lineNumber: 185,
+          lineNumber: 194,
           columnNumber: 11
         }, this),
         /* @__PURE__ */ jsxDEV8("h1", { className: "mt-2 font-bold text-gray-900 tracking-tight text-4xl sm:text-5xl", children: headline }, void 0, !1, {
           fileName: "app/root.tsx",
-          lineNumber: 188,
+          lineNumber: 197,
           columnNumber: 11
         }, this),
         /* @__PURE__ */ jsxDEV8("p", { className: "mt-4 text-base text-gray-500 max-w-full break-words", children: description }, void 0, !1, {
           fileName: "app/root.tsx",
-          lineNumber: 191,
+          lineNumber: 200,
           columnNumber: 11
         }, this),
         /* @__PURE__ */ jsxDEV8("div", { className: "mt-6", children: /* @__PURE__ */ jsxDEV8(
@@ -3535,43 +3620,43 @@ function DefaultSparseErrorPage({
           !1,
           {
             fileName: "app/root.tsx",
-            lineNumber: 195,
+            lineNumber: 204,
             columnNumber: 13
           },
           this
         ) }, void 0, !1, {
           fileName: "app/root.tsx",
-          lineNumber: 194,
+          lineNumber: 203,
           columnNumber: 11
         }, this)
       ] }, void 0, !0, {
         fileName: "app/root.tsx",
-        lineNumber: 184,
+        lineNumber: 193,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDEV8(ScrollRestoration, {}, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 203,
+        lineNumber: 212,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDEV8(Scripts, {}, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 204,
+        lineNumber: 213,
         columnNumber: 9
       }, this),
       devMode && /* @__PURE__ */ jsxDEV8(LiveReload, {}, void 0, !1, {
         fileName: "app/root.tsx",
-        lineNumber: 205,
+        lineNumber: 214,
         columnNumber: 21
       }, this)
     ] }, void 0, !0, {
       fileName: "app/root.tsx",
-      lineNumber: 183,
+      lineNumber: 192,
       columnNumber: 7
     }, this)
   ] }, void 0, !0, {
     fileName: "app/root.tsx",
-    lineNumber: 175,
+    lineNumber: 184,
     columnNumber: 5
   }, this);
 }
@@ -3588,7 +3673,7 @@ function ErrorBoundary() {
     !1,
     {
       fileName: "app/root.tsx",
-      lineNumber: 227,
+      lineNumber: 236,
       columnNumber: 5
     },
     this
@@ -4098,7 +4183,7 @@ import {
   useSubmit,
   useNavigation
 } from "@remix-run/react";
-import { json as json2, redirect } from "@remix-run/server-runtime";
+import { json as json2, redirect as redirect2 } from "@remix-run/server-runtime";
 import { useRef, useEffect as useEffect6 } from "react";
 import { validationError } from "remix-validated-form";
 
@@ -4820,16 +4905,14 @@ function CustomerAddressForm({
 
 // app/providers/account/account.ts
 import gql6 from "graphql-tag";
-var login = async (email, password, rememberMe, options) => sdk.login({ email, password, rememberMe }, options).then((res) => ({
-  ...res.login,
-  _headers: res._headers
-})), logout = async (options) => sdk.logout({}, options).then((res) => ({
-  ...res.logout,
-  _headers: res._headers
-})), registerCustomerAccount = async (options, variables) => sdk.registerCustomerAccount(variables, options).then((res) => ({
-  ...res.registerCustomerAccount,
-  _headers: res._headers
-})), verifyCustomerAccount = async (options, token, password) => sdk.verifyCustomerAccount({ token, password }, options).then((res) => ({
+import { redirect } from "@remix-run/server-runtime";
+var logout = async (options) => {
+  let logoutResult = await sdk.logout({}, options), sessionStorage2 = await getSessionStorage(), session = await sessionStorage2.getSession(
+    options?.request?.headers.get("Cookie")
+  ), setCookie = await sessionStorage2.destroySession(session), headers = new Headers(logoutResult._headers);
+  return headers.set("Set-Cookie", setCookie), redirect("/login", { headers });
+};
+var verifyCustomerAccount = async (options, token, password) => sdk.verifyCustomerAccount({ token, password }, options).then((res) => ({
   ...res.verifyCustomerAccount,
   _headers: res._headers
 }));
@@ -4859,19 +4942,14 @@ gql6`
     login(username: $email, password: $password, rememberMe: $rememberMe) {
       __typename
       ... on CurrentUser {
-      id
-      __typename
-      channels {
-        token
-        permissions
-        code
         id
-        __typename
+        identifier
+      }
+      ... on ErrorResult {
+        errorCode
+        message
       }
     }
-    ...ErrorResult
-    __typename
-  }
   }
 `;
 gql6`
@@ -4986,6 +5064,50 @@ gql6`
     }
   }
 `;
+async function authenticate(input, {
+  request,
+  customHeaders
+}) {
+  let response = await fetch(process.env.VENDURE_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "vendure-token": customHeaders["vendure-token"]
+    },
+    body: JSON.stringify({
+      query: `
+        mutation Authenticate($input: AuthenticationInput!) {
+          authenticate(input: $input) {
+            __typename
+            ... on CurrentUser {
+              id
+              identifier
+              channels {
+                id
+                code
+                token
+                permissions
+              }
+            }
+            ... on InvalidCredentialsError {
+              message
+              errorCode
+            }
+            ... on NotVerifiedError {
+              message
+              errorCode
+            }
+          }
+        }
+      `,
+      variables: { input }
+    })
+  });
+  return {
+    result: (await response.json()).data.authenticate,
+    headers: response.headers
+  };
+}
 
 // app/providers/checkout/checkout.ts
 import gql7 from "graphql-tag";
@@ -5092,7 +5214,7 @@ async function loader3({ request, params }) {
     (address2) => address2.id === params.addressId
   );
   if (!address)
-    return redirect("/account/addresses");
+    return redirect2("/account/addresses");
   let { availableCountries } = await getAvailableCountries({ request });
   return json2({ address, availableCountries });
 }
@@ -5204,7 +5326,7 @@ __export(verify_email_address_change_exports, {
 });
 import { useEffect as useEffect7, useRef as useRef2 } from "react";
 import { useLoaderData as useLoaderData5, useSearchParams } from "@remix-run/react";
-import { redirect as redirect2 } from "@remix-run/server-runtime";
+import { redirect as redirect3 } from "@remix-run/server-runtime";
 import { CheckCircleIcon as CheckCircleIcon2, XCircleIcon as XCircleIcon2 } from "@heroicons/react/24/outline";
 import { useTranslation as useTranslation13 } from "react-i18next";
 import { jsxDEV as jsxDEV20 } from "react/jsx-dev-runtime";
@@ -5222,7 +5344,7 @@ async function loader4({
 }
 async function action2({ request }) {
   let redirectTarget = (await request.formData()).get("redirect");
-  return redirect2(redirectTarget);
+  return redirect3(redirectTarget);
 }
 function VerifyEmailAddressChangeTokenPage() {
   let [searchParams] = useSearchParams(), result = useLoaderData5(), btnRef = useRef2(null), { t } = useTranslation13();
@@ -7164,7 +7286,7 @@ gql8`
 `;
 
 // app/utils/filtered-search-loader.ts
-import { redirect as redirect3 } from "@remix-run/server-runtime";
+import { redirect as redirect4 } from "@remix-run/server-runtime";
 function filteredSearchLoaderFromPagination(allowedPaginationLimits4, paginationLimitMinimumDefault4) {
   let searchPaginationSchema = paginationValidationSchema(
     allowedPaginationLimits4
@@ -7174,7 +7296,7 @@ function filteredSearchLoaderFromPagination(allowedPaginationLimits4, pagination
     filteredSearchLoader: async ({ params, request }) => {
       let url = new URL(request.url), term = url.searchParams.get("q"), facetValueIds = url.searchParams.getAll("fvid"), limit = url.searchParams.get("limit") ?? paginationLimitMinimumDefault4, page = url.searchParams.get("page") ?? 1, zodResult = searchPaginationSchema.safeParse({ limit, page });
       if (!zodResult.success)
-        throw url.search = "", redirect3(url.href);
+        throw url.search = "", redirect4(url.href);
       let resultPromises, searchResultPromise = search(
         {
           input: {
@@ -7830,7 +7952,7 @@ __export(checkout_payment_exports, {
   default: () => CheckoutPayment,
   loader: () => loader9
 });
-import { json as json7, redirect as redirect4 } from "@remix-run/server-runtime";
+import { json as json7, redirect as redirect5 } from "@remix-run/server-runtime";
 import { useLoaderData as useLoaderData9, useOutletContext } from "@remix-run/react";
 
 // app/components/checkout/stripe/StripePayments.tsx
@@ -8203,7 +8325,7 @@ async function loader9({ params, request }) {
     (sessionStorage2) => sessionStorage2.getSession(request?.headers.get("Cookie"))
   ), activeOrder = await getActiveOrder({ request });
   if (!session || !activeOrder || !activeOrder.active || activeOrder.lines.length === 0)
-    return redirect4("/");
+    return redirect5("/");
   let { eligiblePaymentMethods } = await getEligiblePaymentMethods({
     request
   }), error = session.get("activeOrderError"), stripePaymentIntent, stripePublishableKey, stripeError;
@@ -8256,7 +8378,7 @@ async function action7({ params, request }) {
       { request }
     );
     if (result.addPaymentToOrder.__typename === "Order")
-      return redirect4(
+      return redirect5(
         `/checkout/confirmation/${result.addPaymentToOrder.code}`
       );
     throw new Response("Not Found", {
@@ -8390,7 +8512,7 @@ __export(account_history_exports, {
   loader: () => loader10
 });
 import { useLoaderData as useLoaderData10, useNavigation as useNavigation5, useSubmit as useSubmit5 } from "@remix-run/react";
-import { json as json8, redirect as redirect5 } from "@remix-run/server-runtime";
+import { json as json8, redirect as redirect6 } from "@remix-run/server-runtime";
 
 // app/components/account/OrderHistoryItem.tsx
 import { useState as useState9 } from "react";
@@ -9110,7 +9232,7 @@ var paginationLimitMinimumDefault2 = 10, allowedPaginationLimits2 = /* @__PURE__
 async function loader10({ request }) {
   let url = new URL(request.url), limit = url.searchParams.get("limit") ?? paginationLimitMinimumDefault2, page = url.searchParams.get("page") ?? 1, zodResult = orderPaginationSchema.safeParse({ limit, page });
   if (!zodResult.success)
-    return url.search = "", redirect5(url.href);
+    return url.search = "", redirect6(url.href);
   let orderListOptions = {
     take: zodResult.data.limit,
     skip: (zodResult.data.page - 1) * zodResult.data.limit,
@@ -9122,7 +9244,7 @@ async function loader10({ request }) {
     orderList: res.activeCustomer.orders,
     appliedPaginationLimit: zodResult.data.limit,
     appliedPaginationPage: zodResult.data.page
-  }) : redirect5("/sign-in");
+  }) : redirect6("/sign-in");
 }
 function AccountHistory() {
   let { orderList, appliedPaginationLimit, appliedPaginationPage } = useLoaderData10(), submit = useSubmit5(), navigation2 = useNavigation5(), { t } = useTranslation31(), showingOrdersFrom = translatePaginationFrom(
@@ -9236,7 +9358,7 @@ import {
   useNavigate as useNavigate3,
   useOutletContext as useOutletContext2
 } from "@remix-run/react";
-import { json as json9, redirect as redirect6 } from "@remix-run/server-runtime";
+import { json as json9, redirect as redirect7 } from "@remix-run/server-runtime";
 
 // app/components/account/AddressForm.tsx
 import { useTranslation as useTranslation32 } from "react-i18next";
@@ -9972,7 +10094,7 @@ async function loader11({ request }) {
     (sessionStorage2) => sessionStorage2.getSession(request?.headers.get("Cookie"))
   ), activeOrder = await getActiveOrder({ request });
   if (!session || !activeOrder || !activeOrder.active || activeOrder.lines.length === 0)
-    return redirect6("/");
+    return redirect7("/");
   let { availableCountries } = await getAvailableCountries({ request }), { eligibleShippingMethods } = await getEligibleShippingMethods({
     request
   }), { activeCustomer } = await getActiveCustomerAddresses({ request }), error = session.get("activeOrderError");
@@ -10364,11 +10486,11 @@ __export(sign_up_success_exports, {
 });
 import { CheckCircleIcon as CheckCircleIcon5 } from "@heroicons/react/24/outline";
 import { Form as Form5 } from "@remix-run/react";
-import { redirect as redirect7 } from "@remix-run/server-runtime";
+import { redirect as redirect8 } from "@remix-run/server-runtime";
 import { useTranslation as useTranslation35 } from "react-i18next";
 import { jsxDEV as jsxDEV49 } from "react/jsx-dev-runtime";
 async function action8() {
-  return redirect7("/");
+  return redirect8("/");
 }
 function SuccessPage() {
   let { t } = useTranslation35();
@@ -10450,7 +10572,7 @@ __export(account_index_exports, {
 });
 import { CheckIcon as CheckIcon2, PencilIcon as PencilIcon3, XMarkIcon as XMarkIcon4 } from "@heroicons/react/24/outline";
 import { useActionData as useActionData4, useLoaderData as useLoaderData12, useNavigation as useNavigation6 } from "@remix-run/react";
-import { json as json10, redirect as redirect8 } from "@remix-run/server-runtime";
+import { json as json10, redirect as redirect9 } from "@remix-run/server-runtime";
 import { useEffect as useEffect11, useRef as useRef7, useState as useState11 } from "react";
 import { ValidatedForm as ValidatedForm5, validationError as validationError4 } from "remix-validated-form";
 import { z as z4 } from "zod";
@@ -10471,7 +10593,7 @@ var validator4 = withZod(
 );
 async function loader12({ request }) {
   let { activeCustomer } = await getActiveCustomerDetails({ request });
-  return activeCustomer ? json10({ activeCustomer }) : redirect8("/sign-in");
+  return activeCustomer ? json10({ activeCustomer }) : redirect9("/sign-in");
 }
 function isFormError(err) {
   return err.message !== void 0;
@@ -11864,426 +11986,487 @@ function getAddItemToOrderError(error) {
 var sign_up_index_exports = {};
 __export(sign_up_index_exports, {
   action: () => action10,
-  default: () => SignUpPage
+  default: () => SignUpPage,
+  loader: () => loader14
 });
-import { Form as Form6, Link as Link12, useActionData as useActionData5, useSearchParams as useSearchParams3 } from "@remix-run/react";
-import { json as json12, redirect as redirect9 } from "@remix-run/server-runtime";
+import {
+  Form as Form6,
+  Link as Link12,
+  useActionData as useActionData5,
+  useSearchParams as useSearchParams3,
+  useLoaderData as useLoaderData14,
+  useNavigation as useNavigation7,
+  useFetcher as useFetcher3
+} from "@remix-run/react";
+import {
+  json as json12,
+  redirect as redirect10
+} from "@remix-run/server-runtime";
 import { XCircleIcon as XCircleIcon6 } from "@heroicons/react/24/solid";
+import { useTranslation as useTranslation40 } from "react-i18next";
 
-// app/utils/registration-helper.ts
-var EMAIL_REGEX = /^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/, validateRegistrationForm = (formData) => {
-  let errors = {}, email = formData.get("email"), password = formData.get("password"), repeatPassword = formData.get("repeatPassword");
-  return (!email || typeof email != "string" || !email.match(EMAIL_REGEX)) && (errors.email = "A valid e-mail address is required."), (!password || typeof password != "string" || password.length < 4) && (errors.password = "Minimum password length is 4 symbols."), (!repeatPassword || typeof repeatPassword != "string") && (errors.repeatPassword = "Please repeat password!"), repeatPassword !== password && (errors.repeatPassword = "Passwords do not match!"), console.log(errors), errors;
-}, extractRegistrationFormValues = (formData) => ({ input: {
-  emailAddress: formData.get("email"),
-  firstName: formData.get("firstName") || void 0,
-  lastName: formData.get("lastName") || void 0,
-  password: formData.get("password")
-} });
+// app/providers/customPlugins/customPlugin.ts
+import gql9 from "graphql-tag";
+async function getChannelList(p0) {
+  return sdk.getChannelList().then((res) => {
+    let data = res.getChannelList;
+    return Object.assign([...data], { _headers: res._headers });
+  });
+}
+async function getChannelsByCustomerEmail(email) {
+  let response = await sdk.GetChannelsByCustomerEmail({ email });
+  return Object.assign([...response.getChannelsByCustomerEmail], {
+    _headers: response._headers
+  });
+}
+async function sendPhoneOtp(phoneNumber) {
+  return (await sdk.SendPhoneOtp({
+    phoneNumber
+  })).sendPhoneOtp ?? !1;
+}
+gql9`
+ query getChannelList{
+  getChannelList {
+    id
+    token
+    code
+  }
+ }
+`;
+gql9`
+query GetChannelsByCustomerEmail($email: String!) {
+    getChannelsByCustomerEmail(email: $email) {
+      id
+      code
+      token
+      defaultCurrencyCode
+    }
+  }
+    `;
+gql9`
+    query GetPasswordResetToken {
+      getPasswordResetToken
+    }
+  `;
+gql9`
+mutation RequestPasswordReset($email: String!){
+    requestPasswordReset(emailAddress: $email){
+        __typename
+    }
+}
+
+`;
+gql9`
+  mutation ResetPassword($token: String!, $password: String!) {
+    resetPassword(token: $token, password: $password) {
+      ... on CurrentUser {
+        id
+        channels {
+          token
+          code
+          permissions
+        }
+      }
+      ...ErrorResult
+      __typename
+    }
+  }
+
+  fragment ErrorResult on ErrorResult {
+    errorCode
+    message
+    __typename
+}
+`;
+gql9`
+  mutation SendPhoneOtp($phoneNumber: String!) {
+    sendPhoneOtp(phoneNumber: $phoneNumber)
+  }
+`;
 
 // app/routes/sign-up.index.tsx
-import { useTranslation as useTranslation40 } from "react-i18next";
-import { Fragment as Fragment14, jsxDEV as jsxDEV56 } from "react/jsx-dev-runtime";
+import { useState as useState13 } from "react";
+import { jsxDEV as jsxDEV56 } from "react/jsx-dev-runtime";
+async function loader14({ request }) {
+  let channels = await getChannelList({ request });
+  return json12({ channels });
+}
 async function action10({ request }) {
-  if (API_URL === DEMO_API_URL)
-    return {
-      form: (await getFixedT(request))("vendure.registrationError")
-    };
-  let body = await request.formData(), fieldErrors = validateRegistrationForm(body);
-  if (Object.keys(fieldErrors).length !== 0)
-    return fieldErrors;
-  let variables = extractRegistrationFormValues(body), result = await registerCustomerAccount({ request }, variables);
-  if (result.__typename === "Success")
-    return redirect9("/sign-up/success");
-  {
-    let formError = {
-      form: result.errorCode
-    };
-    return json12(formError, { status: 401 });
+  let body = await request.formData(), intent = body.get("intent")?.toString(), phoneNumber = body.get("phoneNumber")?.toString(), code = body.get("otp")?.toString(), selectedChannelToken = body.get("channel")?.toString(), firstName = body.get("firstName")?.toString(), lastName = body.get("lastName")?.toString(), redirectTo = body.get("redirectTo") || "/account", sessionStorage2 = await getSessionStorage(), session = await sessionStorage2.getSession(request.headers.get("Cookie"));
+  if (selectedChannelToken && session.set("channelToken", selectedChannelToken), intent === "send-otp" && phoneNumber) {
+    let otpSent = await sendPhoneOtp(phoneNumber);
+    return json12(
+      otpSent ? { otpSent: !0 } : { form: "Failed to send OTP" },
+      {
+        headers: {
+          "Set-Cookie": await sessionStorage2.commitSession(session)
+        }
+      }
+    );
   }
+  if (intent === "submit-form") {
+    if (!phoneNumber || !code)
+      return json12(
+        { form: "Phone number and OTP are required" },
+        {
+          status: 400,
+          headers: {
+            "Set-Cookie": await sessionStorage2.commitSession(session)
+          }
+        }
+      );
+    try {
+      let { result, headers } = await authenticate(
+        {
+          phoneOtp: {
+            phoneNumber,
+            code,
+            firstName,
+            lastName
+          }
+        },
+        {
+          request,
+          customHeaders: {
+            "vendure-token": selectedChannelToken ?? ""
+          }
+        }
+      ), vendureToken = headers.get("vendure-auth-token");
+      return "__typename" in result && result.__typename === "CurrentUser" ? (vendureToken && session.set("authToken", vendureToken), redirect10(redirectTo, {
+        headers: {
+          "Set-Cookie": await sessionStorage2.commitSession(session)
+        }
+      })) : json12(
+        { form: "Authentication failed" },
+        {
+          status: 401,
+          headers: {
+            "Set-Cookie": await sessionStorage2.commitSession(session)
+          }
+        }
+      );
+    } catch (error) {
+      return json12(
+        { form: error.message || "Unexpected error" },
+        {
+          status: 500,
+          headers: {
+            "Set-Cookie": await sessionStorage2.commitSession(session)
+          }
+        }
+      );
+    }
+  }
+  return json12(
+    { form: "Invalid request" },
+    {
+      status: 400,
+      headers: {
+        "Set-Cookie": await sessionStorage2.commitSession(session)
+      }
+    }
+  );
 }
 function SignUpPage() {
-  let [searchParams] = useSearchParams3(), formErrors = useActionData5(), { t } = useTranslation40();
-  return /* @__PURE__ */ jsxDEV56(Fragment14, { children: /* @__PURE__ */ jsxDEV56("div", { className: "flex flex-col justify-center py-12 sm:px-6 lg:px-8", children: [
+  let [searchParams] = useSearchParams3(), formErrors = useActionData5(), { t } = useTranslation40(), { channels } = useLoaderData14(), navigation2 = useNavigation7(), [phoneInput, setPhoneInput] = useState13(""), [firstNameInput, setFirstNameInput] = useState13(""), [lastNameInput, setLastNameInput] = useState13(""), fetcher = useFetcher3(), otpSent = fetcher.data?.otpSent;
+  return /* @__PURE__ */ jsxDEV56("div", { className: "flex flex-col justify-center py-12 sm:px-6 lg:px-8", children: [
     /* @__PURE__ */ jsxDEV56("div", { className: "sm:mx-auto sm:w-full sm:max-w-md", children: [
       /* @__PURE__ */ jsxDEV56("h2", { className: "mt-6 text-center text-3xl text-gray-900", children: t("account.create") }, void 0, !1, {
         fileName: "app/routes/sign-up.index.tsx",
-        lineNumber: 50,
-        columnNumber: 11
+        lineNumber: 167,
+        columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDEV56("p", { className: "mt-2 text-center text-sm text-gray-600", children: [
         t("common.or"),
         " ",
+        /* @__PURE__ */ jsxDEV56(Link12, { to: "/sign-in", className: "font-medium text-primary-600 hover:text-primary-500", children: t("account.login") }, void 0, !1, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 170,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, !0, {
+        fileName: "app/routes/sign-up.index.tsx",
+        lineNumber: 168,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, !0, {
+      fileName: "app/routes/sign-up.index.tsx",
+      lineNumber: 166,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV56("div", { className: "mt-8 sm:mx-auto sm:w-full sm:max-w-md", children: /* @__PURE__ */ jsxDEV56("div", { className: "bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10", children: [
+      /* @__PURE__ */ jsxDEV56(fetcher.Form, { method: "post", className: "space-y-6", children: [
+        /* @__PURE__ */ jsxDEV56("input", { type: "hidden", name: "intent", value: "send-otp" }, void 0, !1, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 181,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV56("label", { className: "block text-sm font-medium text-gray-700", children: t("account.phoneNumber") }, void 0, !1, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 182,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV56("div", { className: "flex space-x-2", children: [
+          /* @__PURE__ */ jsxDEV56(
+            "input",
+            {
+              id: "phoneNumber",
+              name: "phoneNumber",
+              type: "text",
+              required: !0,
+              value: phoneInput,
+              onChange: (e) => setPhoneInput(e.target.value),
+              className: "flex-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm"
+            },
+            void 0,
+            !1,
+            {
+              fileName: "app/routes/sign-up.index.tsx",
+              lineNumber: 184,
+              columnNumber: 15
+            },
+            this
+          ),
+          /* @__PURE__ */ jsxDEV56(
+            "button",
+            {
+              type: "submit",
+              className: "px-3 py-2 text-sm text-white bg-primary-600 rounded-md",
+              disabled: fetcher.state !== "idle",
+              children: fetcher.state === "submitting" ? "Sending\u2026" : t("sendOtp")
+            },
+            void 0,
+            !1,
+            {
+              fileName: "app/routes/sign-up.index.tsx",
+              lineNumber: 193,
+              columnNumber: 15
+            },
+            this
+          )
+        ] }, void 0, !0, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 183,
+          columnNumber: 13
+        }, this),
+        formErrors?.phoneNumber && /* @__PURE__ */ jsxDEV56("div", { className: "text-xs text-red-700", children: formErrors.phoneNumber }, void 0, !1, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 202,
+          columnNumber: 15
+        }, this),
+        fetcher.data?.form && /* @__PURE__ */ jsxDEV56("div", { className: "text-xs text-red-700", children: fetcher.data.form }, void 0, !1, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 205,
+          columnNumber: 15
+        }, this),
+        otpSent && /* @__PURE__ */ jsxDEV56("div", { className: "text-green-600 text-sm", children: t("otpSentSuccessfully") }, void 0, !1, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 208,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, !0, {
+        fileName: "app/routes/sign-up.index.tsx",
+        lineNumber: 180,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV56(Form6, { method: "post", className: "space-y-6 mt-6", children: [
+        /* @__PURE__ */ jsxDEV56("input", { type: "hidden", name: "intent", value: "submit-form" }, void 0, !1, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 214,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV56("input", { type: "hidden", name: "phoneNumber", value: phoneInput }, void 0, !1, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 215,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV56("div", { children: [
+          /* @__PURE__ */ jsxDEV56("label", { htmlFor: "otp", className: "block text-sm font-medium text-gray-700", children: t("account.otp") }, void 0, !1, {
+            fileName: "app/routes/sign-up.index.tsx",
+            lineNumber: 218,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV56(
+            "input",
+            {
+              id: "otp",
+              name: "otp",
+              type: "text",
+              required: !0,
+              className: "block w-full px-3 py-2 border border-gray-300 rounded-md sm:text-sm"
+            },
+            void 0,
+            !1,
+            {
+              fileName: "app/routes/sign-up.index.tsx",
+              lineNumber: 219,
+              columnNumber: 15
+            },
+            this
+          )
+        ] }, void 0, !0, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 217,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV56("div", { children: [
+          /* @__PURE__ */ jsxDEV56("label", { htmlFor: "firstName", className: "block text-sm font-medium text-gray-700", children: "First Name" }, void 0, !1, {
+            fileName: "app/routes/sign-up.index.tsx",
+            lineNumber: 229,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV56(
+            "input",
+            {
+              id: "firstName",
+              name: "firstName",
+              type: "text",
+              value: firstNameInput,
+              onChange: (e) => setFirstNameInput(e.target.value),
+              className: "block w-full px-3 py-2 border border-gray-300 rounded-md sm:text-sm"
+            },
+            void 0,
+            !1,
+            {
+              fileName: "app/routes/sign-up.index.tsx",
+              lineNumber: 230,
+              columnNumber: 15
+            },
+            this
+          )
+        ] }, void 0, !0, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 228,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV56("div", { children: [
+          /* @__PURE__ */ jsxDEV56("label", { htmlFor: "lastName", className: "block text-sm font-medium text-gray-700", children: "Last Name" }, void 0, !1, {
+            fileName: "app/routes/sign-up.index.tsx",
+            lineNumber: 241,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV56(
+            "input",
+            {
+              id: "lastName",
+              name: "lastName",
+              type: "text",
+              value: lastNameInput,
+              onChange: (e) => setLastNameInput(e.target.value),
+              className: "block w-full px-3 py-2 border border-gray-300 rounded-md sm:text-sm"
+            },
+            void 0,
+            !1,
+            {
+              fileName: "app/routes/sign-up.index.tsx",
+              lineNumber: 243,
+              columnNumber: 15
+            },
+            this
+          )
+        ] }, void 0, !0, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 240,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV56("div", { children: [
+          /* @__PURE__ */ jsxDEV56("label", { htmlFor: "channel", className: "block text-sm font-medium text-gray-700", children: t("account.channel") }, void 0, !1, {
+            fileName: "app/routes/sign-up.index.tsx",
+            lineNumber: 256,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV56(
+            "select",
+            {
+              id: "channel",
+              name: "channel",
+              className: "block w-full px-3 py-2 border border-gray-300 rounded-md sm:text-sm",
+              required: !0,
+              children: channels.map((channel) => /* @__PURE__ */ jsxDEV56("option", { value: channel.token, children: channel.code }, channel.id, !1, {
+                fileName: "app/routes/sign-up.index.tsx",
+                lineNumber: 264,
+                columnNumber: 19
+              }, this))
+            },
+            void 0,
+            !1,
+            {
+              fileName: "app/routes/sign-up.index.tsx",
+              lineNumber: 257,
+              columnNumber: 15
+            },
+            this
+          )
+        ] }, void 0, !0, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 255,
+          columnNumber: 13
+        }, this),
+        formErrors?.form && /* @__PURE__ */ jsxDEV56("div", { className: "rounded-md bg-red-50 p-4", children: /* @__PURE__ */ jsxDEV56("div", { className: "flex", children: [
+          /* @__PURE__ */ jsxDEV56(XCircleIcon6, { className: "h-5 w-5 text-red-400", "aria-hidden": "true" }, void 0, !1, {
+            fileName: "app/routes/sign-up.index.tsx",
+            lineNumber: 274,
+            columnNumber: 19
+          }, this),
+          /* @__PURE__ */ jsxDEV56("div", { className: "ml-3", children: [
+            /* @__PURE__ */ jsxDEV56("h3", { className: "text-sm font-medium text-red-800", children: t("account.createError") }, void 0, !1, {
+              fileName: "app/routes/sign-up.index.tsx",
+              lineNumber: 276,
+              columnNumber: 21
+            }, this),
+            /* @__PURE__ */ jsxDEV56("p", { className: "text-sm text-red-700 mt-2", children: formErrors.form }, void 0, !1, {
+              fileName: "app/routes/sign-up.index.tsx",
+              lineNumber: 277,
+              columnNumber: 21
+            }, this)
+          ] }, void 0, !0, {
+            fileName: "app/routes/sign-up.index.tsx",
+            lineNumber: 275,
+            columnNumber: 19
+          }, this)
+        ] }, void 0, !0, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 273,
+          columnNumber: 17
+        }, this) }, void 0, !1, {
+          fileName: "app/routes/sign-up.index.tsx",
+          lineNumber: 272,
+          columnNumber: 15
+        }, this),
         /* @__PURE__ */ jsxDEV56(
-          Link12,
+          "button",
           {
-            to: "/sign-in",
-            className: "font-medium text-primary-600 hover:text-primary-500",
-            children: t("account.login")
+            type: "submit",
+            className: "w-full flex justify-center py-2 px-4 border border-transparent rounded-md text-sm font-medium text-white bg-primary-600",
+            disabled: navigation2.state === "submitting",
+            children: t("account.signUp")
           },
           void 0,
           !1,
           {
             fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 55,
+            lineNumber: 283,
             columnNumber: 13
           },
           this
         )
       ] }, void 0, !0, {
         fileName: "app/routes/sign-up.index.tsx",
-        lineNumber: 53,
+        lineNumber: 213,
         columnNumber: 11
       }, this)
     ] }, void 0, !0, {
       fileName: "app/routes/sign-up.index.tsx",
-      lineNumber: 49,
+      lineNumber: 177,
       columnNumber: 9
-    }, this),
-    /* @__PURE__ */ jsxDEV56("div", { className: "mt-8 sm:mx-auto sm:w-full sm:max-w-md", children: /* @__PURE__ */ jsxDEV56("div", { className: "bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10", children: /* @__PURE__ */ jsxDEV56(Form6, { className: "space-y-6", method: "post", children: [
-      /* @__PURE__ */ jsxDEV56(
-        "input",
-        {
-          type: "hidden",
-          name: "redirectTo",
-          value: searchParams.get("redirectTo") ?? void 0
-        },
-        void 0,
-        !1,
-        {
-          fileName: "app/routes/sign-up.index.tsx",
-          lineNumber: 70,
-          columnNumber: 15
-        },
-        this
-      ),
-      /* @__PURE__ */ jsxDEV56("div", { children: [
-        /* @__PURE__ */ jsxDEV56(
-          "label",
-          {
-            htmlFor: "email",
-            className: "block text-sm font-medium text-gray-700",
-            children: t("account.emailAddress")
-          },
-          void 0,
-          !1,
-          {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 76,
-            columnNumber: 17
-          },
-          this
-        ),
-        /* @__PURE__ */ jsxDEV56("div", { className: "mt-1", children: [
-          /* @__PURE__ */ jsxDEV56(
-            "input",
-            {
-              id: "email",
-              name: "email",
-              type: "email",
-              autoComplete: "email",
-              className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/sign-up.index.tsx",
-              lineNumber: 83,
-              columnNumber: 19
-            },
-            this
-          ),
-          formErrors?.email && /* @__PURE__ */ jsxDEV56("div", { className: "text-xs text-red-700", children: formErrors.email }, void 0, !1, {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 91,
-            columnNumber: 21
-          }, this)
-        ] }, void 0, !0, {
-          fileName: "app/routes/sign-up.index.tsx",
-          lineNumber: 82,
-          columnNumber: 17
-        }, this)
-      ] }, void 0, !0, {
-        fileName: "app/routes/sign-up.index.tsx",
-        lineNumber: 75,
-        columnNumber: 15
-      }, this),
-      /* @__PURE__ */ jsxDEV56("div", { children: [
-        /* @__PURE__ */ jsxDEV56(
-          "label",
-          {
-            htmlFor: "firstName",
-            className: "block text-sm font-medium text-gray-700",
-            children: t("account.firstName")
-          },
-          void 0,
-          !1,
-          {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 99,
-            columnNumber: 17
-          },
-          this
-        ),
-        /* @__PURE__ */ jsxDEV56("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV56(
-          "input",
-          {
-            id: "firstName",
-            name: "firstName",
-            type: "text",
-            autoComplete: "given-name",
-            className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-          },
-          void 0,
-          !1,
-          {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 106,
-            columnNumber: 19
-          },
-          this
-        ) }, void 0, !1, {
-          fileName: "app/routes/sign-up.index.tsx",
-          lineNumber: 105,
-          columnNumber: 17
-        }, this)
-      ] }, void 0, !0, {
-        fileName: "app/routes/sign-up.index.tsx",
-        lineNumber: 98,
-        columnNumber: 15
-      }, this),
-      /* @__PURE__ */ jsxDEV56("div", { children: [
-        /* @__PURE__ */ jsxDEV56(
-          "label",
-          {
-            htmlFor: "lastName",
-            className: "block text-sm font-medium text-gray-700",
-            children: t("account.lastName")
-          },
-          void 0,
-          !1,
-          {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 117,
-            columnNumber: 17
-          },
-          this
-        ),
-        /* @__PURE__ */ jsxDEV56("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV56(
-          "input",
-          {
-            id: "lastName",
-            name: "lastName",
-            type: "text",
-            autoComplete: "family-name",
-            className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-          },
-          void 0,
-          !1,
-          {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 124,
-            columnNumber: 19
-          },
-          this
-        ) }, void 0, !1, {
-          fileName: "app/routes/sign-up.index.tsx",
-          lineNumber: 123,
-          columnNumber: 17
-        }, this)
-      ] }, void 0, !0, {
-        fileName: "app/routes/sign-up.index.tsx",
-        lineNumber: 116,
-        columnNumber: 15
-      }, this),
-      /* @__PURE__ */ jsxDEV56("div", { children: [
-        /* @__PURE__ */ jsxDEV56(
-          "label",
-          {
-            htmlFor: "password",
-            className: "block text-sm font-medium text-gray-700",
-            children: t("account.password")
-          },
-          void 0,
-          !1,
-          {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 135,
-            columnNumber: 17
-          },
-          this
-        ),
-        /* @__PURE__ */ jsxDEV56("div", { className: "mt-1", children: [
-          /* @__PURE__ */ jsxDEV56(
-            "input",
-            {
-              id: "password",
-              name: "password",
-              type: "password",
-              autoComplete: "current-password",
-              className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/sign-up.index.tsx",
-              lineNumber: 142,
-              columnNumber: 19
-            },
-            this
-          ),
-          formErrors?.password && /* @__PURE__ */ jsxDEV56("div", { className: "text-xs text-red-700", children: formErrors.password }, void 0, !1, {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 150,
-            columnNumber: 21
-          }, this)
-        ] }, void 0, !0, {
-          fileName: "app/routes/sign-up.index.tsx",
-          lineNumber: 141,
-          columnNumber: 17
-        }, this)
-      ] }, void 0, !0, {
-        fileName: "app/routes/sign-up.index.tsx",
-        lineNumber: 134,
-        columnNumber: 15
-      }, this),
-      /* @__PURE__ */ jsxDEV56("div", { children: [
-        /* @__PURE__ */ jsxDEV56(
-          "label",
-          {
-            htmlFor: "repeatPassword",
-            className: "block text-sm font-medium text-gray-700",
-            children: t("account.repeatPassword")
-          },
-          void 0,
-          !1,
-          {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 157,
-            columnNumber: 17
-          },
-          this
-        ),
-        /* @__PURE__ */ jsxDEV56("div", { className: "mt-1", children: [
-          /* @__PURE__ */ jsxDEV56(
-            "input",
-            {
-              id: "repeatPassword",
-              name: "repeatPassword",
-              type: "password",
-              autoComplete: "current-password",
-              className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/sign-up.index.tsx",
-              lineNumber: 164,
-              columnNumber: 19
-            },
-            this
-          ),
-          formErrors?.repeatPassword && /* @__PURE__ */ jsxDEV56("div", { className: "text-xs text-red-700", children: formErrors.repeatPassword }, void 0, !1, {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 172,
-            columnNumber: 21
-          }, this)
-        ] }, void 0, !0, {
-          fileName: "app/routes/sign-up.index.tsx",
-          lineNumber: 163,
-          columnNumber: 17
-        }, this)
-      ] }, void 0, !0, {
-        fileName: "app/routes/sign-up.index.tsx",
-        lineNumber: 156,
-        columnNumber: 15
-      }, this),
-      formErrors?.form && /* @__PURE__ */ jsxDEV56("div", { className: "rounded-md bg-red-50 p-4", children: /* @__PURE__ */ jsxDEV56("div", { className: "flex", children: [
-        /* @__PURE__ */ jsxDEV56("div", { className: "flex-shrink-0", children: /* @__PURE__ */ jsxDEV56(
-          XCircleIcon6,
-          {
-            className: "h-5 w-5 text-red-400",
-            "aria-hidden": "true"
-          },
-          void 0,
-          !1,
-          {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 182,
-            columnNumber: 23
-          },
-          this
-        ) }, void 0, !1, {
-          fileName: "app/routes/sign-up.index.tsx",
-          lineNumber: 181,
-          columnNumber: 21
-        }, this),
-        /* @__PURE__ */ jsxDEV56("div", { className: "ml-3", children: [
-          /* @__PURE__ */ jsxDEV56("h3", { className: "text-sm font-medium text-red-800", children: t("account.createError") }, void 0, !1, {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 188,
-            columnNumber: 23
-          }, this),
-          /* @__PURE__ */ jsxDEV56("p", { className: "text-sm text-red-700 mt-2", children: formErrors.form }, void 0, !1, {
-            fileName: "app/routes/sign-up.index.tsx",
-            lineNumber: 191,
-            columnNumber: 23
-          }, this)
-        ] }, void 0, !0, {
-          fileName: "app/routes/sign-up.index.tsx",
-          lineNumber: 187,
-          columnNumber: 21
-        }, this)
-      ] }, void 0, !0, {
-        fileName: "app/routes/sign-up.index.tsx",
-        lineNumber: 180,
-        columnNumber: 19
-      }, this) }, void 0, !1, {
-        fileName: "app/routes/sign-up.index.tsx",
-        lineNumber: 179,
-        columnNumber: 17
-      }, this),
-      'console.log("Form Data:", formData); console.log("Email:", email); console.log("Password:", password); console.log("Repeat Password:", repeatPassword);',
-      /* @__PURE__ */ jsxDEV56("div", { children: /* @__PURE__ */ jsxDEV56(
-        "button",
-        {
-          type: "submit",
-          className: "w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500",
-          children: t("account.signUp")
-        },
-        void 0,
-        !1,
-        {
-          fileName: "app/routes/sign-up.index.tsx",
-          lineNumber: 204,
-          columnNumber: 17
-        },
-        this
-      ) }, void 0, !1, {
-        fileName: "app/routes/sign-up.index.tsx",
-        lineNumber: 203,
-        columnNumber: 15
-      }, this)
-    ] }, void 0, !0, {
-      fileName: "app/routes/sign-up.index.tsx",
-      lineNumber: 69,
-      columnNumber: 13
     }, this) }, void 0, !1, {
       fileName: "app/routes/sign-up.index.tsx",
-      lineNumber: 65,
-      columnNumber: 11
-    }, this) }, void 0, !1, {
-      fileName: "app/routes/sign-up.index.tsx",
-      lineNumber: 64,
-      columnNumber: 9
+      lineNumber: 176,
+      columnNumber: 7
     }, this)
   ] }, void 0, !0, {
     fileName: "app/routes/sign-up.index.tsx",
-    lineNumber: 48,
-    columnNumber: 7
-  }, this) }, void 0, !1, {
-    fileName: "app/routes/sign-up.index.tsx",
-    lineNumber: 47,
+    lineNumber: 165,
     columnNumber: 5
   }, this);
 }
@@ -12292,15 +12475,15 @@ function SignUpPage() {
 var api_logout_exports = {};
 __export(api_logout_exports, {
   action: () => action11,
-  loader: () => loader14
+  loader: () => loader15
 });
-import { redirect as redirect10 } from "@remix-run/server-runtime";
+import { redirect as redirect11 } from "@remix-run/server-runtime";
 async function action11({ request }) {
   let result = await logout({ request });
-  return redirect10("/", { headers: result._headers });
+  return redirect11("/", { headers: result._headers });
 }
-async function loader14() {
-  return redirect10("/");
+async function loader15() {
+  return redirect11("/");
 }
 
 // app/routes/checkout.tsx
@@ -12449,7 +12632,7 @@ function Checkout() {
 var account_exports = {};
 __export(account_exports, {
   default: () => AccountDashboard,
-  loader: () => loader15
+  loader: () => loader16
 });
 import {
   HashtagIcon,
@@ -12457,8 +12640,8 @@ import {
   ShoppingBagIcon as ShoppingBagIcon2,
   UserCircleIcon
 } from "@heroicons/react/24/solid";
-import { Form as Form7, Outlet as Outlet4, useLoaderData as useLoaderData14 } from "@remix-run/react";
-import { json as json13, redirect as redirect11 } from "@remix-run/server-runtime";
+import { Form as Form7, Outlet as Outlet4, useLoaderData as useLoaderData15 } from "@remix-run/react";
+import { json as json13, redirect as redirect12 } from "@remix-run/server-runtime";
 
 // app/components/tabs/Tab.tsx
 import { NavLink, useMatches as useMatches3, useResolvedPath } from "@remix-run/react";
@@ -12508,12 +12691,12 @@ function Tab({ Icon, text, to }) {
 }
 
 // app/components/tabs/TabsContainer.tsx
-import { Fragment as Fragment15, jsxDEV as jsxDEV59 } from "react/jsx-dev-runtime";
+import { Fragment as Fragment14, jsxDEV as jsxDEV59 } from "react/jsx-dev-runtime";
 function TabsContainer({
   tabs,
   children
 }) {
-  return /* @__PURE__ */ jsxDEV59(Fragment15, { children: [
+  return /* @__PURE__ */ jsxDEV59(Fragment14, { children: [
     /* @__PURE__ */ jsxDEV59("div", { className: "border-b border-gray-200 mt-4", children: /* @__PURE__ */ jsxDEV59("ul", { className: "gap-x-4 grid grid-cols-2 sm:grid-0 sm:flex sm:flex-wrap -mb-px text-sm font-medium text-center text-gray-500", children: tabs.map((props) => /* @__PURE__ */ jsxDEV59(
       Tab,
       {
@@ -12549,12 +12732,12 @@ function TabsContainer({
 // app/routes/account.tsx
 import { useTranslation as useTranslation42 } from "react-i18next";
 import { jsxDEV as jsxDEV60 } from "react/jsx-dev-runtime";
-async function loader15({ request }) {
+async function loader16({ request }) {
   let { activeCustomer } = await getActiveCustomerDetails({ request });
-  return activeCustomer ? json13({ activeCustomer }) : redirect11("/sign-in");
+  return activeCustomer ? json13({ activeCustomer }) : redirect12("/sign-in");
 }
 function AccountDashboard() {
-  let { activeCustomer } = useLoaderData14(), { firstName, lastName } = activeCustomer, { t } = useTranslation42(), tabs = [
+  let { activeCustomer } = useLoaderData15(), { firstName, lastName } = activeCustomer, { t } = useTranslation42(), tabs = [
     {
       Icon: UserCircleIcon,
       text: t("account.details"),
@@ -12635,171 +12818,198 @@ __export(sign_in_exports, {
   action: () => action12,
   default: () => SignInPage
 });
-import { Link as Link13, useFetcher as useFetcher3, useSearchParams as useSearchParams4 } from "@remix-run/react";
-import { json as json14, redirect as redirect12 } from "@remix-run/server-runtime";
-import { XCircleIcon as XCircleIcon7 } from "@heroicons/react/24/solid";
-import { ArrowPathIcon as ArrowPathIcon4 } from "@heroicons/react/24/solid";
+import { Link as Link13, useFetcher as useFetcher4 } from "@remix-run/react";
+import { json as json14, redirect as redirect13 } from "@remix-run/server-runtime";
 import { useTranslation as useTranslation43 } from "react-i18next";
-import { Fragment as Fragment16, jsxDEV as jsxDEV61 } from "react/jsx-dev-runtime";
-async function action12({ params, request }) {
-  let body = await request.formData(), email = body.get("email"), password = body.get("password");
-  if (typeof email == "string" && typeof password == "string") {
-    let rememberMe = !!body.get("rememberMe"), redirectTo = body.get("redirectTo") || "/account", result = await login(email, password, rememberMe, { request });
-    return result.__typename === "CurrentUser" ? redirect12(redirectTo, { headers: result._headers }) : json14(result, {
-      status: 401
-    });
+import React6 from "react";
+import { jsxDEV as jsxDEV61 } from "react/jsx-dev-runtime";
+function useIsClient() {
+  let [isClient, setIsClient] = React6.useState(!1);
+  return React6.useEffect(() => {
+    setIsClient(!0);
+  }, []), isClient;
+}
+async function action12({ request }) {
+  let body = await request.formData(), phoneNumber = body.get("phoneNumber"), otp = body.get("otp"), actionType = body.get("actionType"), rememberMe = !!body.get("rememberMe"), redirectTo = body.get("redirectTo") || "/account", sessionStorage2 = await getSessionStorage(), session = await sessionStorage2.getSession(request.headers.get("Cookie"));
+  if (!phoneNumber || phoneNumber.length !== 10)
+    return json14({ message: "Invalid phone number" }, { status: 400 });
+  if (console.log("Incoming actionType:", actionType), console.log("Phone Number:", phoneNumber), actionType === "send-otp") {
+    let sent = await sendPhoneOtp(phoneNumber);
+    return json14({ sent });
   }
+  if (actionType === "login" && otp) {
+    let email = `${phoneNumber}@kaikani.com`, channels = await getChannelsByCustomerEmail(email);
+    if (console.log("Channels found:", channels), !channels || channels.length === 0)
+      return json14({ message: "No channel associated with this phone number." }, { status: 403 });
+    let selectedChannelToken = channels[0].token;
+    console.log("Using channel token:", selectedChannelToken);
+    let result = await authenticate(
+      {
+        phoneOtp: {
+          phoneNumber,
+          code: otp
+        }
+      },
+      {
+        request,
+        customHeaders: { "vendure-token": selectedChannelToken }
+      }
+    );
+    if ("__typename" in result.result && result.result.__typename === "CurrentUser") {
+      let vendureToken = result.headers.get("vendure-auth-token");
+      if (vendureToken) {
+        session.set("authToken", vendureToken), session.set("rememberMe", rememberMe);
+        let cookieHeaders = await sessionStorage2.commitSession(session);
+        return redirect13(redirectTo, {
+          headers: {
+            "Set-Cookie": cookieHeaders
+          }
+        });
+      }
+    }
+    return console.log("Auth result:", result.result), console.log("vendure-auth-token:", result.headers.get("vendure-auth-token")), json14({ message: "Invalid credentials" }, { status: 401 });
+  }
+  return json14({ message: "Invalid request" }, { status: 400 });
 }
 function SignInPage() {
-  let [searchParams] = useSearchParams4(), login2 = useFetcher3(), { t } = useTranslation43();
-  return /* @__PURE__ */ jsxDEV61(Fragment16, { children: /* @__PURE__ */ jsxDEV61("div", { className: "flex flex-col justify-center py-12 sm:px-6 lg:px-8", children: [
+  let { t } = useTranslation43(), [phoneNumber, setPhoneNumber] = React6.useState(""), [otpSent, setOtpSent] = React6.useState(!1), isClient = useIsClient(), sendOtpFetcher = useFetcher4(), loginFetcher = useFetcher4();
+  return React6.useEffect(() => {
+    sendOtpFetcher.data?.sent && setOtpSent(!0);
+  }, [sendOtpFetcher.data]), /* @__PURE__ */ jsxDEV61("div", { className: "flex flex-col justify-center py-12 sm:px-6 lg:px-8", children: [
     /* @__PURE__ */ jsxDEV61("div", { className: "sm:mx-auto sm:w-full sm:max-w-md", children: [
       /* @__PURE__ */ jsxDEV61("h2", { className: "mt-6 text-center text-3xl text-gray-900", children: t("account.signInTitle") }, void 0, !1, {
         fileName: "app/routes/sign-in.tsx",
-        lineNumber: 37,
-        columnNumber: 11
+        lineNumber: 117,
+        columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDEV61("p", { className: "mt-2 text-center text-sm text-gray-600", children: [
         t("common.or"),
         " ",
-        /* @__PURE__ */ jsxDEV61(
-          Link13,
-          {
-            to: "/sign-up",
-            className: "font-medium text-primary-600 hover:text-primary-500",
-            children: t("account.register")
-          },
-          void 0,
-          !1,
-          {
-            fileName: "app/routes/sign-in.tsx",
-            lineNumber: 42,
-            columnNumber: 13
-          },
-          this
-        )
+        /* @__PURE__ */ jsxDEV61(Link13, { to: "/sign-up", className: "font-medium text-primary-600 hover:text-primary-500", children: t("account.register") }, void 0, !1, {
+          fileName: "app/routes/sign-in.tsx",
+          lineNumber: 120,
+          columnNumber: 11
+        }, this)
       ] }, void 0, !0, {
         fileName: "app/routes/sign-in.tsx",
-        lineNumber: 40,
-        columnNumber: 11
+        lineNumber: 118,
+        columnNumber: 9
       }, this)
     ] }, void 0, !0, {
       fileName: "app/routes/sign-in.tsx",
-      lineNumber: 36,
-      columnNumber: 9
+      lineNumber: 116,
+      columnNumber: 7
     }, this),
-    /* @__PURE__ */ jsxDEV61("div", { className: "mt-8 sm:mx-auto sm:w-full sm:max-w-md", children: /* @__PURE__ */ jsxDEV61("div", { className: "bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10", children: /* @__PURE__ */ jsxDEV61(login2.Form, { method: "post", children: /* @__PURE__ */ jsxDEV61("fieldset", { disabled: login2.state !== "idle", className: "space-y-6", children: [
-      /* @__PURE__ */ jsxDEV61(
-        "input",
-        {
-          type: "hidden",
-          name: "redirectTo",
-          value: searchParams.get("redirectTo") ?? void 0
-        },
-        void 0,
-        !1,
-        {
+    /* @__PURE__ */ jsxDEV61("div", { className: "mt-8 sm:mx-auto sm:w-full sm:max-w-md", children: /* @__PURE__ */ jsxDEV61("div", { className: "bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 space-y-6", children: [
+      !otpSent && /* @__PURE__ */ jsxDEV61(sendOtpFetcher.Form, { method: "post", className: "space-y-6", children: [
+        /* @__PURE__ */ jsxDEV61("input", { type: "hidden", name: "actionType", value: "send-otp" }, void 0, !1, {
           fileName: "app/routes/sign-in.tsx",
-          lineNumber: 66,
-          columnNumber: 17
-        },
-        this
-      ),
-      /* @__PURE__ */ jsxDEV61("div", { children: [
-        /* @__PURE__ */ jsxDEV61(
-          "label",
-          {
-            htmlFor: "email",
-            className: "block text-sm font-medium text-gray-700",
-            children: t("account.emailAddress")
-          },
-          void 0,
-          !1,
-          {
+          lineNumber: 132,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV61("div", { children: [
+          /* @__PURE__ */ jsxDEV61("label", { htmlFor: "phoneNumber", className: "block text-sm font-medium text-gray-700", children: "Phone Number" }, void 0, !1, {
             fileName: "app/routes/sign-in.tsx",
-            lineNumber: 72,
-            columnNumber: 19
-          },
-          this
-        ),
-        /* @__PURE__ */ jsxDEV61("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV61(
-          "input",
-          {
-            id: "email",
-            name: "email",
-            type: "email",
-            autoComplete: "email",
-            required: !0,
-            defaultValue: "test@vendure.io",
-            placeholder: t("account.emailAddress"),
-            className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed"
-          },
-          void 0,
-          !1,
-          {
+            lineNumber: 134,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV61("div", { className: "mt-1 flex gap-2", children: [
+            /* @__PURE__ */ jsxDEV61(
+              "input",
+              {
+                id: "phoneNumber",
+                name: "phoneNumber",
+                type: "tel",
+                required: !0,
+                value: phoneNumber,
+                onChange: (e) => setPhoneNumber(e.target.value),
+                className: "flex-1 block px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+              },
+              void 0,
+              !1,
+              {
+                fileName: "app/routes/sign-in.tsx",
+                lineNumber: 138,
+                columnNumber: 19
+              },
+              this
+            ),
+            /* @__PURE__ */ jsxDEV61(
+              Button,
+              {
+                type: "submit",
+                disabled: !isClient || !phoneNumber || sendOtpFetcher.state !== "idle",
+                children: "Send OTP"
+              },
+              void 0,
+              !1,
+              {
+                fileName: "app/routes/sign-in.tsx",
+                lineNumber: 147,
+                columnNumber: 19
+              },
+              this
+            )
+          ] }, void 0, !0, {
             fileName: "app/routes/sign-in.tsx",
-            lineNumber: 79,
-            columnNumber: 21
-          },
-          this
-        ) }, void 0, !1, {
+            lineNumber: 137,
+            columnNumber: 17
+          }, this)
+        ] }, void 0, !0, {
           fileName: "app/routes/sign-in.tsx",
-          lineNumber: 78,
-          columnNumber: 19
+          lineNumber: 133,
+          columnNumber: 15
         }, this)
       ] }, void 0, !0, {
         fileName: "app/routes/sign-in.tsx",
-        lineNumber: 71,
-        columnNumber: 17
+        lineNumber: 131,
+        columnNumber: 13
       }, this),
-      /* @__PURE__ */ jsxDEV61("div", { children: [
-        /* @__PURE__ */ jsxDEV61(
-          "label",
-          {
-            htmlFor: "password",
-            className: "block text-sm font-medium text-gray-700",
-            children: t("account.password")
-          },
-          void 0,
-          !1,
-          {
-            fileName: "app/routes/sign-in.tsx",
-            lineNumber: 93,
-            columnNumber: 19
-          },
-          this
-        ),
-        /* @__PURE__ */ jsxDEV61("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV61(
-          "input",
-          {
-            id: "password",
-            name: "password",
-            type: "password",
-            autoComplete: "current-password",
-            required: !0,
-            placeholder: t("account.password"),
-            defaultValue: "test",
-            className: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed"
-          },
-          void 0,
-          !1,
-          {
-            fileName: "app/routes/sign-in.tsx",
-            lineNumber: 100,
-            columnNumber: 21
-          },
-          this
-        ) }, void 0, !1, {
+      otpSent && /* @__PURE__ */ jsxDEV61(loginFetcher.Form, { method: "post", className: "space-y-6", children: [
+        /* @__PURE__ */ jsxDEV61("input", { type: "hidden", name: "actionType", value: "login" }, void 0, !1, {
           fileName: "app/routes/sign-in.tsx",
-          lineNumber: 99,
-          columnNumber: 19
-        }, this)
-      ] }, void 0, !0, {
-        fileName: "app/routes/sign-in.tsx",
-        lineNumber: 92,
-        columnNumber: 17
-      }, this),
-      /* @__PURE__ */ jsxDEV61("div", { className: "flex items-center justify-between", children: [
+          lineNumber: 161,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV61("input", { type: "hidden", name: "phoneNumber", value: phoneNumber }, void 0, !1, {
+          fileName: "app/routes/sign-in.tsx",
+          lineNumber: 162,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV61("div", { children: [
+          /* @__PURE__ */ jsxDEV61("label", { htmlFor: "otp", className: "block text-sm font-medium text-gray-700", children: "OTP" }, void 0, !1, {
+            fileName: "app/routes/sign-in.tsx",
+            lineNumber: 165,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV61("div", { className: "mt-1", children: /* @__PURE__ */ jsxDEV61(
+            "input",
+            {
+              id: "otp",
+              name: "otp",
+              type: "text",
+              required: !0,
+              placeholder: "Enter OTP",
+              className: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+            },
+            void 0,
+            !1,
+            {
+              fileName: "app/routes/sign-in.tsx",
+              lineNumber: 169,
+              columnNumber: 19
+            },
+            this
+          ) }, void 0, !1, {
+            fileName: "app/routes/sign-in.tsx",
+            lineNumber: 168,
+            columnNumber: 17
+          }, this)
+        ] }, void 0, !0, {
+          fileName: "app/routes/sign-in.tsx",
+          lineNumber: 164,
+          columnNumber: 15
+        }, this),
         /* @__PURE__ */ jsxDEV61("div", { className: "flex items-center", children: [
           /* @__PURE__ */ jsxDEV61(
             "input",
@@ -12807,164 +13017,66 @@ function SignInPage() {
               id: "rememberMe",
               name: "rememberMe",
               type: "checkbox",
-              className: "h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded disabled:bg-gray-300 disabled:cursor-not-allowed",
-              defaultChecked: !0
+              defaultChecked: !0,
+              className: "h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
             },
             void 0,
             !1,
             {
               fileName: "app/routes/sign-in.tsx",
-              lineNumber: 115,
-              columnNumber: 21
+              lineNumber: 181,
+              columnNumber: 17
             },
             this
           ),
-          /* @__PURE__ */ jsxDEV61(
-            "label",
-            {
-              htmlFor: "rememberMe",
-              className: "ml-2 block text-sm text-gray-900",
-              children: t("account.rememberMe")
-            },
-            void 0,
-            !1,
-            {
-              fileName: "app/routes/sign-in.tsx",
-              lineNumber: 122,
-              columnNumber: 21
-            },
-            this
-          )
+          /* @__PURE__ */ jsxDEV61("label", { htmlFor: "rememberMe", className: "ml-2 block text-sm text-gray-900", children: "RememberMe" }, void 0, !1, {
+            fileName: "app/routes/sign-in.tsx",
+            lineNumber: 188,
+            columnNumber: 17
+          }, this)
         ] }, void 0, !0, {
           fileName: "app/routes/sign-in.tsx",
-          lineNumber: 114,
-          columnNumber: 19
+          lineNumber: 180,
+          columnNumber: 15
         }, this),
-        /* @__PURE__ */ jsxDEV61("div", { className: "text-sm", children: /* @__PURE__ */ jsxDEV61(
-          "a",
+        /* @__PURE__ */ jsxDEV61("div", { children: /* @__PURE__ */ jsxDEV61(
+          Button,
           {
-            href: "#",
-            className: "font-medium text-primary-600 hover:text-primary-500",
-            children: t("account.forgotPassword")
+            type: "submit",
+            disabled: loginFetcher.state !== "idle",
+            className: "w-full",
+            children: "signIn"
           },
           void 0,
           !1,
           {
             fileName: "app/routes/sign-in.tsx",
-            lineNumber: 131,
-            columnNumber: 21
+            lineNumber: 194,
+            columnNumber: 17
           },
           this
         ) }, void 0, !1, {
           fileName: "app/routes/sign-in.tsx",
-          lineNumber: 130,
-          columnNumber: 19
+          lineNumber: 193,
+          columnNumber: 15
         }, this)
       ] }, void 0, !0, {
         fileName: "app/routes/sign-in.tsx",
-        lineNumber: 113,
-        columnNumber: 17
-      }, this),
-      login2.data && login2.state === "idle" && /* @__PURE__ */ jsxDEV61("div", { className: "rounded-md bg-red-50 p-4", children: /* @__PURE__ */ jsxDEV61("div", { className: "flex", children: [
-        /* @__PURE__ */ jsxDEV61("div", { className: "flex-shrink-0", children: /* @__PURE__ */ jsxDEV61(
-          XCircleIcon7,
-          {
-            className: "h-5 w-5 text-red-400",
-            "aria-hidden": "true"
-          },
-          void 0,
-          !1,
-          {
-            fileName: "app/routes/sign-in.tsx",
-            lineNumber: 144,
-            columnNumber: 25
-          },
-          this
-        ) }, void 0, !1, {
-          fileName: "app/routes/sign-in.tsx",
-          lineNumber: 143,
-          columnNumber: 23
-        }, this),
-        /* @__PURE__ */ jsxDEV61("div", { className: "ml-3", children: [
-          /* @__PURE__ */ jsxDEV61("h3", { className: "text-sm font-medium text-red-800", children: t("account.errorSignIn") }, void 0, !1, {
-            fileName: "app/routes/sign-in.tsx",
-            lineNumber: 150,
-            columnNumber: 25
-          }, this),
-          /* @__PURE__ */ jsxDEV61("p", { className: "text-sm text-red-700 mt-2", children: login2.data.message }, void 0, !1, {
-            fileName: "app/routes/sign-in.tsx",
-            lineNumber: 153,
-            columnNumber: 25
-          }, this)
-        ] }, void 0, !0, {
-          fileName: "app/routes/sign-in.tsx",
-          lineNumber: 149,
-          columnNumber: 23
-        }, this)
-      ] }, void 0, !0, {
-        fileName: "app/routes/sign-in.tsx",
-        lineNumber: 142,
-        columnNumber: 21
-      }, this) }, void 0, !1, {
-        fileName: "app/routes/sign-in.tsx",
-        lineNumber: 141,
-        columnNumber: 19
-      }, this),
-      /* @__PURE__ */ jsxDEV61("div", { children: /* @__PURE__ */ jsxDEV61(
-        Button,
-        {
-          type: "submit",
-          className: "w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500",
-          children: /* @__PURE__ */ jsxDEV61("span", { className: "flex gap-4 items-center", children: [
-            login2.state !== "idle" && /* @__PURE__ */ jsxDEV61(ArrowPathIcon4, { className: "animate-spin h-5 w-5 text-gray-500" }, void 0, !1, {
-              fileName: "app/routes/sign-in.tsx",
-              lineNumber: 168,
-              columnNumber: 25
-            }, this),
-            t("account.signIn")
-          ] }, void 0, !0, {
-            fileName: "app/routes/sign-in.tsx",
-            lineNumber: 166,
-            columnNumber: 21
-          }, this)
-        },
-        void 0,
-        !1,
-        {
-          fileName: "app/routes/sign-in.tsx",
-          lineNumber: 162,
-          columnNumber: 19
-        },
-        this
-      ) }, void 0, !1, {
-        fileName: "app/routes/sign-in.tsx",
-        lineNumber: 161,
-        columnNumber: 17
+        lineNumber: 160,
+        columnNumber: 13
       }, this)
     ] }, void 0, !0, {
       fileName: "app/routes/sign-in.tsx",
-      lineNumber: 65,
-      columnNumber: 15
-    }, this) }, void 0, !1, {
-      fileName: "app/routes/sign-in.tsx",
-      lineNumber: 64,
-      columnNumber: 13
-    }, this) }, void 0, !1, {
-      fileName: "app/routes/sign-in.tsx",
-      lineNumber: 52,
-      columnNumber: 11
-    }, this) }, void 0, !1, {
-      fileName: "app/routes/sign-in.tsx",
-      lineNumber: 51,
+      lineNumber: 127,
       columnNumber: 9
+    }, this) }, void 0, !1, {
+      fileName: "app/routes/sign-in.tsx",
+      lineNumber: 126,
+      columnNumber: 7
     }, this)
   ] }, void 0, !0, {
     fileName: "app/routes/sign-in.tsx",
-    lineNumber: 35,
-    columnNumber: 7
-  }, this) }, void 0, !1, {
-    fileName: "app/routes/sign-in.tsx",
-    lineNumber: 34,
+    lineNumber: 115,
     columnNumber: 5
   }, this);
 }
@@ -12973,10 +13085,10 @@ function SignInPage() {
 var search_exports = {};
 __export(search_exports, {
   default: () => Search,
-  loader: () => loader16
+  loader: () => loader17
 });
-import { useLoaderData as useLoaderData15, useSubmit as useSubmit6 } from "@remix-run/react";
-import { useRef as useRef9, useState as useState13 } from "react";
+import { useLoaderData as useLoaderData16, useSubmit as useSubmit6 } from "@remix-run/react";
+import { useRef as useRef9, useState as useState14 } from "react";
 import { ValidatedForm as ValidatedForm6 } from "remix-validated-form";
 import { useTranslation as useTranslation44 } from "react-i18next";
 import { jsxDEV as jsxDEV62 } from "react/jsx-dev-runtime";
@@ -12984,12 +13096,12 @@ var paginationLimitMinimumDefault3 = 25, allowedPaginationLimits3 = /* @__PURE__
   paginationLimitMinimumDefault3,
   50,
   100
-]), validator5 = withZod(paginationValidationSchema(allowedPaginationLimits3)), { filteredSearchLoader: loader16 } = filteredSearchLoaderFromPagination(
+]), validator5 = withZod(paginationValidationSchema(allowedPaginationLimits3)), { filteredSearchLoader: loader17 } = filteredSearchLoaderFromPagination(
   allowedPaginationLimits3,
   paginationLimitMinimumDefault3
 );
 function Search() {
-  let loaderData = useLoaderData15(), { result, resultWithoutFacetValueFilters, term, facetValueIds } = loaderData, [mobileFiltersOpen, setMobileFiltersOpen] = useState13(!1);
+  let loaderData = useLoaderData16(), { result, resultWithoutFacetValueFilters, term, facetValueIds } = loaderData, [mobileFiltersOpen, setMobileFiltersOpen] = useState14(!1);
   useRef9(new FacetFilterTracker()).current.update(
     result,
     resultWithoutFacetValueFilters,
@@ -13068,15 +13180,15 @@ var verify_exports = {};
 __export(verify_exports, {
   action: () => action13,
   default: () => VerifyTokenPage,
-  loader: () => loader17
+  loader: () => loader18
 });
 import { useEffect as useEffect13, useRef as useRef10 } from "react";
-import { useLoaderData as useLoaderData16, useSearchParams as useSearchParams5 } from "@remix-run/react";
-import { redirect as redirect13 } from "@remix-run/server-runtime";
-import { CheckCircleIcon as CheckCircleIcon6, XCircleIcon as XCircleIcon8 } from "@heroicons/react/24/outline";
+import { useLoaderData as useLoaderData17, useSearchParams as useSearchParams4 } from "@remix-run/react";
+import { redirect as redirect14 } from "@remix-run/server-runtime";
+import { CheckCircleIcon as CheckCircleIcon6, XCircleIcon as XCircleIcon7 } from "@heroicons/react/24/outline";
 import { useTranslation as useTranslation45 } from "react-i18next";
 import { jsxDEV as jsxDEV63 } from "react/jsx-dev-runtime";
-async function loader17({
+async function loader18({
   request
 }) {
   let token = new URL(request.url).searchParams.get("token");
@@ -13095,10 +13207,10 @@ async function action13({ request }) {
   let headers = new Headers(), headerData = JSON.parse(headersJson);
   return Object.keys(headerData).forEach((key) => {
     headers.set(key, headerData[key]);
-  }), redirect13(redirectTarget, { headers });
+  }), redirect14(redirectTarget, { headers });
 }
 function VerifyTokenPage() {
-  let [searchParams] = useSearchParams5(), result = useLoaderData16(), btnRef = useRef10(null), { t } = useTranslation45();
+  let [searchParams] = useSearchParams4(), result = useLoaderData17(), btnRef = useRef10(null), { t } = useTranslation45();
   return useEffect13(() => {
     if (!result.success || !btnRef.current)
       return;
@@ -13197,7 +13309,7 @@ function VerifyTokenPage() {
     columnNumber: 13
   }, this) : /* @__PURE__ */ jsxDEV63("div", { className: "rounded-md bg-red-50 p-4", children: /* @__PURE__ */ jsxDEV63("div", { className: "flex", children: [
     /* @__PURE__ */ jsxDEV63("div", { className: "flex-shrink-0", children: /* @__PURE__ */ jsxDEV63(
-      XCircleIcon8,
+      XCircleIcon7,
       {
         className: "h-5 w-5 text-red-400",
         "aria-hidden": "true"
@@ -13251,20 +13363,20 @@ function VerifyTokenPage() {
 var routes_exports = {};
 __export(routes_exports, {
   default: () => Index,
-  loader: () => loader18
+  loader: () => loader19
 });
-import { useLoaderData as useLoaderData17 } from "@remix-run/react";
+import { useLoaderData as useLoaderData18 } from "@remix-run/react";
 import { BookOpenIcon } from "@heroicons/react/24/solid";
 import { useTranslation as useTranslation46 } from "react-i18next";
-import { Fragment as Fragment17, jsxDEV as jsxDEV64 } from "react/jsx-dev-runtime";
-async function loader18({ request }) {
+import { Fragment as Fragment15, jsxDEV as jsxDEV64 } from "react/jsx-dev-runtime";
+async function loader19({ request }) {
   return {
     collections: await getCollections(request, { take: 20 })
   };
 }
 function Index() {
-  let { collections } = useLoaderData17(), { t } = useTranslation46(), headerImage = collections[0]?.featuredAsset?.preview;
-  return /* @__PURE__ */ jsxDEV64(Fragment17, { children: [
+  let { collections } = useLoaderData18(), { t } = useTranslation46(), headerImage = collections[0]?.featuredAsset?.preview;
+  return /* @__PURE__ */ jsxDEV64(Fragment15, { children: [
     /* @__PURE__ */ jsxDEV64("div", { className: "relative", children: [
       /* @__PURE__ */ jsxDEV64("div", { "aria-hidden": "true", className: "absolute inset-0 overflow-hidden", children: [
         headerImage && /* @__PURE__ */ jsxDEV64(
@@ -13496,7 +13608,7 @@ function Index() {
 }
 
 // server-assets-manifest:@remix-run/dev/assets-manifest
-var assets_manifest_default = { entry: { module: "/build/entry.client-EDULRROB.js", imports: ["/build/_shared/chunk-OAPPX4FA.js", "/build/_shared/chunk-7LRNVKNK.js", "/build/_shared/chunk-7PHB3BFD.js", "/build/_shared/chunk-LN2QK4ZM.js", "/build/_shared/chunk-RJ6WM5PD.js", "/build/_shared/chunk-JR22VO6P.js", "/build/_shared/chunk-WEAPBHQG.js", "/build/_shared/chunk-CJ4MY3PQ.js", "/build/_shared/chunk-PZDJHGND.js"] }, routes: { root: { id: "root", parentId: void 0, path: "", index: void 0, caseSensitive: void 0, module: "/build/root-62ZNOHYS.js", imports: ["/build/_shared/chunk-SQRWUPPV.js", "/build/_shared/chunk-2WPG26PK.js", "/build/_shared/chunk-QZYG7WHP.js", "/build/_shared/chunk-ENCCBPD3.js", "/build/_shared/chunk-2QJY4JOV.js", "/build/_shared/chunk-Q4DAOXYC.js", "/build/_shared/chunk-R5BHNF67.js", "/build/_shared/chunk-4KYYPW5T.js", "/build/_shared/chunk-5EWT5DRM.js", "/build/_shared/chunk-76TTLXDT.js", "/build/_shared/chunk-L7FVEPUN.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !0 }, "routes/account": { id: "routes/account", parentId: "root", path: "account", index: void 0, caseSensitive: void 0, module: "/build/routes/account-CEHCXHQH.js", imports: void 0, hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account._index": { id: "routes/account._index", parentId: "root", path: "account/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/account._index-6KQAVITU.js", imports: ["/build/_shared/chunk-6BAWLQLJ.js", "/build/_shared/chunk-X5ZRNQ2O.js", "/build/_shared/chunk-FWFO23FU.js", "/build/_shared/chunk-5JSPHM6Q.js", "/build/_shared/chunk-6XQL3ZDP.js", "/build/_shared/chunk-GQCXPWV2.js", "/build/_shared/chunk-EMQBFFD2.js", "/build/_shared/chunk-IMWKISV6.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses": { id: "routes/account.addresses", parentId: "root", path: "account/addresses", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses-KN2CL5GI.js", imports: ["/build/_shared/chunk-5JSPHM6Q.js", "/build/_shared/chunk-6XQL3ZDP.js", "/build/_shared/chunk-GQCXPWV2.js", "/build/_shared/chunk-IMWKISV6.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.$addressId": { id: "routes/account.addresses.$addressId", parentId: "root", path: "account/addresses/:addressId", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.$addressId-HRDLME5I.js", imports: ["/build/_shared/chunk-WT4B6YBY.js", "/build/_shared/chunk-G3J4JRBH.js", "/build/_shared/chunk-X5ZRNQ2O.js", "/build/_shared/chunk-FWFO23FU.js", "/build/_shared/chunk-6XQL3ZDP.js", "/build/_shared/chunk-GQCXPWV2.js", "/build/_shared/chunk-VJAJMKIA.js", "/build/_shared/chunk-EMQBFFD2.js", "/build/_shared/chunk-575GV3VZ.js", "/build/_shared/chunk-IMWKISV6.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.new": { id: "routes/account.addresses.new", parentId: "root", path: "account/addresses/new", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.new-G5A363ZD.js", imports: ["/build/_shared/chunk-WT4B6YBY.js", "/build/_shared/chunk-G3J4JRBH.js", "/build/_shared/chunk-X5ZRNQ2O.js", "/build/_shared/chunk-FWFO23FU.js", "/build/_shared/chunk-6XQL3ZDP.js", "/build/_shared/chunk-GQCXPWV2.js", "/build/_shared/chunk-VJAJMKIA.js", "/build/_shared/chunk-EMQBFFD2.js", "/build/_shared/chunk-575GV3VZ.js", "/build/_shared/chunk-IMWKISV6.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.history": { id: "routes/account.history", parentId: "root", path: "account/history", index: void 0, caseSensitive: void 0, module: "/build/routes/account.history-4TUVJRH7.js", imports: ["/build/_shared/chunk-7APOZWIT.js", "/build/_shared/chunk-VJAJMKIA.js", "/build/_shared/chunk-EMQBFFD2.js", "/build/_shared/chunk-IMWKISV6.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.password": { id: "routes/account.password", parentId: "root", path: "account/password", index: void 0, caseSensitive: void 0, module: "/build/routes/account.password-YJ42BYBX.js", imports: ["/build/_shared/chunk-FWFO23FU.js", "/build/_shared/chunk-5JSPHM6Q.js", "/build/_shared/chunk-GQCXPWV2.js", "/build/_shared/chunk-EMQBFFD2.js", "/build/_shared/chunk-IMWKISV6.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.active-order": { id: "routes/api.active-order", parentId: "root", path: "api/active-order", index: void 0, caseSensitive: void 0, module: "/build/routes/api.active-order-VQJ67ND7.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.logout": { id: "routes/api.logout", parentId: "root", path: "api/logout", index: void 0, caseSensitive: void 0, module: "/build/routes/api.logout-O22KF3EY.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout": { id: "routes/checkout", parentId: "root", path: "checkout", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout-F66EG4LU.js", imports: ["/build/_shared/chunk-I3DX7LT6.js"], hasAction: !1, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout._index": { id: "routes/checkout._index", parentId: "root", path: "checkout/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout._index-DJG7JERQ.js", imports: ["/build/_shared/chunk-6BAWLQLJ.js", "/build/_shared/chunk-G3J4JRBH.js", "/build/_shared/chunk-575GV3VZ.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.confirmation.$orderCode": { id: "routes/checkout.confirmation.$orderCode", parentId: "root", path: "checkout/confirmation/:orderCode", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.confirmation.$orderCode-XU4QTJD6.js", imports: ["/build/_shared/chunk-I3DX7LT6.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.payment": { id: "routes/checkout.payment", parentId: "root", path: "checkout/payment", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.payment-MHQWSLOU.js", imports: ["/build/_shared/chunk-G3J4JRBH.js", "/build/_shared/chunk-575GV3VZ.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/collections.$slug": { id: "routes/collections.$slug", parentId: "root", path: "collections/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/collections.$slug-VCFUSVVR.js", imports: ["/build/_shared/chunk-OTHXEPVB.js", "/build/_shared/chunk-HFJCG7C6.js", "/build/_shared/chunk-7APOZWIT.js", "/build/_shared/chunk-ULHO4LD4.js", "/build/_shared/chunk-35LHL7AD.js", "/build/_shared/chunk-VJAJMKIA.js", "/build/_shared/chunk-EMQBFFD2.js", "/build/_shared/chunk-575GV3VZ.js", "/build/_shared/chunk-IMWKISV6.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/index": { id: "routes/index", parentId: "root", path: void 0, index: !0, caseSensitive: void 0, module: "/build/routes/index-36TEHKII.js", imports: ["/build/_shared/chunk-HFJCG7C6.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/products.$slug": { id: "routes/products.$slug", parentId: "root", path: "products/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/products.$slug-BZNY3747.js", imports: ["/build/_shared/chunk-ULHO4LD4.js", "/build/_shared/chunk-35LHL7AD.js", "/build/_shared/chunk-575GV3VZ.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/search": { id: "routes/search", parentId: "root", path: "search", index: void 0, caseSensitive: void 0, module: "/build/routes/search-BL4HTSGU.js", imports: ["/build/_shared/chunk-OTHXEPVB.js", "/build/_shared/chunk-7APOZWIT.js", "/build/_shared/chunk-35LHL7AD.js", "/build/_shared/chunk-VJAJMKIA.js", "/build/_shared/chunk-EMQBFFD2.js", "/build/_shared/chunk-575GV3VZ.js", "/build/_shared/chunk-IMWKISV6.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-in": { id: "routes/sign-in", parentId: "root", path: "sign-in", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-in-5RYJ5WYG.js", imports: ["/build/_shared/chunk-IMWKISV6.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.index": { id: "routes/sign-up.index", parentId: "root", path: "sign-up", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.index-4UXGUUAS.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.success": { id: "routes/sign-up.success", parentId: "root", path: "sign-up/success", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.success-PT54H25N.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify": { id: "routes/verify", parentId: "root", path: "verify", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-SIEDXC3S.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify-email-address-change": { id: "routes/verify-email-address-change", parentId: "root", path: "verify-email-address-change", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-email-address-change-HERVC4OZ.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 } }, version: "f8a97344", hmr: { runtime: "/build/_shared/chunk-RJ6WM5PD.js", timestamp: 1743511091602 }, url: "/build/manifest-F8A97344.js" };
+var assets_manifest_default = { entry: { module: "/build/entry.client-R7UCZ5SP.js", imports: ["/build/_shared/chunk-OAPPX4FA.js", "/build/_shared/chunk-7LRNVKNK.js", "/build/_shared/chunk-7PHB3BFD.js", "/build/_shared/chunk-HUTDNUIA.js", "/build/_shared/chunk-TK4QEW5Z.js", "/build/_shared/chunk-JR22VO6P.js", "/build/_shared/chunk-WEAPBHQG.js", "/build/_shared/chunk-CJ4MY3PQ.js", "/build/_shared/chunk-PZDJHGND.js"] }, routes: { root: { id: "root", parentId: void 0, path: "", index: void 0, caseSensitive: void 0, module: "/build/root-MHR6BZTM.js", imports: ["/build/_shared/chunk-SLSGE3PG.js", "/build/_shared/chunk-XPDPRU6O.js", "/build/_shared/chunk-QZYG7WHP.js", "/build/_shared/chunk-ZUYBOHTO.js", "/build/_shared/chunk-2QJY4JOV.js", "/build/_shared/chunk-R7IIBVB7.js", "/build/_shared/chunk-R5BHNF67.js", "/build/_shared/chunk-4KYYPW5T.js", "/build/_shared/chunk-LGFH5224.js", "/build/_shared/chunk-76TTLXDT.js", "/build/_shared/chunk-L7FVEPUN.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !0 }, "routes/account": { id: "routes/account", parentId: "root", path: "account", index: void 0, caseSensitive: void 0, module: "/build/routes/account-FLGO6NFK.js", imports: void 0, hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account._index": { id: "routes/account._index", parentId: "root", path: "account/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/account._index-XMTG2UZU.js", imports: ["/build/_shared/chunk-EPLOZVVD.js", "/build/_shared/chunk-BJCEE4D4.js", "/build/_shared/chunk-2GCGKN2W.js", "/build/_shared/chunk-KQJWLXY3.js", "/build/_shared/chunk-RHIJ73BG.js", "/build/_shared/chunk-UT4MYZBX.js", "/build/_shared/chunk-4MDHSWYN.js", "/build/_shared/chunk-UE5VSATA.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses": { id: "routes/account.addresses", parentId: "root", path: "account/addresses", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses-VRD4GVMU.js", imports: ["/build/_shared/chunk-KQJWLXY3.js", "/build/_shared/chunk-RHIJ73BG.js", "/build/_shared/chunk-UT4MYZBX.js", "/build/_shared/chunk-UE5VSATA.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.$addressId": { id: "routes/account.addresses.$addressId", parentId: "root", path: "account/addresses/:addressId", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.$addressId-4NA4B27D.js", imports: ["/build/_shared/chunk-UQXFOTEV.js", "/build/_shared/chunk-KNYORDUP.js", "/build/_shared/chunk-BJCEE4D4.js", "/build/_shared/chunk-2GCGKN2W.js", "/build/_shared/chunk-RHIJ73BG.js", "/build/_shared/chunk-UT4MYZBX.js", "/build/_shared/chunk-JXVZ55SJ.js", "/build/_shared/chunk-4MDHSWYN.js", "/build/_shared/chunk-W2GRVHHA.js", "/build/_shared/chunk-QRPFO6NW.js", "/build/_shared/chunk-UE5VSATA.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.addresses.new": { id: "routes/account.addresses.new", parentId: "root", path: "account/addresses/new", index: void 0, caseSensitive: void 0, module: "/build/routes/account.addresses.new-4M4MMVBW.js", imports: ["/build/_shared/chunk-UQXFOTEV.js", "/build/_shared/chunk-KNYORDUP.js", "/build/_shared/chunk-BJCEE4D4.js", "/build/_shared/chunk-2GCGKN2W.js", "/build/_shared/chunk-RHIJ73BG.js", "/build/_shared/chunk-UT4MYZBX.js", "/build/_shared/chunk-JXVZ55SJ.js", "/build/_shared/chunk-4MDHSWYN.js", "/build/_shared/chunk-W2GRVHHA.js", "/build/_shared/chunk-QRPFO6NW.js", "/build/_shared/chunk-UE5VSATA.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.history": { id: "routes/account.history", parentId: "root", path: "account/history", index: void 0, caseSensitive: void 0, module: "/build/routes/account.history-LSXBH7GC.js", imports: ["/build/_shared/chunk-S42253ZP.js", "/build/_shared/chunk-JXVZ55SJ.js", "/build/_shared/chunk-4MDHSWYN.js", "/build/_shared/chunk-UE5VSATA.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/account.password": { id: "routes/account.password", parentId: "root", path: "account/password", index: void 0, caseSensitive: void 0, module: "/build/routes/account.password-WYQEBH5U.js", imports: ["/build/_shared/chunk-2GCGKN2W.js", "/build/_shared/chunk-KQJWLXY3.js", "/build/_shared/chunk-UT4MYZBX.js", "/build/_shared/chunk-4MDHSWYN.js", "/build/_shared/chunk-UE5VSATA.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.active-order": { id: "routes/api.active-order", parentId: "root", path: "api/active-order", index: void 0, caseSensitive: void 0, module: "/build/routes/api.active-order-VQJ67ND7.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/api.logout": { id: "routes/api.logout", parentId: "root", path: "api/logout", index: void 0, caseSensitive: void 0, module: "/build/routes/api.logout-O22KF3EY.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout": { id: "routes/checkout", parentId: "root", path: "checkout", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout-P76GGBLO.js", imports: ["/build/_shared/chunk-GDHEKWNO.js"], hasAction: !1, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout._index": { id: "routes/checkout._index", parentId: "root", path: "checkout/_index", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout._index-2J7YHVLQ.js", imports: ["/build/_shared/chunk-EPLOZVVD.js", "/build/_shared/chunk-KNYORDUP.js", "/build/_shared/chunk-W2GRVHHA.js", "/build/_shared/chunk-QRPFO6NW.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.confirmation.$orderCode": { id: "routes/checkout.confirmation.$orderCode", parentId: "root", path: "checkout/confirmation/:orderCode", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.confirmation.$orderCode-6FQH4T6W.js", imports: ["/build/_shared/chunk-GDHEKWNO.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/checkout.payment": { id: "routes/checkout.payment", parentId: "root", path: "checkout/payment", index: void 0, caseSensitive: void 0, module: "/build/routes/checkout.payment-2G36TNWA.js", imports: ["/build/_shared/chunk-KNYORDUP.js", "/build/_shared/chunk-W2GRVHHA.js", "/build/_shared/chunk-QRPFO6NW.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/collections.$slug": { id: "routes/collections.$slug", parentId: "root", path: "collections/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/collections.$slug-5ORNN4AZ.js", imports: ["/build/_shared/chunk-JKTQTWML.js", "/build/_shared/chunk-H4O6VB2F.js", "/build/_shared/chunk-S42253ZP.js", "/build/_shared/chunk-ZVQLA4CF.js", "/build/_shared/chunk-GY43FB4Z.js", "/build/_shared/chunk-JXVZ55SJ.js", "/build/_shared/chunk-4MDHSWYN.js", "/build/_shared/chunk-W2GRVHHA.js", "/build/_shared/chunk-QRPFO6NW.js", "/build/_shared/chunk-UE5VSATA.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/index": { id: "routes/index", parentId: "root", path: void 0, index: !0, caseSensitive: void 0, module: "/build/routes/index-QTFYWOPH.js", imports: ["/build/_shared/chunk-H4O6VB2F.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/products.$slug": { id: "routes/products.$slug", parentId: "root", path: "products/:slug", index: void 0, caseSensitive: void 0, module: "/build/routes/products.$slug-HBDPLKN5.js", imports: ["/build/_shared/chunk-ZVQLA4CF.js", "/build/_shared/chunk-GY43FB4Z.js", "/build/_shared/chunk-W2GRVHHA.js", "/build/_shared/chunk-QRPFO6NW.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/search": { id: "routes/search", parentId: "root", path: "search", index: void 0, caseSensitive: void 0, module: "/build/routes/search-KXKPGUQG.js", imports: ["/build/_shared/chunk-JKTQTWML.js", "/build/_shared/chunk-S42253ZP.js", "/build/_shared/chunk-GY43FB4Z.js", "/build/_shared/chunk-JXVZ55SJ.js", "/build/_shared/chunk-4MDHSWYN.js", "/build/_shared/chunk-W2GRVHHA.js", "/build/_shared/chunk-QRPFO6NW.js", "/build/_shared/chunk-UE5VSATA.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-in": { id: "routes/sign-in", parentId: "root", path: "sign-in", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-in-NDP3OFC5.js", imports: ["/build/_shared/chunk-QRPFO6NW.js", "/build/_shared/chunk-UE5VSATA.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.index": { id: "routes/sign-up.index", parentId: "root", path: "sign-up", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.index-ASC4XYSK.js", imports: ["/build/_shared/chunk-QRPFO6NW.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/sign-up.success": { id: "routes/sign-up.success", parentId: "root", path: "sign-up/success", index: void 0, caseSensitive: void 0, module: "/build/routes/sign-up.success-AUWJRY3O.js", imports: void 0, hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify": { id: "routes/verify", parentId: "root", path: "verify", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-66LO6TLU.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/verify-email-address-change": { id: "routes/verify-email-address-change", parentId: "root", path: "verify-email-address-change", index: void 0, caseSensitive: void 0, module: "/build/routes/verify-email-address-change-5OCZ3IHY.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 } }, version: "e648e110", hmr: { runtime: "/build/_shared/chunk-TK4QEW5Z.js", timestamp: 1745471913551 }, url: "/build/manifest-E648E110.js" };
 
 // server-entry-module:@remix-run/dev/server-build
 var mode = "development", assetsBuildDirectory = "public/build", future = { v3_fetcherPersist: !1, v3_relativeSplatPath: !1 }, publicPath = "/build/", entry = { module: entry_server_exports }, routes = {
