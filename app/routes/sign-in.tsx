@@ -114,7 +114,7 @@ export default function SignInPage() {
   return (
     <div className="flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl text-gray-900">{t('account.signInTitle')}</h2>
+        <h2 className="mt-6 text-center text-3xl text-gray-900">SignIn</h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           {t('common.or')}{' '}
           <Link to="/sign-up" className="font-medium text-primary-600 hover:text-primary-500">
