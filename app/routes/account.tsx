@@ -28,7 +28,7 @@ export default function AccountDashboard() {
     {
       Icon: UserCircleIcon,
       text: t('account.details'),
-      to: './',
+      to: './_index',
     },
     {
       Icon: ShoppingBagIcon,
