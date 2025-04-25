@@ -74,6 +74,7 @@ enum AssetType {
 
 input AuthenticationInput {
   native: NativeAuthInput
+  phoneOtp: PhoneOtpInput
 }
 
 type AuthenticationMethod implements Node {
@@ -1984,7 +1985,6 @@ type Mutation {
 
   """Delete an existing Address"""
   deleteCustomerAddress(id: ID!): Success!
-  generateRazorpayOrderId(orderId: ID!): generateRazorpayOrderIdResult!
 
   """
   Authenticates the user using the native authentication strategy. This mutation is an alias for authenticate({ native: { ... }})
@@ -2043,6 +2043,7 @@ type Mutation {
 
   """Resets a Customer's password based on the provided token"""
   resetPassword(password: String!, token: String!): ResetPasswordResult!
+  sendPhoneOtp(phoneNumber: String!): Boolean
 
   """
   Set the Customer for the Order. Required only if the Customer is not currently logged in
@@ -2250,7 +2251,6 @@ type OrderAddress {
 type OrderCustomFields {
   clientRequestToCancel: Int
   otherInstructions: String
-  razorpay_order_id: String
 }
 
 input OrderFilterParameter {
@@ -2264,7 +2264,6 @@ input OrderFilterParameter {
   id: IDOperators
   orderPlacedAt: DateOperators
   otherInstructions: StringOperators
-  razorpay_order_id: StringOperators
   shipping: NumberOperators
   shippingWithTax: NumberOperators
   state: StringOperators
@@ -2415,7 +2414,6 @@ input OrderSortParameter {
   id: SortOrder
   orderPlacedAt: SortOrder
   otherInstructions: SortOrder
-  razorpay_order_id: SortOrder
   shipping: SortOrder
   shippingWithTax: SortOrder
   state: SortOrder
@@ -2896,6 +2894,13 @@ enum Permission {
   UpdateZone
 }
 
+input PhoneOtpInput {
+  code: String!
+  firstName: String
+  lastName: String
+  phoneNumber: String!
+}
+
 """The price range where the result has more than one price"""
 type PriceRange {
   max: Money!
@@ -3207,6 +3212,7 @@ type Query {
   facets(options: FacetListOptions): FacetList!
   generateBraintreeClientToken: String
   getChannelList: [Channel!]!
+  getChannelsByCustomerEmail(email: String!): [Channel!]!
   getCouponCodeList: CoupcodesList!
   getPasswordResetToken: String!
 
@@ -3242,15 +3248,6 @@ type Query {
 
   """Search Products based on the criteria set by the `SearchInput`"""
   search(input: SearchInput!): SearchResponse!
-}
-
-type RazorpayOrderIdGenerationError {
-  errorCode: String
-  message: String
-}
-
-type RazorpayOrderIdSuccess {
-  razorpayOrderId: String!
 }
 
 union RefreshCustomerVerificationResult = NativeAuthStrategyError | Success
@@ -3645,7 +3642,6 @@ union UpdateCustomerPasswordResult = InvalidCredentialsError | NativeAuthStrateg
 input UpdateOrderCustomFieldsInput {
   clientRequestToCancel: Int
   otherInstructions: String
-  razorpay_order_id: String
 }
 
 input UpdateOrderInput {
@@ -3697,5 +3693,3 @@ type Zone implements Node {
   name: String!
   updatedAt: DateTime!
 }
-
-union generateRazorpayOrderIdResult = RazorpayOrderIdGenerationError | RazorpayOrderIdSuccess
