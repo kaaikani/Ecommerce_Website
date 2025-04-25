@@ -60,6 +60,38 @@ export function setOrderShippingMethod(
 ) {
   return sdk.setOrderShippingMethod({ shippingMethodId }, options);
 }
+export function applyCouponCode(input: string, options: QueryOptions) {
+  return sdk.ApplyCouponCode ({ input }, options)
+    .then(response => response.applyCouponCode);
+}
+
+export function removeCouponCode(couponCode: string, options: QueryOptions) {
+  return sdk.RemoveCouponCode({ couponCode }, options)
+    .then(response => response.removeCouponCode);
+}
+
+export function getCouponCodeList(options: QueryOptions) {
+  return sdk.GetCouponCodeList(undefined, options).then((response) =>
+    response.getCouponCodeList.items.map((c) => ({
+      id: c.id,
+      name: c.name,
+      couponCode: c.couponCode,
+      description: c.description,
+      enabled: c.enabled,
+      endsAt: c.endsAt,
+      startsAt: c.startsAt,
+      usageLimit: c.usageLimit,
+      conditions: c.conditions.map((condition) => ({
+        code: condition.code,
+        args: condition.args.map((arg) => ({
+          name: arg.name,
+          value: arg.value,
+        })),
+      })),
+    }))
+  );
+}
+
 
 gql`
   mutation setCustomerForOrder($input: CreateCustomerInput!) {
@@ -230,4 +262,53 @@ gql`
       ...OrderDetail
     }
   }
+`;
+gql`
+query GetCouponCodeList{
+    getCouponCodeList{
+        items {
+            id
+            name
+            couponCode
+            description
+            enabled
+            endsAt
+            startsAt
+            conditions{
+                code
+                args{
+                    name
+                    value
+                }
+            }
+            usageLimit
+        }
+        totalItems
+        __typename
+    }
+}
+`;
+
+gql`
+  mutation ApplyCouponCode($input: String!) {
+    applyCouponCode(couponCode: $input) {
+        __typename
+        ... on Order {
+            id
+            couponCodes
+            total
+        }
+        ... on CouponCodeInvalidError {
+            message
+        }
+    }
+}
+`;
+gql`
+mutation RemoveCouponCode($couponCode: String!){
+    removeCouponCode(couponCode: $couponCode){
+        __typename
+    }
+}
+
 `;

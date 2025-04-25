@@ -44,6 +44,7 @@ console.log('Phone Number:', phoneNumber);
 
   // Login (OTP verification) flow
   if (actionType === 'login' && otp) {
+    
     const email = `${phoneNumber}@kaikani.com`;
     const channels = await getChannelsByCustomerEmail(email);
 

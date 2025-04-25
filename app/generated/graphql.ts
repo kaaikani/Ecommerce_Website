@@ -3808,6 +3808,25 @@ export type OrderByCodeQueryVariables = Exact<{
 
 export type OrderByCodeQuery = { __typename?: 'Query', orderByCode?: { __typename: 'Order', id: string, code: string, active: boolean, createdAt: any, state: string, currencyCode: CurrencyCode, totalQuantity: number, subTotal: number, subTotalWithTax: number, shippingWithTax: number, totalWithTax: number, taxSummary: Array<{ __typename?: 'OrderTaxSummary', description: string, taxRate: number, taxTotal: number }>, customer?: { __typename?: 'Customer', id: string, firstName: string, lastName: string, emailAddress: string } | null, shippingAddress?: { __typename?: 'OrderAddress', fullName?: string | null, streetLine1?: string | null, streetLine2?: string | null, company?: string | null, city?: string | null, province?: string | null, postalCode?: string | null, countryCode?: string | null, phoneNumber?: string | null } | null, shippingLines: Array<{ __typename?: 'ShippingLine', priceWithTax: number, shippingMethod: { __typename?: 'ShippingMethod', id: string, name: string } }>, lines: Array<{ __typename?: 'OrderLine', id: string, unitPriceWithTax: number, linePriceWithTax: number, quantity: number, featuredAsset?: { __typename?: 'Asset', id: string, preview: string } | null, productVariant: { __typename?: 'ProductVariant', id: string, name: string, price: number, product: { __typename?: 'Product', id: string, slug: string } } }>, payments?: Array<{ __typename?: 'Payment', id: string, state: string, method: string, amount: number, metadata?: any | null }> | null } | null };
 
+export type GetCouponCodeListQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetCouponCodeListQuery = { __typename?: 'Query', getCouponCodeList: { __typename: 'CoupcodesList', totalItems: number, items: Array<{ __typename?: 'Promotion', id: string, name: string, couponCode?: string | null, description: string, enabled: boolean, endsAt?: any | null, startsAt?: any | null, usageLimit?: number | null, conditions: Array<{ __typename?: 'ConfigurableOperation', code: string, args: Array<{ __typename?: 'ConfigArg', name: string, value: string }> }> }> } };
+
+export type ApplyCouponCodeMutationVariables = Exact<{
+  input: Scalars['String'];
+}>;
+
+
+export type ApplyCouponCodeMutation = { __typename?: 'Mutation', applyCouponCode: { __typename: 'CouponCodeExpiredError' } | { __typename: 'CouponCodeInvalidError', message: string } | { __typename: 'CouponCodeLimitError' } | { __typename: 'Order', id: string, couponCodes: Array<string>, total: number } };
+
+export type RemoveCouponCodeMutationVariables = Exact<{
+  couponCode: Scalars['String'];
+}>;
+
+
+export type RemoveCouponCodeMutation = { __typename?: 'Mutation', removeCouponCode?: { __typename: 'Order' } | null };
+
 export type DetailedProductFragment = { __typename?: 'Product', id: string, name: string, description: string, collections: Array<{ __typename?: 'Collection', id: string, slug: string, name: string, breadcrumbs: Array<{ __typename?: 'CollectionBreadcrumb', id: string, name: string, slug: string }> }>, facetValues: Array<{ __typename?: 'FacetValue', id: string, code: string, name: string, facet: { __typename?: 'Facet', id: string, code: string, name: string } }>, featuredAsset?: { __typename?: 'Asset', id: string, preview: string } | null, assets: Array<{ __typename?: 'Asset', id: string, preview: string }>, variants: Array<{ __typename?: 'ProductVariant', id: string, name: string, priceWithTax: number, currencyCode: CurrencyCode, sku: string, stockLevel: string, featuredAsset?: { __typename?: 'Asset', id: string, preview: string } | null }> };
 
 export type ProductQueryVariables = Exact<{
@@ -4457,6 +4476,53 @@ export const OrderByCodeDocument = gql`
   }
 }
     ${OrderDetailFragmentDoc}`;
+export const GetCouponCodeListDocument = gql`
+    query GetCouponCodeList {
+  getCouponCodeList {
+    items {
+      id
+      name
+      couponCode
+      description
+      enabled
+      endsAt
+      startsAt
+      conditions {
+        code
+        args {
+          name
+          value
+        }
+      }
+      usageLimit
+    }
+    totalItems
+    __typename
+  }
+}
+    `;
+export const ApplyCouponCodeDocument = gql`
+    mutation ApplyCouponCode($input: String!) {
+  applyCouponCode(couponCode: $input) {
+    __typename
+    ... on Order {
+      id
+      couponCodes
+      total
+    }
+    ... on CouponCodeInvalidError {
+      message
+    }
+  }
+}
+    `;
+export const RemoveCouponCodeDocument = gql`
+    mutation RemoveCouponCode($couponCode: String!) {
+  removeCouponCode(couponCode: $couponCode) {
+    __typename
+  }
+}
+    `;
 export const ProductDocument = gql`
     query product($slug: String, $id: ID) {
   product(slug: $slug, id: $id) {
@@ -4625,6 +4691,15 @@ export function getSdk<C, E>(requester: Requester<C, E>) {
     },
     orderByCode(variables: OrderByCodeQueryVariables, options?: C): Promise<OrderByCodeQuery> {
       return requester<OrderByCodeQuery, OrderByCodeQueryVariables>(OrderByCodeDocument, variables, options) as Promise<OrderByCodeQuery>;
+    },
+    GetCouponCodeList(variables?: GetCouponCodeListQueryVariables, options?: C): Promise<GetCouponCodeListQuery> {
+      return requester<GetCouponCodeListQuery, GetCouponCodeListQueryVariables>(GetCouponCodeListDocument, variables, options) as Promise<GetCouponCodeListQuery>;
+    },
+    ApplyCouponCode(variables: ApplyCouponCodeMutationVariables, options?: C): Promise<ApplyCouponCodeMutation> {
+      return requester<ApplyCouponCodeMutation, ApplyCouponCodeMutationVariables>(ApplyCouponCodeDocument, variables, options) as Promise<ApplyCouponCodeMutation>;
+    },
+    RemoveCouponCode(variables: RemoveCouponCodeMutationVariables, options?: C): Promise<RemoveCouponCodeMutation> {
+      return requester<RemoveCouponCodeMutation, RemoveCouponCodeMutationVariables>(RemoveCouponCodeDocument, variables, options) as Promise<RemoveCouponCodeMutation>;
     },
     product(variables?: ProductQueryVariables, options?: C): Promise<ProductQuery> {
       return requester<ProductQuery, ProductQueryVariables>(ProductDocument, variables, options) as Promise<ProductQuery>;
