@@ -16,7 +16,9 @@ import { BraintreeDropIn } from '~/components/checkout/braintree/BraintreePaymen
 import { getActiveOrder } from '~/providers/orders/order';
 import { getSessionStorage } from '~/sessions';
 import { useTranslation } from 'react-i18next';
-import { RazorpayPayments } from '~/components/checkout/razopay/RezopayPayments';
+
+import { RazorpayPayments } from '~/components/checkout/razorpay/RezopayPayments';
+
 export async function loader({ params, request }: DataFunctionArgs) {
   const session = await getSessionStorage().then((sessionStorage) =>
     sessionStorage.getSession(request?.headers.get('Cookie')),

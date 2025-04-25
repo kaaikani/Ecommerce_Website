@@ -9,18 +9,75 @@ import { useTranslation } from 'react-i18next';
 
 export async function action({ params, request }: DataFunctionArgs) {
   const body = await request.formData();
-  const email = body.get('email');
-  const password = body.get('password');
-  if (typeof email === 'string' && typeof password === 'string') {
-    const rememberMe = !!body.get('rememberMe');
-    const redirectTo = (body.get('redirectTo') || '/account') as string;
-    const result = await login(email, password, rememberMe, { request });
-    if (result.__typename === 'CurrentUser') {
-      return redirect(redirectTo, { headers: result._headers });
-    } else {
-      return json(result, {
-        status: 401,
-      });
+
+  const phoneNumber = body.get('phoneNumber') as string;
+  const otp = body.get('otp') as string;
+  const actionType = body.get('actionType') as string;
+  // const firstName = body.get('firstName')?.toString();
+  // const lastName = body.get('lastName')?.toString();
+
+  const rememberMe = !!body.get('rememberMe');
+  const redirectTo = (body.get('redirectTo') || '/account') as string;
+  const sessionStorage = await getSessionStorage();
+  const session = await sessionStorage.getSession(request.headers.get('Cookie'));
+
+  if (!phoneNumber || phoneNumber.length !== 10) {
+    return json({ message: 'Invalid phone number' }, { status: 400 });
+  }
+
+  console.log('Incoming actionType:', actionType);
+console.log('Phone Number:', phoneNumber);
+
+  // Send OTP flow
+  if (actionType === 'send-otp') {
+    const sent = await sendPhoneOtp(phoneNumber);
+    return json({ sent });
+  }
+
+  // Login (OTP verification) flow
+  if (actionType === 'login' && otp) {
+    
+    const email = `${phoneNumber}@kaikani.com`;
+    const channels = await getChannelsByCustomerEmail(email);
+
+    console.log('Channels found:', channels);
+
+    if (!channels || channels.length === 0) {
+      return json({ message: 'No channel associated with this phone number.' }, { status: 403 });
+    }
+
+    const selectedChannelToken = channels[0].token;
+    console.log('Using channel token:', selectedChannelToken);
+
+    const result = await authenticate(
+      {
+        phoneOtp: {
+          phoneNumber,
+          code: otp,
+          
+        },
+      },
+      {
+        request,
+        customHeaders: { 'vendure-token': selectedChannelToken },
+      }
+    );
+    
+    if ('__typename' in result.result && result.result.__typename === 'CurrentUser') {
+      const vendureToken = result.headers.get('vendure-auth-token');
+    
+      if (vendureToken) {
+        session.set('authToken', vendureToken);
+        session.set('rememberMe', rememberMe);
+        const cookieHeaders = await sessionStorage.commitSession(session);
+    
+        return redirect(redirectTo, {
+          headers: {
+            'Set-Cookie': cookieHeaders,
+          },
+        });
+      }
+
     }
   }
 }
