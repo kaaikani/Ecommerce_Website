@@ -414,10 +414,12 @@ export async function authenticate(
   input: AuthenticationInput,
   {
     request,
-    customHeaders
+    customHeaders,
   }: { request: Request; customHeaders: { 'vendure-token': string } }
 ): Promise<{ result: CurrentUser | ErrorResult; headers: Headers }> {
-  const response = await fetch('http://localhost:3000/shop-api', {
+  const vendureApiUrl = process.env.VENDURE_API_URL;
+
+  const response = await fetch(vendureApiUrl!, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -453,9 +455,10 @@ export async function authenticate(
     }),
   });
 
-  const json = await response.json() as { data: { authenticate: CurrentUser | ErrorResult } };  // Type assertion here
+  const json = await response.json() as { data: { authenticate: CurrentUser | ErrorResult } };
   return {
     result: json.data.authenticate,
     headers: response.headers,
   };
 }
+
