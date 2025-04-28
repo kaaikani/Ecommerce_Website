@@ -38,7 +38,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const intent = body.get('intent')?.toString();
   const phoneNumber = body.get('phoneNumber')?.toString();
   const code = body.get('otp')?.toString();
-  const selectedChannelToken = body.get('channel')?.toString();
+  const selectedChannelToken = String(body.get('channel') || '');
   const firstName = body.get('firstName')?.toString();
   const lastName = body.get('lastName')?.toString();
   const redirectTo = (body.get('redirectTo') || '/account') as string;
@@ -77,6 +77,14 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     try {
+      if (!selectedChannelToken) {
+        return json<RegisterValidationErrors>(
+          { form: 'No channel was selected. Please try again.' },
+          {
+            status: 400,
+          }
+        );
+      }
       const { result ,headers} = await authenticate(
         {
           phoneOtp: {
@@ -89,7 +97,7 @@ export async function action({ request }: ActionFunctionArgs) {
         {
           request,
           customHeaders: {
-            'vendure-token': selectedChannelToken ?? '',
+            'vendure-token': selectedChannelToken,
           },
         }
       );
@@ -102,11 +110,10 @@ export async function action({ request }: ActionFunctionArgs) {
           session.set('authToken', vendureToken);
         }
       
-        return redirect(redirectTo, {
-          headers: {
-            'Set-Cookie': await sessionStorage.commitSession(session),
-          },
+        return redirect(`${redirectTo}?reload=true`, {
+          headers: { 'Set-Cookie': await sessionStorage.commitSession(session) },
         });
+        
       } else {
         return json<RegisterValidationErrors>(
           { form: 'Authentication failed' },
@@ -252,7 +259,7 @@ export default function SignUpPage() {
               
             </div>
 
-            <div>
+            {/* <div>
               <label htmlFor="channel" className="block text-sm font-medium text-gray-700">{t('account.channel')}</label>
               <select
                 id="channel"
@@ -266,7 +273,28 @@ export default function SignUpPage() {
                   </option>
                 ))}
               </select>
-            </div>
+            </div> */}
+
+            {channels.length > 1 && (
+              <div>
+                <label htmlFor="channel" className="block text-sm font-medium text-gray-700">
+                  {t('account.channel')}
+                </label>
+                <select
+                  name="channel"
+                  id="channel"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md sm:text-sm"
+                  required
+                >
+                  {channels.map((channel) => (
+                    <option key={channel.id} value={channel.token}>
+                      {channel.code}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
 
             {formErrors?.form && (
               <div className="rounded-md bg-red-50 p-4">

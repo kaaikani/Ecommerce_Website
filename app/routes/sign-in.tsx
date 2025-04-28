@@ -21,11 +21,9 @@ export async function action({ request }: ActionFunctionArgs) {
   const phoneNumber = body.get('phoneNumber') as string;
   const otp = body.get('otp') as string;
   const actionType = body.get('actionType') as string;
-  // const firstName = body.get('firstName')?.toString();
-  // const lastName = body.get('lastName')?.toString();
-
   const rememberMe = !!body.get('rememberMe');
   const redirectTo = (body.get('redirectTo') || '/account') as string;
+
   const sessionStorage = await getSessionStorage();
   const session = await sessionStorage.getSession(request.headers.get('Cookie'));
 
@@ -34,21 +32,18 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   console.log('Incoming actionType:', actionType);
-console.log('Phone Number:', phoneNumber);
+  console.log('Phone Number:', phoneNumber);
 
-  // Send OTP flow
+  // ✅ Send OTP flow
   if (actionType === 'send-otp') {
     const sent = await sendPhoneOtp(phoneNumber);
     return json({ sent });
   }
 
-  // Login (OTP verification) flow
+  // ✅ Login flow
   if (actionType === 'login' && otp) {
-    
     const email = `${phoneNumber}@kaikani.com`;
     const channels = await getChannelsByCustomerEmail(email);
-
-    console.log('Channels found:', channels);
 
     if (!channels || channels.length === 0) {
       return json({ message: 'No channel associated with this phone number.' }, { status: 403 });
@@ -59,42 +54,46 @@ console.log('Phone Number:', phoneNumber);
 
     const result = await authenticate(
       {
-        phoneOtp: {
-          phoneNumber,
-          code: otp,
-          
-        },
+        phoneOtp: { phoneNumber, code: otp },
       },
       {
         request,
-        customHeaders: { 'vendure-token': selectedChannelToken },
+        customHeaders: { 'vendure-token': selectedChannelToken }, // ✅ Pass for authentication
       }
     );
-    
+
     if ('__typename' in result.result && result.result.__typename === 'CurrentUser') {
       const vendureToken = result.headers.get('vendure-auth-token');
-    
+
       if (vendureToken) {
+        // ✅ Save both authToken and channelToken
         session.set('authToken', vendureToken);
+        session.set('channelToken', selectedChannelToken);
         session.set('rememberMe', rememberMe);
+
         const cookieHeaders = await sessionStorage.commitSession(session);
-    
-        return redirect(redirectTo, {
+
+        // ✅ Redirect to home/account + force reload
+        const url = new URL(redirectTo, request.url);
+        url.searchParams.set('reload', 'true');
+
+        return redirect(url.toString(), {
           headers: {
             'Set-Cookie': cookieHeaders,
           },
         });
       }
     }
+
     console.log('Auth result:', result.result);
     console.log('vendure-auth-token:', result.headers.get('vendure-auth-token'));
-        
 
     return json({ message: 'Invalid credentials' }, { status: 401 });
   }
 
   return json({ message: 'Invalid request' }, { status: 400 });
 }
+
 
 export default function SignInPage() {
   const { t } = useTranslation();

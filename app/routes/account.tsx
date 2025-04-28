@@ -4,18 +4,32 @@ import {
   ShoppingBagIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/solid';
-import { Form, Outlet, useLoaderData, useMatches } from '@remix-run/react';
-import { DataFunctionArgs, json, redirect } from '@remix-run/server-runtime';
+import { Form, Outlet, useLoaderData, useSearchParams } from '@remix-run/react';
+import { LoaderFunctionArgs, json, redirect } from '@remix-run/server-runtime';
 import { TabProps } from '~/components/tabs/Tab';
 import { TabsContainer } from '~/components/tabs/TabsContainer';
 import { getActiveCustomerDetails } from '~/providers/customer/customer';
 import { useTranslation } from 'react-i18next';
+import { useEffect } from 'react';
+import { getSessionStorage } from '~/sessions';
 
-export async function loader({ request }: DataFunctionArgs) {
+export async function loader({ request }: LoaderFunctionArgs) {
   const { activeCustomer } = await getActiveCustomerDetails({ request });
+
   if (!activeCustomer) {
-    return redirect('/sign-in');
+    const sessionStorage = await getSessionStorage();
+    const session = await sessionStorage.getSession(request.headers.get('Cookie'));
+
+    session.unset('authToken');
+    session.unset('channelToken');
+
+    return redirect('/sign-in', {
+      headers: {
+        'Set-Cookie': await sessionStorage.commitSession(session),
+      },
+    });
   }
+
   return json({ activeCustomer });
 }
 
@@ -23,12 +37,25 @@ export default function AccountDashboard() {
   const { activeCustomer } = useLoaderData<typeof loader>();
   const { firstName, lastName } = activeCustomer!;
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('reload') === 'true') {
+      // Clean the URL by removing `reload=true`
+      const url = new URL(window.location.href);
+      url.searchParams.delete('reload');
+      window.history.replaceState({}, '', url.toString());
+
+      // Refresh data by hard-reloading the page once
+      window.location.reload();
+    }
+  }, [searchParams]);
 
   const tabs: TabProps[] = [
     {
       Icon: UserCircleIcon,
       text: t('account.details'),
-      to: './',
+      to: './_index',
     },
     {
       Icon: ShoppingBagIcon,
@@ -63,8 +90,9 @@ export default function AccountDashboard() {
           {t('account.signOut')}
         </button>
       </Form>
+
       <TabsContainer tabs={tabs}>
-        <Outlet></Outlet>
+        <Outlet />
       </TabsContainer>
     </div>
   );
