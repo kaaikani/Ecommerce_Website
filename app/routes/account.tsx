@@ -83,13 +83,20 @@ export default function AccountDashboard() {
         {t('account.welcomeBack')}, {firstName} {lastName}
       </p>
       <Form method="post" action="/api/logout">
-        <button
-          type="submit"
-          className="underline text-primary-600 hover:text-primary-800"
-        >
-          {t('account.signOut')}
-        </button>
-      </Form>
+  <button
+    type="submit"
+    className="underline text-primary-600 hover:text-primary-800"
+    onClick={() => {
+      // Wait briefly, then force full reload to reset state
+      setTimeout(() => {
+        window.location.href = '/home';
+      }, 50); // Allow Remix to process the POST first
+    }}
+  >
+    {t('account.signOut')}
+  </button>
+</Form>
+
 
       <TabsContainer tabs={tabs}>
         <Outlet />

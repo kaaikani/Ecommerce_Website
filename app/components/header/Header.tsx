@@ -65,7 +65,7 @@ export function Header({
             />
           </Link>
         </h1>
-        <div className="flex space-x-4 hidden sm:block">
+        <div className="flex space-x-4  sm:block">
           {collections.map((collection) => (
             <Link
               className="text-sm md:text-base text-gray-200 hover:text-white"

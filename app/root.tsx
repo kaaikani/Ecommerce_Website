@@ -129,12 +129,23 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <Header
+        {/* <Header
           onCartIconClick={() => setOpen(!open)}
           cartQuantity={activeOrder?.totalQuantity ?? 0}
           isSignedIn={isSignedIn}
           collections={collections}
-        />
+        /> */}
+
+{isSignedIn && (
+  <>
+    <Header
+      onCartIconClick={() => setOpen(!open)}
+      cartQuantity={activeOrder?.totalQuantity ?? 0}
+      isSignedIn={isSignedIn}
+      collections={collections}
+    />
+  </>
+)}
         <main>
           <Outlet
             context={{
@@ -145,16 +156,20 @@ export default function App() {
             }}
           />
         </main>
-        <CartTray
-          open={open}
-          onClose={setOpen}
-          activeOrder={activeOrder}
-          adjustOrderLine={adjustOrderLine}
-          removeItem={removeItem}
-        />
+        {isSignedIn && (
+  <>
+    <CartTray
+      open={open}
+      onClose={setOpen}
+      activeOrder={activeOrder}
+      adjustOrderLine={adjustOrderLine}
+      removeItem={removeItem}
+    />
+    <Footer collections={collections} />
+  </>
+)}
         <ScrollRestoration />
         <Scripts />
-        <Footer collections={collections}></Footer>
 
         {devMode && <LiveReload />}
       </body>
