@@ -61,13 +61,16 @@ const buildConfig = {
 };
 
 function selectConfig() {
-  if (!['development', 'production'].includes(process.env.NODE_ENV))
-    throw new Error(`Unknown NODE_ENV: ${process.env.NODE_ENV}`);
+  const nodeEnv = process.env.NODE_ENV || 'production';
+
+  if (!['development', 'production'].includes(nodeEnv))
+    throw new Error(`Unknown NODE_ENV: ${nodeEnv}`);
   if (process.env.CF_PAGES) return cloudflarePagesConfig;
   if (process.env.NETLIFY) return netlifyConfig;
-  if (process.env.NODE_ENV === 'development') return devConfig;
+  if (nodeEnv === 'development') return devConfig;
   if (!process.env.CF_PAGES && !process.env.NETLIFY) return buildConfig;
   throw new Error(`Cannot select config`);
 }
+
 
 export default selectConfig();
