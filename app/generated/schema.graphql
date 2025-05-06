@@ -2040,10 +2040,11 @@ type Mutation {
   that verification token to the Customer, which is then used to verify the change of email address.
   """
   requestUpdateCustomerEmailAddress(newEmailAddress: String!, password: String!): RequestUpdateCustomerEmailAddressResult!
+  resendPhoneOtp(phoneNumber: String!): String
 
   """Resets a Customer's password based on the provided token"""
   resetPassword(password: String!, token: String!): ResetPasswordResult!
-  sendPhoneOtp(phoneNumber: String!): Boolean
+  sendPhoneOtp(phoneNumber: String!): String
 
   """
   Set the Customer for the Order. Required only if the Customer is not currently logged in
@@ -2095,6 +2096,7 @@ type Mutation {
   provided here.
   """
   verifyCustomerAccount(password: String, token: String!): VerifyCustomerAccountResult!
+  verifyPhoneOtp(code: String!, phoneNumber: String!): Boolean
 }
 
 input NativeAuthInput {
@@ -2896,8 +2898,9 @@ enum Permission {
 
 input PhoneOtpInput {
   code: String!
-  firstName: String
-  lastName: String
+  emailAddress: String!
+  firstName: String!
+  lastName: String!
   phoneNumber: String!
 }
 

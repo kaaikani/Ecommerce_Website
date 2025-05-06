@@ -22,10 +22,15 @@ import {
 } from '~/providers/customPlugins/customPlugin';
 import { getSessionStorage } from '~/sessions';
 import { useState } from 'react';
+import React from 'react';
 
 interface RegisterValidationErrors {
-  phoneNumber?: string;
   form?: string;
+  fieldErrors?: {
+    phoneNumber?: string;
+    otp?: string;
+    emailAddress?: string;
+  }
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -39,10 +44,11 @@ export async function action({ request }: ActionFunctionArgs) {
   const phoneNumber = body.get('phoneNumber')?.toString();
   const code = body.get('otp')?.toString();
   const selectedChannelToken = String(body.get('channel') || '');
-  const firstName = body.get('firstName')?.toString();
-  const lastName = body.get('lastName')?.toString();
-  const redirectTo = (body.get('redirectTo') || '/account') as string;
 
+  const redirectTo = (body.get('redirectTo') || '/account') as string;
+  const firstName = body.get('firstName') as string;
+const lastName = body.get('lastName') as string;
+const emailAddress = body.get('emailAddress') as string;
 
   const sessionStorage = await getSessionStorage();
   const session = await sessionStorage.getSession(request.headers.get('Cookie'));
@@ -85,11 +91,13 @@ export async function action({ request }: ActionFunctionArgs) {
           }
         );
       }
-      const { result ,headers} = await authenticate(
+      const { result, headers } = await authenticate(
         {
           phoneOtp: {
             phoneNumber,
             code,
+
+            emailAddress,
             firstName,
             lastName,
           },
@@ -104,16 +112,16 @@ export async function action({ request }: ActionFunctionArgs) {
       const vendureToken = headers.get('vendure-auth-token'); // ✅ CORRECT
 
       if ('__typename' in result && result.__typename === 'CurrentUser') {
-        
-        
+
+
         if (vendureToken) {
           session.set('authToken', vendureToken);
         }
-      
+
         return redirect(`${redirectTo}?reload=true`, {
           headers: { 'Set-Cookie': await sessionStorage.commitSession(session) },
         });
-        
+
       } else {
         return json<RegisterValidationErrors>(
           { form: 'Authentication failed' },
@@ -150,172 +158,370 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function SignUpPage() {
-  const [searchParams] = useSearchParams();
-  const formErrors = useActionData<RegisterValidationErrors>();
   const { t } = useTranslation();
   const { channels } = useLoaderData<typeof loader>();
+  const formErrors = useActionData<RegisterValidationErrors>();
   const navigation = useNavigation();
-  const [phoneInput, setPhoneInput] = useState('');
-  const [firstNameInput, setFirstNameInput] = useState('');
-  const [lastNameInput, setLastNameInput] = useState('');
-  
+  const [phoneNumber, setPhoneNumber] = React.useState('');
 
-  interface SendOtpResponse {
-    otpSent?: boolean;
-    form?: string;
-  }
+  const sendOtpFetcher = useFetcher<{ otpSent?: boolean; form?: string }>();
+  const otpSent = sendOtpFetcher.data?.otpSent;
 
-  const fetcher = useFetcher<SendOtpResponse>();
-  const otpSent = fetcher.data?.otpSent;
+  const [formData, setFormData] = useState({
+    phoneNumber: '',
+    firstName: '',
+    lastName: '',
+    emailAddress: '',
+    channel: channels.length === 1 ? channels[0].token : '',
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+
+    let newValue = value;
+
+    if (name === 'phoneNumber') {
+      // Keep only digits and limit to 10 characters
+      newValue = value.replace(/\D/g, '').slice(0, 10);
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: newValue }));
+  };
+  const SendOtpForm = sendOtpFetcher.Form;
 
   return (
-    <div className="flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl text-gray-900">{t('account.create')}</h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          {t('common.or')}{' '}
-          <Link to="/sign-in" className="font-medium text-primary-600 hover:text-primary-500">
-            {t('account.login')}
-          </Link>
-        </p>
-      </div>
+    <div className="min-h-screen flex flex-col lg:grid lg:grid-cols-3  rounded-xl">
+      {/* Mobile Top Image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center   lg:hidden"
+        style={{
+          backgroundImage: `url('https://www.beckydorner.com/wp-content/uploads/2021/09/Fruits-and-vegetables.jpg')`,
+        }}
+      />
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
 
-          {/* OTP Send Form */}
-          <fetcher.Form method="post" className="space-y-6">
-            <input type="hidden" name="intent" value="send-otp" />
-            <label className="block text-sm font-medium text-gray-700">{t('account.phoneNumber')}</label>
-            <div className="flex space-x-2">
-              <input
-                id="phoneNumber"
-                name="phoneNumber"
-                type="text"
-                required
-                value={phoneInput}
-                onChange={(e) => setPhoneInput(e.target.value)}
-                className="flex-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm"
-              />
+      {/* Left Panel or Full Form on Mobile */}
+      <div className="lg:hidden absolute bottom-0 left-0 right-0 z-10 bg-white rounded-t-3xl shadow-xl p-6 sm:p-8">
+
+        <div className="mt-8 space-y-6 max-w-sm mx-auto">
+          <h2 className="text-5xl font-bold pt-10 text-gray-900 ">Sign Up</h2>
+
+          {!otpSent ? (
+            <SendOtpForm method="post" className="space-y-6">
+                            <input type="hidden" name="intent" value="send-otp" />
+              <input type="hidden" name="emailAddress" value={formData.emailAddress} />
+              <input type="hidden" name="phoneNumber" value={formData.phoneNumber} />
+
+              <div className="space-y-2">
+                <label htmlFor="emailAddress" className="block text-sm font-medium text-gray-700">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="emailAddress"
+                  name="emailAddress"
+                  value={formData.emailAddress}
+                  onChange={handleChange}
+                  required
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                />
+                {formData.emailAddress && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.emailAddress) && (
+                  <p className="text-sm text-red-600">Please enter a valid email address.</p>
+                )}
+              </div>
+
+
+              <div className="space-y-2">
+
+                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
+                  required
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                />
+                {formData.phoneNumber && formData.phoneNumber.length !== 10 && (
+                  <p className="text-sm text-red-600">Please enter a valid 10-digit phone number.</p>
+                )}
+
+              </div>
+
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">First Name</label>
+                <input
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  required
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  required
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                />
+              </div>
+
+              {channels.length > 1 && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Available City</label>
+                  <select
+                    name="channel"
+                    value={formData.channel}
+                    onChange={handleChange}
+                    required
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  >
+                    <option value="">Select a city</option>
+                    {channels.map((channel) => (
+                      <option key={channel.id} value={channel.token}>
+                        {channel.code}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="px-3 py-2 text-sm text-white bg-primary-600 rounded-md"
-                disabled={fetcher.state !== 'idle'}
+                className="w-full mt-2 justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={sendOtpFetcher.state !== 'idle'}
               >
-                {fetcher.state === 'submitting' ? 'Sending…' : t('sendOtp')}
+                {sendOtpFetcher.state === 'submitting' ? 'Sending...' : 'Send OTP'}
               </button>
-            </div>
-            {formErrors?.phoneNumber && (
-              <div className="text-xs text-red-700">{formErrors.phoneNumber}</div>
-            )}
-            {fetcher.data?.form && (
-              <div className="text-xs text-red-700">{fetcher.data.form}</div>
-            )}
-            {otpSent && (
-              <div className="text-green-600 text-sm">{t('otpSentSuccessfully')}</div>
-            )}
-          </fetcher.Form>
 
-          {/* Registration Form */}
-          <Form method="post" className="space-y-6 mt-6">
-            <input type="hidden" name="intent" value="submit-form" />
-            <input type="hidden" name="phoneNumber" value={phoneInput} />
+              {sendOtpFetcher.data?.form && (
+                <p className="text-sm text-red-600">{sendOtpFetcher.data.form}</p>
+              )}
 
-            <div>
-              <label htmlFor="otp" className="block text-sm font-medium text-gray-700">{t('account.otp')}</label>
-              <input
-                id="otp"
-                name="otp"
-                type="text"
-                required
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md sm:text-sm"
-              />
-            </div>
 
-            <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">First Name</label>
-              <input
-                id="firstName"
-                name="firstName"
-                type="text"
-                value={firstNameInput}
-                onChange={(e) => setFirstNameInput(e.target.value)}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md sm:text-sm"
-              />
-            </div>
+              <p className="mt-10 text-center text-sm text-gray-500">
+                Already a member ?{' '}
+                <Link to="/sign-in" className="font-semibold text-indigo-600 hover:text-indigo-500">
+                  login to your existing account
+                </Link>
+              </p>
+            </SendOtpForm>
+          ) : (
+            <Form method="post" className="space-y-4 mt-6">
+              <input type="hidden" name="intent" value="submit-form" />
+              <input type="hidden" name="phoneNumber" value={formData.phoneNumber} />
+              <input type="hidden" name="firstName" value={formData.firstName} />
+              <input type="hidden" name="lastName" value={formData.lastName} />
+              <input type="hidden" name="channel" value={formData.channel} />
+              <input type="hidden" name="emailAddress" value={formData.emailAddress} />
 
-            <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Last Name</label>
-
-              <input
-                id="lastName"
-                name="lastName"
-                type="text"
-                value={lastNameInput}
-                onChange={(e) => setLastNameInput(e.target.value)}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md sm:text-sm"
-              />
-              
-              
-            </div>
-
-            {/* <div>
-              <label htmlFor="channel" className="block text-sm font-medium text-gray-700">{t('account.channel')}</label>
-              <select
-                id="channel"
-                name="channel"
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md sm:text-sm"
-                required
-              >
-                {channels.map((channel) => (
-                  <option key={channel.id} value={channel.token}>
-                    {channel.code}
-                  </option>
-                ))}
-              </select>
-            </div> */}
-
-            {channels.length > 1 && (
               <div>
-                <label htmlFor="channel" className="block text-sm font-medium text-gray-700">
-                  {t('account.channel')}
-                </label>
-                <select
-                  name="channel"
-                  id="channel"
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md sm:text-sm"
+                <label className="block text-sm">OTP</label>
+                <input
+                  type="text"
+                  name="otp"
                   required
-                >
-                  {channels.map((channel) => (
-                    <option key={channel.id} value={channel.token}>
-                      {channel.code}
-                    </option>
-                  ))}
-                </select>
+                  className="w-full px-3 py-2 border rounded-md"
+                />
               </div>
-            )}
 
-
-            {formErrors?.form && (
-              <div className="rounded-md bg-red-50 p-4">
-                <div className="flex">
-                  <XCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">{t('account.createError')}</h3>
-                    <p className="text-sm text-red-700 mt-2">{formErrors.form}</p>
-                  </div>
+              {formErrors?.form && (
+                <div className="bg-red-100 text-red-700 p-3 rounded">
+                  {formErrors.form}
                 </div>
-              </div>
-            )}
+              )}
 
-            <button
-              type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md text-sm font-medium text-white bg-primary-600"
-              disabled={navigation.state === 'submitting'}
-            >
-              {t('account.signUp')}
-            </button>
-          </Form>
+              <button
+                type="submit"
+                className="w-full py-2 bg-primary-600 text-white rounded-md"
+                disabled={navigation.state === 'submitting' || navigation.state === 'loading'}
+                >
+                Register
+              </button>
+            </Form>
+          )}
+        </div>
+        <div className='pb-20' />
+      </div>
+
+
+      {/* Desktop Left Panel */}
+      <div className="hidden lg:flex lg:col-span-1 flex-col justify-center rounded-r-3xl shadow-xl  px-6 lg:px-16">
+        <div className="mx-auto w-full max-w-md  p-6 sm:p-8">
+          <h2 className="text-5xl font-bold text-gray-900">Sign Up</h2>
+          {/* Your form here */}
+          <div className="mt-8 space-y-6">
+            {!otpSent ? (
+              <SendOtpForm method="post" className="space-y-6">
+                                <input type="hidden" name="intent" value="send-otp" />
+                
+                <div className="space-y-2">
+                  <label htmlFor="emailAddress" className="block text-sm font-medium text-gray-700">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    id="emailAddress"
+                    name="emailAddress"
+                    value={formData.emailAddress}
+                    onChange={handleChange}
+                    required
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  />
+                  {formData.emailAddress && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.emailAddress) && (
+                    <p className="text-sm text-red-600">Please enter a valid email address.</p>
+                  )}
+                </div>
+
+
+                <div className="space-y-2">
+
+                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    value={formData.phoneNumber}
+                    onChange={handleChange}
+                    required
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  />
+                  {formData.phoneNumber && formData.phoneNumber.length !== 10 && (
+                    <p className="text-sm text-red-600">Please enter a valid 10-digit phone number.</p>
+                  )}
+
+                </div>
+
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">First Name</label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    required
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    required
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  />
+                </div>
+
+                {channels.length > 1 && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Available City</label>
+                    <select
+                      name="channel"
+                      value={formData.channel}
+                      onChange={handleChange}
+                      required
+                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    >
+                      <option value="">Select a city</option>
+                      {channels.map((channel) => (
+                        <option key={channel.id} value={channel.token}>
+                          {channel.code}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full mt-2 justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={sendOtpFetcher.state !== 'idle'}
+                >
+                  {sendOtpFetcher.state === 'submitting' ? 'Sending...' : 'Send OTP'}
+                </button>
+
+                {sendOtpFetcher.data?.form && (
+                  <p className="text-sm text-red-600">{sendOtpFetcher.data.form}</p>
+                )}
+
+
+                <p className="mt-10 text-center text-sm text-gray-500">
+                  Already a member ?{' '}
+                  <Link to="/sign-in" className="font-semibold text-indigo-600 hover:text-indigo-500">
+                    login to your existing account
+                  </Link>
+                </p>
+              </SendOtpForm>
+            ) : (
+              <Form method="post" className="space-y-4 mt-6">
+                <input type="hidden" name="intent" value="submit-form" />
+                <input type="hidden" name="phoneNumber" value={formData.phoneNumber} />
+                <input type="hidden" name="firstName" value={formData.firstName} />
+                <input type="hidden" name="lastName" value={formData.lastName} />
+                <input type="hidden" name="channel" value={formData.channel} />
+                <input type="hidden" name="emailAddress" value={formData.emailAddress} />
+
+                <div>
+                  <label className="block text-sm">OTP</label>
+                  <input
+                    type="text"
+                    name="otp"
+                    required
+                    className="w-full px-3 py-2 border rounded-md"
+                  />
+                </div>
+
+                {formErrors?.form && (
+                  <div className="bg-red-100 text-red-700 p-3 rounded">
+                    {formErrors.form}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full py-2 bg-primary-600 text-white rounded-md"
+                  disabled={navigation.state !== 'idle'}
+                >
+                  Register
+                </button>
+              </Form>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Right Panel for Desktop */}
+      <div className="hidden lg:flex lg:col-span-2 items-center justify-center relative p-12 overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center blur-sm scale-110"
+          style={{
+            backgroundImage: `url('https://www.beckydorner.com/wp-content/uploads/2021/09/Fruits-and-vegetables.jpg')`,
+          }}
+        />
+        <div className="relative z-10 text-center max-w-4xl  p-8 ">
+
+          <img
+            src="/banner.jpg"
+            alt="Product"
+            className="mx-auto w-full rounded-lg shadow-md"
+          />
         </div>
       </div>
     </div>

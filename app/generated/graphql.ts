@@ -1746,9 +1746,10 @@ export type Mutation = {
    * that verification token to the Customer, which is then used to verify the change of email address.
    */
   requestUpdateCustomerEmailAddress: RequestUpdateCustomerEmailAddressResult;
+  resendPhoneOtp?: Maybe<Scalars['String']>;
   /** Resets a Customer's password based on the provided token */
   resetPassword: ResetPasswordResult;
-  sendPhoneOtp?: Maybe<Scalars['Boolean']>;
+  sendPhoneOtp?: Maybe<Scalars['String']>;
   /** Set the Customer for the Order. Required only if the Customer is not currently logged in */
   setCustomerForOrder: SetCustomerForOrderResult;
   /** Sets the billing address for this order */
@@ -1785,6 +1786,7 @@ export type Mutation = {
    * provided here.
    */
   verifyCustomerAccount: VerifyCustomerAccountResult;
+  verifyPhoneOtp?: Maybe<Scalars['Boolean']>;
 };
 
 
@@ -1876,6 +1878,11 @@ export type MutationRequestUpdateCustomerEmailAddressArgs = {
 };
 
 
+export type MutationResendPhoneOtpArgs = {
+  phoneNumber: Scalars['String'];
+};
+
+
 export type MutationResetPasswordArgs = {
   password: Scalars['String'];
   token: Scalars['String'];
@@ -1947,6 +1954,12 @@ export type MutationUpdateCustomerPasswordArgs = {
 export type MutationVerifyCustomerAccountArgs = {
   password?: InputMaybe<Scalars['String']>;
   token: Scalars['String'];
+};
+
+
+export type MutationVerifyPhoneOtpArgs = {
+  code: Scalars['String'];
+  phoneNumber: Scalars['String'];
 };
 
 export type NativeAuthInput = {
@@ -2618,8 +2631,9 @@ export enum Permission {
 
 export type PhoneOtpInput = {
   code: Scalars['String'];
-  firstName?: InputMaybe<Scalars['String']>;
-  lastName?: InputMaybe<Scalars['String']>;
+  emailAddress: Scalars['String'];
+  firstName: Scalars['String'];
+  lastName: Scalars['String'];
   phoneNumber: Scalars['String'];
 };
 
@@ -3726,7 +3740,7 @@ export type SendPhoneOtpMutationVariables = Exact<{
 }>;
 
 
-export type SendPhoneOtpMutation = { __typename?: 'Mutation', sendPhoneOtp?: boolean | null };
+export type SendPhoneOtpMutation = { __typename?: 'Mutation', sendPhoneOtp?: string | null };
 
 export type ActiveCustomerQueryVariables = Exact<{ [key: string]: never; }>;
 

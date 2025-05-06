@@ -16,7 +16,7 @@ export const validateRegistrationForm = (formData: FormData): RegisterValidation
 
 export const extractRegistrationFormValues = (formData: FormData) => {
   const phoneNumber = formData.get('phoneNumber')?.toString() ?? '';
-  const emailAddress = `${phoneNumber}@kaikani.com`;
+  const emailAddress = formData.get('emailAddress')?.toString() ?? '';
   const firstName = formData.get('firstName')?.toString() ?? '';
   const lastName = formData.get('lastName')?.toString() ?? '';
 

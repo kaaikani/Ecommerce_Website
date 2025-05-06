@@ -346,70 +346,6 @@ gql`
 `;
 
 
-
-// type AuthenticateResponse = {
-//   data: {
-//     authenticate: CurrentUser | ErrorResult;
-//   };
-// };
-
-// export async function authenticate(
-//   input: AuthenticationInput,
-//   p0: { request: Request; customHeaders: { 'vendure-token': string } }
-// ): Promise<{ result: CurrentUser | ErrorResult; headers: Headers }> {
-//   const { phoneNumber, code } = input.phoneOtp!;
-  
-//   const fetchResponse = await fetch('http://localhost:3000/shop-api', {
-//     method: 'POST',
-//     headers: {
-//       'Content-Type': 'application/json',
-//       'vendure-token': p0.customHeaders['vendure-token'],
-//     },
-//     body: JSON.stringify({
-//       query: `
-//         mutation authenticate($input: AuthenticationInput!) {
-//           authenticate(input: $input) {
-//             __typename
-//             ... on CurrentUser {
-//               id
-//               identifier
-//               channels {
-//                 id
-//                 code
-//                 token
-//                 permissions
-//               }
-//             }
-//             ... on InvalidCredentialsError {
-//               message
-//               errorCode
-//             }
-//             ... on NotVerifiedError {
-//               message
-//               errorCode
-//             }
-//           }
-//         }
-//       `,
-//       variables: {
-//         input: {
-//           phoneOtp: {
-//             phoneNumber,
-//             code,
-//           },
-//         },
-//       },
-//     }),
-//   });
-
-//   const json = (await fetchResponse.json()) as AuthenticateResponse;
-//   return {
-//     result: json.data.authenticate,
-//     headers: fetchResponse.headers,
-//   };
-// }
-
-
 export async function authenticate(
   input: AuthenticationInput,
   {
@@ -418,7 +354,7 @@ export async function authenticate(
   }: { request: Request; customHeaders: { 'vendure-token': string } }
 ): Promise<{ result: CurrentUser | ErrorResult; headers: Headers }> {
   const vendureApiUrl = process.env.VENDURE_API_URL;
-
+  console.log('authenticate:', authenticate);
   const response = await fetch(vendureApiUrl!, {
     method: 'POST',
     headers: {
