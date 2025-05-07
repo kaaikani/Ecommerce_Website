@@ -1,213 +1,174 @@
 import { CreditCardIcon, XCircleIcon } from '@heroicons/react/24/solid';
 import { Form, useLoaderData } from '@remix-run/react';
-import { ActiveCustomerQuery, EligiblePaymentMethodsQuery, OrderDetailFragment,ActiveCustomerDetailsQuery } from '~/generated/graphql';
+import type { EligiblePaymentMethodsQuery, OrderDetailFragment, ActiveCustomerDetailsQuery } from '~/generated/graphql';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { getActiveCustomerDetails } from '~/providers/customer/customer';
-import { DataFunctionArgs, json } from '@remix-run/server-runtime';
+import type { LoaderFunctionArgs } from '@remix-run/server-runtime';
+import { json, redirect } from '@remix-run/server-runtime';
+import { getSessionStorage } from '~/sessions';
 
-// Define the expected response type for the Razorpay order creation API
-interface RazorpayOrderResponse {
-  orderId: string;
-  error?: string;
-}
+// Razorpay API response shape
+type RazorpayOrderResponse = { orderId: string; error?: string };
+interface RazorpayInstance { open(): void; on(event: string, callback: (response: any) => void): void; }
 
-// Define Razorpay SDK interface (basic)
-interface Razorpay {
-  new (options: any): RazorpayInstance;
-}
-
-interface RazorpayInstance {
-  open: () => void;
-  on: (event: string, callback: (response: any) => void) => void;
-}
-
-// Loader to fetch active customer details
-export async function loader({ request }: DataFunctionArgs) {
+// Ensure authenticated customer
+export async function loader({ request }: LoaderFunctionArgs) {
   const { activeCustomer } = await getActiveCustomerDetails({ request });
+
+ 
   if (!activeCustomer) {
-    return json({ activeCustomer: null });
-
-console.log('check1',activeCustomer);
+    const sessionStorage = await getSessionStorage();
+    const session = await sessionStorage.getSession(request.headers.get('Cookie'));
+    session.unset('authToken');
+    session.unset('channelToken');
+    return json({
+      activeCustomer: null,
+      message: 'You need to be signed in to proceed with payment.',
+      loginUrl: '/sign-in',
+    }, {
+      headers: { 'Set-Cookie': await sessionStorage.commitSession(session) }
+    });
   }
-  return json({ activeCustomer });
 
-console.log('check2',activeCustomer);
+  return json({ activeCustomer });
 }
+
+// Payment component
 export function DummyPayments({
   paymentMethod,
   paymentError,
   order,
+  activeCustomer,
 }: {
   paymentMethod: EligiblePaymentMethodsQuery['eligiblePaymentMethods'][number];
   paymentError?: string;
   order?: OrderDetailFragment | null;
+  activeCustomer: ActiveCustomerDetailsQuery['activeCustomer'];
 }) {
   const { t } = useTranslation();
   const [razorpayError, setRazorpayError] = useState<string | null>(null);
-  const { activeCustomer } = useLoaderData<typeof loader>() as { activeCustomer: ActiveCustomerDetailsQuery['activeCustomer'] | null };
-  const amountInPaise = order?.totalWithTax ? Math.round(order.totalWithTax * 1) : 1000; // default 100.00 INR
+
+  // Get customer data (nullable until guarded)
+  // const { activeCustomer } = useLoaderData<typeof loader>() as {
+  //   activeCustomer: ActiveCustomerDetailsQuery['activeCustomer'] | null;
+  // };
+
+  // Guard against missing customer
+  if (!activeCustomer) {
+    return (
+      <div className="max-w-md mx-auto p-6 bg-gray-100 rounded">
+        <p className="text-center text-red-600">{t('checkout.noCustomer', 'Customer information is not available.')}</p>
+      </div>
+    );
+  }
+
+  // Payment parameters
+  const amountInPaise = order?.totalWithTax ? Math.round(order.totalWithTax * 1) : 1000;
+
   const currency = order?.currencyCode || 'INR';
 
-  console.log('check3',activeCustomer);
-  // Function to load Razorpay script
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
+  // Load Razorpay script
+  const loadRazorpayScript = () =>
+    new Promise<boolean>((resolve) => {
       const script = document.createElement('script');
       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => {
-        console.log('Razorpay script loaded successfully');
-        resolve(true);
-      };
-      script.onerror = () => {
-        console.error('Failed to load Razorpay script');
-        resolve(false);
-      };
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
       document.body.appendChild(script);
     });
-  };
 
-  // Function to handle Razorpay payment
+  // Handle online payment
   const handleRazorpayPayment = async () => {
-    setRazorpayError(null); // Clear previous errors
-    console.log('Initiating Razorpay payment for method:', paymentMethod.name);
-
-    // Load Razorpay script
-    const scriptLoaded = await loadRazorpayScript();
-    if (!scriptLoaded) {
-      setRazorpayError('Failed to load Razorpay SDK. Please try again.');
+    setRazorpayError(null);
+    const loaded = await loadRazorpayScript();
+    if (!loaded) {
+      setRazorpayError('Unable to load payment SDK');
       return;
     }
 
-    // Fetch order ID from your backend
     let orderData: RazorpayOrderResponse;
     try {
-      const response = await fetch('/api/create-razorpay-order', {
+      const res = await fetch('/api/create-razorpay-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: amountInPaise,
-          currency: currency,
-        }),
+        body: JSON.stringify({ amount: amountInPaise, currency }),
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      orderData = await response.json();
-      if (!orderData.orderId) {
-        throw new Error('No order ID received from backend');
-      }
-      console.log('Order ID received:', orderData.orderId);
-    } catch (error: any) {
-      console.error('Error fetching order ID:', error);
-      setRazorpayError(`Failed to create order: ${error.message || 'Please try again.'}`);
+      if (!res.ok) throw new Error(res.statusText);
+      orderData = await res.json();
+      if (!orderData.orderId) throw new Error('No orderId');
+    } catch (e: any) {
+      setRazorpayError(e.message);
       return;
     }
 
-    // Razorpay options with dynamic prefill
     const options = {
       key: 'rzp_live_MT7BL3eZs3HHGB',
       amount: amountInPaise,
-      currency: currency,
-      name: 'Kaaikani',
+      currency,
+      name: `${activeCustomer.firstName} ${activeCustomer.lastName}`,
       description: 'Online Payment',
       order_id: orderData.orderId,
       prefill: {
-        name: activeCustomer?.firstName
-          ? `${activeCustomer.firstName} ${activeCustomer.lastName || ''}`.trim()
-          : '',
-        email: activeCustomer?.emailAddress || '',
-        contact: activeCustomer?.phoneNumber || '',
+        name: `${activeCustomer.firstName} ${activeCustomer.lastName}`,
+        email: activeCustomer.emailAddress,
+        contact: activeCustomer.phoneNumber,
       },
-      notes: {
-        address: 'Customer Address',
-      },
-      theme: {
-        color: '#3399cc',
-      },
+      theme: { color: '#3399cc' },
     };
-      console.log(activeCustomer?.firstName);
-      console.log(activeCustomer?.phoneNumber);
-      console.log(activeCustomer?.emailAddress);
-    // Initialize Razorpay
+
     try {
       const rzp = new (window as any).Razorpay(options) as RazorpayInstance;
-      rzp.on('payment.failed', function (response: any) {
-        // Handle payment failure
-        console.error('Payment failed:', response.error);
-        setRazorpayError(
-          `Payment failed: ${response.error.description || 'Please try again.'}`
-        );
+      rzp.on('payment.failed', (resp: any) => setRazorpayError(resp.error.description));
+      rzp.on('payment.success', (response: any) => {
+        // Optional: send payment verification to backend here
+        window.location.href = '/'; // Redirect user
       });
-
-      // Open Razorpay checkout
-      console.log('Opening Razorpay checkout');
       rzp.open();
-    } catch (error: any) {
-      console.error('Error initializing Razorpay:', error);
-      setRazorpayError('Failed to initialize payment. Please try again.');
+    } catch (e: any) {
+      setRazorpayError(e.message || 'Payment initialization failed');
     }
   };
 
   return (
-    <div className="flex flex-col items-center">
-      <p className="text-gray-600 text-sm p-6">{t('')}</p>
-      {paymentError && (
-        <div className="rounded-md bg-red-50 p-4 mb-8">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <XCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">
-                {t('checkout.paymentErrorMessage')}
-              </h3>
-              <div className="mt-2 text-sm text-red-700">{paymentError}</div>
-            </div>
-          </div>
-        </div>
-      )}
-      {razorpayError && (
-        <div className="rounded-md bg-red-50 p-4 mb-8">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <XCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Razorpay Error</h3>
-              <div className="mt-2 text-sm text-red-700">{razorpayError}</div>
-            </div>
-          </div>
-        </div>
-      )}
-      {paymentMethod.name.toLowerCase() === 'online' ? (
-        // Button for Online (Razorpay) payment
+    <div className="max-w-lg mx-auto p-6 bg-gradient-to-br from-white to-gray-100 rounded-2xl shadow-2xl">
+    {/* Header */}
+    <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center border-b pb-2">
+      {t('checkout.title', 'Payment Checkout')}
+    </h2>
+  
+
+  
+    {/* Error Message */}
+    {(paymentError || razorpayError) && (
+      <div className="mb-4 p-4 bg-red-100 border border-red-300 rounded-lg flex items-start space-x-2">
+        <XCircleIcon className="w-6 h-6 text-red-500 mt-1" />
+        <span className="text-red-700 font-medium">{paymentError || razorpayError}</span>
+      </div>
+    )}
+  
+    {/* Payment Button */}
+    {paymentMethod.name.toLowerCase() === 'online' ? (
+      <button
+        onClick={handleRazorpayPayment}
+        className="w-full flex items-center justify-center gap-3 py-3 px-6 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-semibold text-lg shadow-md transition-transform transform hover:scale-[1.02]"
+      >
+        <CreditCardIcon className="w-6 h-6" />
+        <span>{t('checkout.payWith')} {paymentMethod.name}</span>
+      </button>
+    ) : (
+      <Form method="post">
+        <input type="hidden" name="paymentMethodCode" value={paymentMethod.code} />
         <button
-          onClick={handleRazorpayPayment}
-          className="flex px-6 bg-primary-600 hover:bg-primary-700 items-center justify-center space-x-2 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          type="submit"
+          className="w-full flex items-center justify-center gap-3 py-3 px-6 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg font-semibold text-lg shadow-md transition-transform transform hover:scale-[1.02]"
         >
-          <CreditCardIcon className="w-5 h-5" />
-          <span>
-            {t('checkout.payWith')} {paymentMethod.name}
-          </span>
+          <CreditCardIcon className="w-6 h-6" />
+          <span>{t('checkout.payWith')} {paymentMethod.name}</span>
         </button>
-      ) : (
-        // Form for Offline payment
-        <Form method="post">
-          <input type="hidden" name="paymentMethodCode" value={paymentMethod.code} />
-          <button
-            type="submit"
-            className="flex px-6 bg-primary-600 hover:bg-primary-700 items-center justify-center space-x-2 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-          >
-            <CreditCardIcon className="w-5 h-5" />
-            <span>
-              {t('checkout.payWith')} {paymentMethod.name}
-            </span>
-          </button>
-        </Form>
-      )}
-    </div>
+      </Form>
+    )}
+  </div>
+  
   );
 }
