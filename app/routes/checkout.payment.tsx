@@ -18,7 +18,7 @@ import { getActiveOrder } from '~/providers/orders/order';
 import { getSessionStorage } from '~/sessions';
 import { useTranslation } from 'react-i18next';
 import { getActiveCustomerDetails } from '~/providers/customer/customer';
-import { RazorpayPayments } from '~/components/checkout/razorpay/RezopayPayments';
+import { RazorpayPayments } from '~/components/checkout/razopay/RezopayPayments';
 
 export async function loader({ params, request }: DataFunctionArgs) {
   const session = await getSessionStorage().then((sessionStorage) =>

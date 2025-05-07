@@ -9,7 +9,7 @@ import { json, redirect } from '@remix-run/server-runtime';
 import { getSessionStorage } from '~/sessions';
 
 // Razorpay API response shape
-type RazorpayOrderResponse = { orderId: string; error?: string };
+type RazorpayOrderResponse = { orderId: string; error?: string, success?: boolean;  };
 interface RazorpayInstance { open(): void; on(event: string, callback: (response: any) => void): void; }
 
 // Ensure authenticated customer
@@ -40,6 +40,7 @@ export function DummyPayments({
   paymentError,
   order,
   activeCustomer,
+  
 }: {
   paymentMethod: EligiblePaymentMethodsQuery['eligiblePaymentMethods'][number];
   paymentError?: string;
@@ -103,7 +104,7 @@ export function DummyPayments({
     }
 
     const options = {
-      key: 'rzp_live_MT7BL3eZs3HHGB',
+      key: 'rzp_test_FizLXqYeAjTxdN',
       amount: amountInPaise,
       currency,
       name: `${activeCustomer.firstName} ${activeCustomer.lastName}`,
@@ -120,10 +121,46 @@ export function DummyPayments({
     try {
       const rzp = new (window as any).Razorpay(options) as RazorpayInstance;
       rzp.on('payment.failed', (resp: any) => setRazorpayError(resp.error.description));
-      rzp.on('payment.success', (response: any) => {
-        // Optional: send payment verification to backend here
-        window.location.href = '/'; // Redirect user
+      rzp.on('payment.success', async (response: any) => {
+        try {
+          // Step 1: Verify with your server
+          const verifyRes = await fetch('/api/verify-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpayOrderId: orderData.orderId,
+              razorpayPaymentId: response.razorpay_payment_id,
+              signature: response.razorpay_signature,
+              
+            }),
+          });
+      
+          if (!verifyRes.ok) throw new Error('Payment verification failed.');
+      
+          // Step 2: Call your Vendure backend to add payment
+          const vendureRes = await fetch('/api/add-payment-to-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              method: 'razorpay',
+              metadata: {
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpayOrderId: orderData.orderId,
+                razorpaySignature: response.razorpay_signature,
+              },
+            }),
+          });
+          
+          if (vendureRes.ok) {
+            window.location.href = '/checkout/confirmation';
+          } else {
+            throw new Error('Failed to register payment in Vendure');
+          }
+        } catch (err) {
+          setRazorpayError('Error verifying or registering payment. Please try again.');
+        }
       });
+      
       rzp.open();
     } catch (e: any) {
       setRazorpayError(e.message || 'Payment initialization failed');

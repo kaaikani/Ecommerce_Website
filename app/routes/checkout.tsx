@@ -163,7 +163,6 @@ export default function Checkout() {
         </nav>
         <div className="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16">
           <div className={isConfirmationPage ? 'lg:col-span-2' : ''}>
-            {/* Render CheckoutShipping component here for /checkout */}
             <CheckoutShipping />
           </div>
 
@@ -180,15 +179,15 @@ export default function Checkout() {
                   adjustOrderLine={adjustOrderLine}
                 />
                <div className="mt-4">
-  <Link to="/coupon">
-    <button
-      type="button"
-      className="w-full bg-primary-600 text-white font-medium py-2 px-4 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
-    >
-      {t('checkout.availOffer')} {/* Assuming you have a translation key for "Avail Our Offers" */}
-    </button>
-  </Link>
-</div>
+                  <Link to="/coupon">
+                    <button
+                      type="button"
+                      className="w-full bg-primary-600 text-white font-medium py-2 px-4 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
+                    >
+                      {t('checkout.availOffer')} {/* Assuming you have a translation key for "Avail Our Offers" */}
+                    </button>
+                  </Link>
+                </div>
                 <CartTotals order={activeOrder as any} />
               </div>
             </div>

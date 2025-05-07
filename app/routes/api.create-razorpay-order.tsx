@@ -11,7 +11,7 @@ export const action: ActionFunction = async ({ request }) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Basic ${Buffer.from('rzp_live_MT7BL3eZs3HHGB:IcFId4SLDKWbSUew1Fpb12xn').toString('base64')}`,
+        Authorization: `Basic ${Buffer.from('rzp_test_FizLXqYeAjTxdN:cRmzrUl39XExk6QBczCzfFZa').toString('base64')}`,
       },
       body: JSON.stringify({
         amount,
