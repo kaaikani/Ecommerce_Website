@@ -60,6 +60,7 @@ export function setOrderShippingMethod(
 ) {
   return sdk.setOrderShippingMethod({ shippingMethodId }, options);
 }
+
 export function applyCouponCode(input: string, options: QueryOptions) {
   return sdk.ApplyCouponCode ({ input }, options)
     .then(response => response.applyCouponCode);
@@ -92,6 +93,65 @@ export function getCouponCodeList(options: QueryOptions) {
   );
 }
 
+export async function addCouponProductToCart(couponCode: string, options: QueryOptions) {
+  try {
+    console.log(`Fetching coupon code: ${couponCode}`);
+    const couponList = await getCouponCodeList(options);
+    const coupon = couponList.find((c) => c.couponCode === couponCode);
+
+    if (!coupon) {
+      console.error(`Coupon code ${couponCode} not found in list`, couponList);
+      throw new Error(`Coupon code ${couponCode} not found`);
+    }
+
+    console.log('Coupon found:', coupon);
+    let productVariantId: string | null = null;
+    for (const condition of coupon.conditions) {
+      const variantArg = condition.args.find((arg) => arg.name === 'productVariantIds');
+      if (variantArg && variantArg.value) {
+        console.log('Found productVariantIds arg:', variantArg.value);
+        try {
+          // Handle both array and single value formats
+          let parsedIds: string[] | string = variantArg.value;
+          if (variantArg.value.startsWith('[')) {
+            parsedIds = JSON.parse(variantArg.value);
+          } else {
+            parsedIds = [variantArg.value];
+          }
+          if (Array.isArray(parsedIds) && parsedIds.length > 0) {
+            productVariantId = parsedIds[0].toString();
+            break;
+          } else if (typeof parsedIds === 'string') {
+            productVariantId = parsedIds;
+            break;
+          }
+        } catch (e) {
+          console.error('Failed to parse productVariantIds:', variantArg.value, e);
+          throw new Error(`Invalid productVariantIds format for coupon ${couponCode}`);
+        }
+      }
+    }
+
+    if (!productVariantId) {
+      console.error(`No product variant ID found for coupon ${couponCode}`);
+      throw new Error(`No product variant ID found for coupon code ${couponCode}`);
+    }
+
+    console.log(`Adding product variant ID: ${productVariantId} to cart`);
+    const addResult = await addItemToOrder(productVariantId, 1, options);
+    console.log('addItemToOrder result:', addResult);
+
+    // Verify the cart update
+    const updatedOrder = await getActiveOrder(options);
+    console.log('Updated order after adding item:', updatedOrder);
+
+    return addResult;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`Error in addCouponProductToCart: ${errorMessage}`);
+    throw new Error(`Failed to add product to cart: ${errorMessage}`);
+  }
+}
 
 gql`
   mutation setCustomerForOrder($input: CreateCustomerInput!) {
@@ -116,6 +176,7 @@ gql`
     }
   }
 `;
+
 gql`
   mutation setOrderShippingMethod($shippingMethodId: [ID!]!) {
     setOrderShippingMethod(shippingMethodId: $shippingMethodId) {
@@ -265,6 +326,7 @@ gql`
     }
   }
 `;
+
 gql`
 query GetCouponCodeList{
     getCouponCodeList{
@@ -306,11 +368,11 @@ gql`
     }
 }
 `;
+
 gql`
 mutation RemoveCouponCode($couponCode: String!){
     removeCouponCode(couponCode: $couponCode){
         __typename
     }
 }
-
 `;
