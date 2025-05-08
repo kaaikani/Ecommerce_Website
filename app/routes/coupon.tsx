@@ -1,6 +1,6 @@
 import { LoaderFunction, json, ActionFunction } from '@remix-run/node';
 import { useLoaderData, Form, useActionData } from '@remix-run/react';
-import { getCouponCodeList, applyCouponCode, removeCouponCode, getActiveOrder, addCouponProductToCart } from '../providers/orders/order';
+import { getCouponCodeList,removeCouponProductFromCart, applyCouponCode, removeCouponCode, getActiveOrder, addCouponProductToCart } from '../providers/orders/order';
 import { QueryOptions } from '../graphqlWrapper';
 import { Price } from '../components/products/Price';
 import { OrderDetailFragment, CurrencyCode } from '../generated/graphql';
@@ -69,7 +69,6 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 };
 
-// Action to handle coupon application and removal
 export const action: ActionFunction = async ({ request }) => {
   try {
     const formData = await request.formData();
@@ -124,7 +123,7 @@ export const action: ActionFunction = async ({ request }) => {
 
       const cartItems = activeOrder?.lines ?? [];
       console.log('Current cart items:', cartItems);
-      // If cart is empty, add the product variant specified in the coupon
+      // Add the product variant specified in the coupon
       console.log(`Calling addCouponProductToCart for ${couponCode}`);
       try {
         const addResult = await addCouponProductToCart(couponCode, options);
@@ -134,7 +133,6 @@ export const action: ActionFunction = async ({ request }) => {
         console.error(`Failed to add product to cart: ${errorMessage}`);
         return json({ error: `Failed to add product to cart: ${errorMessage}` }, { status: 400 });
       }
-      
 
       console.log(`Applying coupon: ${couponCode}`);
       const result = await applyCouponCode(couponCode, options);
@@ -143,17 +141,16 @@ export const action: ActionFunction = async ({ request }) => {
         const order = result as Order;
         return json({
           success: true,
-          message: `Coupon "${couponCode}" applied to your order!${
-            cartItems.length === 0 ? ' Required products added to cart.' : ''
-          }`,
+          message: `Coupon "${couponCode}" applied and product added to your order!`,
           orderTotal: order.totalWithTax,
           appliedCoupon: couponCode,
         });
       } else if (result.__typename === 'CouponCodeExpiredError') {
         const message = (result as any).message ?? 'Coupon has expired.';
         console.error(message);
+        return json({ error: message }, { status: 400 });
       }
-      
+
       console.error('Unexpected response from applyCouponCode');
       return json({ error: 'Unexpected response from server.' }, { status: 500 });
     } else if (actionType === 'remove') {
@@ -171,57 +168,26 @@ export const action: ActionFunction = async ({ request }) => {
         return json({ error: 'Coupon code is not applied to the order.' }, { status: 400 });
       }
 
-      const variantIdsToRemove: string[] = [];
-      for (const condition of coupon.conditions) {
-        if (condition.code === 'productVariantIds') {
-          for (const arg of condition.args) {
-            if (arg.name === 'productVariantIds') {
-              try {
-                const parsedIds = JSON.parse(arg.value);
-                if (Array.isArray(parsedIds)) {
-                  variantIdsToRemove.push(...parsedIds.map((id: any) => id.toString()));
-                } else {
-                  variantIdsToRemove.push(arg.value);
-                }
-              } catch {
-                variantIdsToRemove.push(arg.value);
-              }
-            }
-          }
-        }
+      // Adjust the quantity of the associated product variant in the cart
+      console.log(`Adjusting coupon product quantity for: ${couponCode}`);
+      try {
+        await removeCouponProductFromCart(couponCode, options);
+        console.log('Coupon product quantity adjusted successfully');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`Failed to adjust product quantity in cart: ${errorMessage}`);
+        // Proceed with coupon removal even if quantity adjustment fails
       }
 
-      const cartItems = activeOrder?.lines ?? [];
-      console.log('Removing items from cart:', variantIdsToRemove);
-      for (const item of cartItems) {
-        if (variantIdsToRemove.includes(item.productVariant.id)) {
-          const removeFormData = new FormData();
-          removeFormData.append('action', 'removeOrderLine');
-          removeFormData.append('orderLineId', item.id);
-          const removeResponse = await fetch('/api/active-order', {
-            method: 'POST',
-            body: removeFormData,
-            headers: { 'Cookie': request.headers.get('Cookie') || '' },
-          });
-          const removeResult: ActiveOrderResponse = await removeResponse.json();
-          if (removeResult.error) {
-            console.error(`Failed to remove item ${item.productVariant.id}: ${removeResult.error}`);
-            return json(
-              { error: `Failed to remove product variant ${item.productVariant.id} from cart: ${removeResult.error}` },
-              { status: 400 }
-            );
-          }
-        }
-      }
-
+      // Remove the coupon code
       console.log(`Removing coupon: ${couponCode}`);
-      const result = await removeCouponCode(couponCode, { request });
+      const result = await removeCouponCode(couponCode, options);
       console.log('removeCouponCode result:', result);
       if (result?.__typename === 'Order') {
         const order = result as Order;
         return json({
           success: true,
-          message: 'Coupon and associated products removed from your order.',
+          message: 'Coupon removed and product quantity adjusted in your order.',
           orderTotal: order.totalWithTax,
           appliedCoupon: null,
         });
@@ -239,7 +205,6 @@ export const action: ActionFunction = async ({ request }) => {
     return json({ error: 'An unexpected error occurred. Please try again later.' }, { status: 500 });
   }
 };
-
 // Gradient color pairs for a luxurious feel
 const couponGradients = [
   ['#8B5CF6', '#EC4899'], // Violet to Pink

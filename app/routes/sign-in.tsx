@@ -56,9 +56,9 @@ export async function action({ request }: ActionFunctionArgs) {
       {
         phoneOtp: {
           phoneNumber, code: otp,
-          emailAddress: '',
-          firstName: '',
-          lastName: ''
+          // emailAddress: '',
+          // firstName: '',
+          // lastName: ''
         },
       },
       {

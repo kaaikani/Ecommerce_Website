@@ -92,7 +92,6 @@ export function getCouponCodeList(options: QueryOptions) {
     }))
   );
 }
-
 export async function addCouponProductToCart(couponCode: string, options: QueryOptions) {
   try {
     console.log(`Fetching coupon code: ${couponCode}`);
@@ -137,13 +136,28 @@ export async function addCouponProductToCart(couponCode: string, options: QueryO
       throw new Error(`No product variant ID found for coupon code ${couponCode}`);
     }
 
-    console.log(`Adding product variant ID: ${productVariantId} to cart`);
+    // Check current cart state before adding
+    const initialOrder = await getActiveOrder(options);
+    const initialQuantity = initialOrder?.lines?.find(
+      (line) => line.productVariant.id === productVariantId
+    )?.quantity || 0;
+    console.log(`Initial quantity of product variant ${productVariantId}: ${initialQuantity}`);
+
+    console.log(`Adding product variant ID: ${productVariantId} to cart with quantity 1`);
     const addResult = await addItemToOrder(productVariantId, 1, options);
     console.log('addItemToOrder result:', addResult);
 
     // Verify the cart update
     const updatedOrder = await getActiveOrder(options);
-    console.log('Updated order after adding item:', updatedOrder);
+    const updatedQuantity = updatedOrder?.lines?.find(
+      (line) => line.productVariant.id === productVariantId
+    )?.quantity || 0;
+    console.log(`Updated quantity of product variant ${productVariantId}: ${updatedQuantity}`);
+
+    if (updatedQuantity < initialQuantity + 1) {
+      console.error(`Failed to increase quantity for product variant ${productVariantId}`);
+      throw new Error(`Failed to add product to cart: quantity did not increase`);
+    }
 
     return addResult;
   } catch (error) {
@@ -152,7 +166,89 @@ export async function addCouponProductToCart(couponCode: string, options: QueryO
     throw new Error(`Failed to add product to cart: ${errorMessage}`);
   }
 }
+export async function removeCouponProductFromCart(couponCode: string, options: QueryOptions) {
+  try {
+    console.log(`Fetching coupon code for removal: ${couponCode}`);
+    const couponList = await getCouponCodeList(options);
+    const coupon = couponList.find((c) => c.couponCode === couponCode);
 
+    if (!coupon) {
+      console.error(`Coupon code ${couponCode} not found in list`, couponList);
+      throw new Error(`Coupon code ${couponCode} not found`);
+    }
+
+    console.log('Coupon found:', coupon);
+    let productVariantId: string | null = null;
+    for (const condition of coupon.conditions) {
+      const variantArg = condition.args.find((arg) => arg.name === 'productVariantIds');
+      if (variantArg && variantArg.value) {
+        console.log('Found productVariantIds arg:', variantArg.value);
+        try {
+          // Handle both array and single value formats
+          let parsedIds: string[] | string = variantArg.value;
+          if (variantArg.value.startsWith('[')) {
+            parsedIds = JSON.parse(variantArg.value);
+          } else {
+            parsedIds = [variantArg.value];
+          }
+          if (Array.isArray(parsedIds) && parsedIds.length > 0) {
+            productVariantId = parsedIds[0].toString();
+            break;
+          } else if (typeof parsedIds === 'string') {
+            productVariantId = parsedIds;
+            break;
+          }
+        } catch (e) {
+          console.error('Failed to parse productVariantIds:', variantArg.value, e);
+          throw new Error(`Invalid productVariantIds format for coupon ${couponCode}`);
+        }
+      }
+    }
+
+    if (!productVariantId) {
+      console.log(`No product variant ID found for coupon ${couponCode}, skipping removal`);
+      return null; // No product variant to remove
+    }
+
+    console.log(`Fetching active order to find line with product variant ID: ${productVariantId}`);
+    const activeOrder = await getActiveOrder(options);
+    if (!activeOrder?.lines) {
+      console.log('No lines found in active order, skipping removal');
+      return activeOrder;
+    }
+
+    // Find the order line matching the productVariantId
+    const lineToAdjust = activeOrder.lines.find(
+      (line) => line.productVariant.id === productVariantId
+    );
+
+    if (!lineToAdjust) {
+      console.log(`No order line found for product variant ID: ${productVariantId}, skipping removal`);
+      return activeOrder;
+    }
+
+    // Adjust quantity or remove line
+    if (lineToAdjust.quantity > 1) {
+      console.log(`Adjusting quantity for order line ID: ${lineToAdjust.id} from ${lineToAdjust.quantity} to ${lineToAdjust.quantity - 1}`);
+      const adjustResult = await adjustOrderLine(lineToAdjust.id, lineToAdjust.quantity - 1, options);
+      console.log('adjustOrderLine result:', adjustResult);
+    } else {
+      console.log(`Removing order line ID: ${lineToAdjust.id} as quantity is 1`);
+      const removeResult = await removeOrderLine(lineToAdjust.id, options);
+      console.log('removeOrderLine result:', removeResult);
+    }
+
+    // Verify the cart update
+    const updatedOrder = await getActiveOrder(options);
+    console.log('Updated order after adjusting/removing item:', updatedOrder);
+
+    return updatedOrder;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`Error in removeCouponProductFromCart: ${errorMessage}`);
+    throw new Error(`Failed to adjust product quantity in cart: ${errorMessage}`);
+  }
+}
 gql`
   mutation setCustomerForOrder($input: CreateCustomerInput!) {
     setCustomerForOrder(input: $input) {
