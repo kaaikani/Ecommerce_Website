@@ -11,20 +11,31 @@ import { useLoaderData, useOutletContext } from '@remix-run/react';
 import { OutletContext } from '~/types';
 import { CurrencyCode, ErrorCode, ErrorResult } from '~/generated/graphql';
 import { StripePayments } from '~/components/checkout/stripe/StripePayments';
-import { DummyPayments } from '~/components/checkout/DummyPayments';
+import {DummyPayments} from '~/components/checkout/DummyPayments';
+
 import { BraintreeDropIn } from '~/components/checkout/braintree/BraintreePayments';
 import { getActiveOrder } from '~/providers/orders/order';
 import { getSessionStorage } from '~/sessions';
 import { useTranslation } from 'react-i18next';
-
-import { RazorpayPayments } from '~/components/checkout/razorpay/RezopayPayments';
+import { getActiveCustomerDetails } from '~/providers/customer/customer';
+import { RazorpayPayments } from '~/components/checkout/razopay/RezopayPayments';
 
 export async function loader({ params, request }: DataFunctionArgs) {
   const session = await getSessionStorage().then((sessionStorage) =>
     sessionStorage.getSession(request?.headers.get('Cookie')),
   );
   const activeOrder = await getActiveOrder({ request });
-
+  const { activeCustomer } = await getActiveCustomerDetails({ request });
+  if (!activeCustomer) {
+    // If you want to redirect away when there’s no logged‑in customer:
+    const sessionStorage = await getSessionStorage();
+    const session = await sessionStorage.getSession(request.headers.get('Cookie'));
+    session.unset('authToken');
+    session.unset('channelToken');
+    return redirect('/sign-in', {
+      headers: { 'Set-Cookie': await sessionStorage.commitSession(session) },
+    });
+  }
   if (
     !session ||
     !activeOrder ||
@@ -112,6 +123,7 @@ export async function loader({ params, request }: DataFunctionArgs) {
     razorpayOrderId,
     razorpayKeyId,
     razorpayError,
+    activeCustomer,    
   });
 }
 export async function action({ params, request }: DataFunctionArgs) {
@@ -172,6 +184,7 @@ export default function CheckoutPayment() {
     razorpayOrderId,
     razorpayKeyId,
     razorpayError,
+    activeCustomer,  
   } = useLoaderData<typeof loader>();
   const { activeOrderFetcher, activeOrder } = useOutletContext<OutletContext>();
   const { t } = useTranslation();
@@ -241,6 +254,7 @@ export default function CheckoutPayment() {
               paymentMethod={paymentMethod}
               paymentError={paymentError}
               order={activeOrder as any}
+        activeCustomer={activeCustomer} 
            />
 
           </div>

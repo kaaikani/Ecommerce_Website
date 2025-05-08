@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useFetcher, useLoaderData } from '@remix-run/react';
 import { CurrencyCode } from '~/generated/graphql';
 
@@ -15,22 +15,30 @@ export function RazorpayPayments({ orderCode, amount, currency }: RazorpayPaymen
     razorpayError?: string;
   }>();
   const fetcher = useFetcher();
+  const [scriptLoaded, setScriptLoaded] = useState(false);
 
   useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.async = true;
+
+    script.onload = () => setScriptLoaded(true);
+    script.onerror = () => setScriptLoaded(false);
+
     document.body.appendChild(script);
-  
     return () => {
-      document.body.removeChild(script); // now it's just a statement, no value returned
+      document.body.removeChild(script);
     };
   }, []);
-  
 
-  const handlePayment = () => {
+  const handlePayment = useCallback(() => {
     if (!razorpayOrderId || !razorpayKeyId) {
       alert('Razorpay configuration is missing.');
+      return;
+    }
+
+    if (!scriptLoaded || !(window as any).Razorpay) {
+      alert('Razorpay script not loaded yet. Please try again shortly.');
       return;
     }
 
@@ -41,7 +49,7 @@ export function RazorpayPayments({ orderCode, amount, currency }: RazorpayPaymen
       name: 'Your Store Name',
       description: `Payment for order ${orderCode}`,
       order_id: razorpayOrderId,
-      handler: async (response: {
+      handler: (response: {
         razorpay_payment_id: string;
         razorpay_order_id: string;
         razorpay_signature: string;
@@ -57,7 +65,7 @@ export function RazorpayPayments({ orderCode, amount, currency }: RazorpayPaymen
       prefill: {
         name: 'Customer Name',
         email: 'customer@example.com',
-        contact: '111111',
+        contact: '1111111111',
       },
       theme: {
         color: '#3399cc',
@@ -66,7 +74,7 @@ export function RazorpayPayments({ orderCode, amount, currency }: RazorpayPaymen
 
     const rzp = new (window as any).Razorpay(options);
     rzp.open();
-  };
+  }, [razorpayOrderId, razorpayKeyId, amount, currency, orderCode, fetcher, scriptLoaded]);
 
   if (razorpayError) {
     return (
@@ -81,10 +89,10 @@ export function RazorpayPayments({ orderCode, amount, currency }: RazorpayPaymen
     <div className="py-3 w-full">
       <button
         onClick={handlePayment}
-        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-        disabled={fetcher.state !== 'idle'}
+        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+        disabled={fetcher.state !== 'idle' || !scriptLoaded}
       >
-        Pay with Razorpay
+        {scriptLoaded ? 'Pay with Razorpay' : 'Loading...'}
       </button>
     </div>
   );

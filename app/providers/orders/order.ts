@@ -195,6 +195,7 @@ gql`
     }
     shippingWithTax
     totalWithTax
+    couponCodes
     customer {
       id
       firstName
@@ -252,6 +253,7 @@ gql`
   query activeOrder {
     activeOrder {
       ...OrderDetail
+      couponCodes
     }
   }
 `;
