@@ -162,6 +162,7 @@ export async function action({ request }: ActionFunctionArgs) {
           phoneOtp: {
             phoneNumber,
             code,
+
             firstName,
             lastName,
           },

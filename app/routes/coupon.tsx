@@ -1,6 +1,6 @@
 import { LoaderFunction, json, ActionFunction } from '@remix-run/node';
 import { useLoaderData, Form, useActionData } from '@remix-run/react';
-import { getCouponCodeList, applyCouponCode, removeCouponCode, getActiveOrder } from '../providers/orders/order';
+import { getCouponCodeList,removeCouponProductFromCart, applyCouponCode, removeCouponCode, getActiveOrder, addCouponProductToCart } from '../providers/orders/order';
 import { QueryOptions } from '../graphqlWrapper';
 import { Price } from '../components/products/Price';
 import { OrderDetailFragment, CurrencyCode } from '../generated/graphql';
@@ -69,7 +69,6 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 };
 
-// Action to handle coupon application and removal
 export const action: ActionFunction = async ({ request }) => {
   try {
     const formData = await request.formData();
@@ -87,12 +86,14 @@ export const action: ActionFunction = async ({ request }) => {
       const coupon = couponCodes.find((c: Coupon) => c.couponCode === couponCode);
 
       if (!coupon || !coupon.couponCode) {
+        console.error(`Invalid coupon code: ${couponCode}`);
         return json({ error: 'Invalid coupon code.' }, { status: 400 });
       }
 
       // Check if another coupon is already applied
       const activeOrder = await getActiveOrder(options);
       if (activeOrder?.couponCodes && activeOrder.couponCodes.length > 0) {
+        console.error(`Another coupon already applied: ${activeOrder.couponCodes}`);
         return json({ error: 'Another coupon is already applied. Please remove it before applying a new one.' }, { status: 400 });
       }
 
@@ -108,156 +109,180 @@ export const action: ActionFunction = async ({ request }) => {
         if (totalWithTaxPaise < minAmountPaise) {
           const diffPaise = minAmountPaise - totalWithTaxPaise;
           const diffRupees = (diffPaise / 100).toFixed(2);
+          console.error(`Order total too low: ${totalWithTaxPaise} < ${minAmountPaise}`);
           return json(
             {
-              error: `Add ₹${diffRupees} more to apply this coupon. Current total: ₹${(totalWithTaxPaise / 100).toFixed(
-                2
-              )}.`,
+              error: `Add ₹${diffRupees} more to apply this coupon. Current total: ₹${(totalWithTaxPaise / 100).toFixed(2)}.`,
             },
             { status: 400 }
           );
         }
       }
 
+      // Check for productVariantIds condition
+      let hasProductVariant = false;
+      const productVariantIds: string[] = [];
+      for (const condition of coupon.conditions) {
+        const variantArg = condition.args.find((arg) => arg.name === 'productVariantIds');
+        if (variantArg && variantArg.value) {
+          hasProductVariant = true;
+          try {
+            let parsedIds: string[] | string = variantArg.value;
+            if (variantArg.value.startsWith('[')) {
+              parsedIds = JSON.parse(variantArg.value);
+            } else {
+              parsedIds = [variantArg.value];
+            }
+            if (Array.isArray(parsedIds)) {
+              productVariantIds.push(...parsedIds.map(id => id.toString()));
+            } else if (typeof parsedIds === 'string') {
+              productVariantIds.push(parsedIds);
+            }
+          } catch (e) {
+            console.error('Failed to parse productVariantIds:', variantArg.value, e);
+            return json({ error: `Invalid productVariantIds format for coupon ${couponCode}` }, { status: 400 });
+          }
+          break;
+        }
+      }
+
+      console.log(`Applying coupon: ${couponCode}`);
+      const couponResult = await applyCouponCode(couponCode, options);
+      console.log('applyCouponCode result:', couponResult);
+
+      if (couponResult?.__typename !== 'Order') {
+        if (couponResult.__typename === 'CouponCodeExpiredError') {
+          const message = (couponResult as any).message ?? 'Coupon has expired.';
+          console.error(message);
+          return json({ error: message }, { status: 400 });
+        } else if (couponResult.__typename === 'CouponCodeInvalidError') {
+          const message = (couponResult as any).message ?? 'Coupon code is invalid.';
+          console.error(message);
+          return json({ error: message }, { status: 400 });
+        } else if (couponResult.__typename === 'CouponCodeLimitError') {
+          const message = (couponResult as any).message ?? 'Coupon usage limit reached.';
+          console.error(message);
+          return json({ error: message }, { status: 400 });
+        }
+        console.error('Unexpected response from applyCouponCode');
+        return json({ error: 'Unexpected response from server.' }, { status: 500 });
+      }
+
+      const order = couponResult as Order;
       const cartItems = activeOrder?.lines ?? [];
-      const variantIds: string[] = [];
-      if (cartItems.length === 0) {
-        for (const condition of coupon.conditions) {
-          if (condition.code === 'productVariantIds') {
-            for (const arg of condition.args) {
-              if (arg.name === 'productVariantIds') {
-                try {
-                  const parsedIds = JSON.parse(arg.value);
-                  if (Array.isArray(parsedIds)) {
-                    variantIds.push(...parsedIds.map((id: any) => id.toString()));
-                  } else {
-                    variantIds.push(arg.value);
-                  }
-                } catch {
-                  variantIds.push(arg.value);
-                }
-              }
-            }
-          }
-        }
+      console.log('Current cart items:', cartItems);
 
-        const existingVariantIds = new Set(cartItems.map((item) => item.productVariant.id));
-        for (const variantId of variantIds) {
-          if (!existingVariantIds.has(variantId)) {
-            const addFormData = new FormData();
-            addFormData.append('action', 'addItemToOrder');
-            addFormData.append('variantId', variantId);
-            const addResponse = await fetch('/api/active-order', {
-              method: 'POST',
-              body: addFormData,
-              headers: { 'Cookie': request.headers.get('Cookie') || '' },
-            });
-            const addResult: ActiveOrderResponse = await addResponse.json();
-            if (addResult.error) {
-              return json(
-                { error: `Failed to add product variant ${variantId} to cart: ${addResult.error}` },
-                { status: 400 }
-              );
-            }
-          }
+      // Add products to cart if the coupon has productVariantIds
+      if (hasProductVariant && productVariantIds.length > 0) {
+        console.log(`Calling addCouponProductToCart for ${couponCode}`);
+        try {
+          const addResult = await addCouponProductToCart(couponCode, options);
+          console.log('addCouponProductToCart result:', addResult);
+        } catch (error) {
+          // If product addition fails, remove the coupon to maintain consistency
+          console.error('Failed to add products, removing coupon:', couponCode);
+          await removeCouponCode(couponCode, options);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.error(`Failed to add products to cart: ${errorMessage}`);
+          return json({ error: `Failed to add products to cart: ${errorMessage}` }, { status: 400 });
         }
+      } else {
+        console.log(`No productVariantIds for coupon ${couponCode}, skipping product addition`);
       }
 
-      const result = await applyCouponCode(couponCode, options);
-      if (result?.__typename === 'Order') {
-        const order = result as Order;
-        return json({
-          success: true,
-          message: `Coupon "${couponCode}" applied to your order!${
-            cartItems.length === 0 && variantIds.length > 0 ? ' Required products added to cart.' : ''
-          }`,
-          orderTotal: order.totalWithTax,
-          appliedCoupon: couponCode,
-        });
-      } else if (result?.__typename === 'CouponCodeExpiredError') {
-        return json({ error: (result as CouponCodeExpiredError).message || 'Coupon code has expired.' }, { status: 400 });
-      } else if (result?.__typename === 'CouponCodeInvalidError') {
-        return json({ error: (result as CouponCodeInvalidError).message || 'Invalid coupon code.' }, { status: 400 });
-      } else if (result?.__typename === 'CouponCodeLimitError') {
-        return json({ error: (result as CouponCodeLimitError).message || 'Coupon usage limit reached.' }, { status: 400 });
-      }
-
-      return json({ error: 'Unexpected response from server.' }, { status: 500 });
+      return json({
+        success: true,
+        message: hasProductVariant
+          ? `Coupon "${couponCode}" applied and ${productVariantIds.length} product${productVariantIds.length > 1 ? 's' : ''} added to your order!`
+          : `Coupon "${couponCode}" applied to your order!`,
+        orderTotal: order.totalWithTax,
+        appliedCoupon: couponCode,
+      });
     } else if (actionType === 'remove') {
       const couponCodes = await getCouponCodeList(options);
       const coupon = couponCodes.find((c: Coupon) => c.couponCode === couponCode);
 
       if (!coupon || !coupon.couponCode) {
+        console.error(`Invalid coupon code for removal: ${couponCode}`);
         return json({ error: 'Invalid coupon code.' }, { status: 400 });
       }
 
       const activeOrder = await getActiveOrder(options);
       if (!activeOrder?.couponCodes?.includes(couponCode)) {
+        console.error(`Coupon ${couponCode} not applied to order`);
         return json({ error: 'Coupon code is not applied to the order.' }, { status: 400 });
       }
 
-      const variantIdsToRemove: string[] = [];
+      // Check for productVariantIds condition
+      let hasProductVariant = false;
+      const productVariantIds: string[] = [];
       for (const condition of coupon.conditions) {
-        if (condition.code === 'productVariantIds') {
-          for (const arg of condition.args) {
-            if (arg.name === 'productVariantIds') {
-              try {
-                const parsedIds = JSON.parse(arg.value);
-                if (Array.isArray(parsedIds)) {
-                  variantIdsToRemove.push(...parsedIds.map((id: any) => id.toString()));
-                } else {
-                  variantIdsToRemove.push(arg.value);
-                }
-              } catch {
-                variantIdsToRemove.push(arg.value);
-              }
+        const variantArg = condition.args.find((arg) => arg.name === 'productVariantIds');
+        if (variantArg && variantArg.value) {
+          hasProductVariant = true;
+          try {
+            let parsedIds: string[] | string = variantArg.value;
+            if (variantArg.value.startsWith('[')) {
+              parsedIds = JSON.parse(variantArg.value);
+            } else {
+              parsedIds = [variantArg.value];
             }
+            if (Array.isArray(parsedIds)) {
+              productVariantIds.push(...parsedIds.map(id => id.toString()));
+            } else if (typeof parsedIds === 'string') {
+              productVariantIds.push(parsedIds);
+            }
+          } catch (e) {
+            console.error('Failed to parse productVariantIds:', variantArg.value, e);
+            return json({ error: `Invalid productVariantIds format for coupon ${couponCode}` }, { status: 400 });
           }
+          break;
         }
       }
 
-      const cartItems = activeOrder?.lines ?? [];
-      for (const item of cartItems) {
-        if (variantIdsToRemove.includes(item.productVariant.id)) {
-          const removeFormData = new FormData();
-          removeFormData.append('action', 'removeOrderLine');
-          removeFormData.append('orderLineId', item.id);
-          const removeResponse = await fetch('/api/active-order', {
-            method: 'POST',
-            body: removeFormData,
-            headers: { 'Cookie': request.headers.get('Cookie') || '' },
-          });
-          const removeResult: ActiveOrderResponse = await removeResponse.json();
-          if (removeResult.error) {
-            return json(
-              { error: `Failed to remove product variant ${item.productVariant.id} from cart: ${removeResult.error}` },
-              { status: 400 }
-            );
-          }
+      // Adjust quantities of associated product variants, if applicable
+      if (hasProductVariant) {
+        console.log(`Adjusting coupon product quantities for: ${couponCode}`);
+        try {
+          await removeCouponProductFromCart(couponCode, options);
+          console.log('Coupon product quantities adjusted successfully');
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.error(`Failed to adjust product quantities in cart: ${errorMessage}`);
+          // Proceed with coupon removal even if adjustment fails
         }
+      } else {
+        console.log(`No productVariantIds for coupon ${couponCode}, skipping product quantity adjustment`);
       }
 
-      const result = await removeCouponCode(couponCode, { request });
+      // Remove the coupon code
+      console.log(`Removing coupon: ${couponCode}`);
+      const result = await removeCouponCode(couponCode, options);
+      console.log('removeCouponCode result:', result);
       if (result?.__typename === 'Order') {
         const order = result as Order;
         return json({
           success: true,
-          message: 'Coupon and associated products removed from your order.',
+          message: hasProductVariant
+            ? `Coupon removed and ${productVariantIds.length} product${productVariantIds.length > 1 ? 's' : ''} quantity adjusted in your order.`
+            : 'Coupon removed from your order.',
           orderTotal: order.totalWithTax,
           appliedCoupon: null,
         });
       } else {
+        console.error('Failed to remove coupon');
         return json({ error: 'Failed to remove coupon.' }, { status: 400 });
       }
     }
 
+    console.error('Invalid action type:', actionType);
     return json({ error: 'Invalid action type.' }, { status: 400 });
   } catch (error) {
-    console.error('Action error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Action error:', errorMessage);
     return json({ error: 'An unexpected error occurred. Please try again later.' }, { status: 500 });
   }
 };
-
 // Gradient color pairs for a luxurious feel
 const couponGradients = [
   ['#8B5CF6', '#EC4899'], // Violet to Pink

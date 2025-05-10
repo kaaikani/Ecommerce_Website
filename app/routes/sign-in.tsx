@@ -123,6 +123,7 @@ export async function action({ request }: ActionFunctionArgs) {
           },
           { status: 403 },
         )
+
       }
 
       const selectedChannelToken = channels[0].token
