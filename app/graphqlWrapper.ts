@@ -18,7 +18,7 @@ export interface GraphqlResponse<Response> {
 export type WithHeaders<T> = T & { _headers: Headers };
 
 const AUTH_TOKEN_SESSION_KEY = 'authToken';
-const CHANNEL_TOKEN_SESSION_KEY = 'channelToken';
+export const CHANNEL_TOKEN_SESSION_KEY = 'channelToken';
 
 async function sendQuery<Response, Variables = {}>(options: {
   query: string;
