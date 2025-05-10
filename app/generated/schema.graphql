@@ -3194,7 +3194,7 @@ type Query {
 
   """A list of Collections available to the shop"""
   collections(options: CollectionListOptions): CollectionList!
-  customBanners(channelId: ID!): [CustomBanner!]!
+  customBanners: [CustomBanner!]!
 
   """
   Returns a list of payment methods and their eligibility based on the current active Order

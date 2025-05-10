@@ -1,56 +1,48 @@
 import { useLoaderData } from "@remix-run/react"
 import { getCollections } from "~/providers/collections/collections"
-import { getCustomBanners } from "~/providers/customPlugins/customPlugin" // Import the getCustomBanners function
+import { getCustomBanners } from "~/providers/customPlugins/customPlugin"
 import { CollectionCard } from "~/components/collections/CollectionCard"
-import { BannerCarousel } from "~/components/BannerCarousel" // Import the BannerCarousel component
-import { BookOpenIcon } from "@heroicons/react/24/solid"
+import { BannerCarousel } from "~/components/BannerCarousel"
 import type { LoaderFunctionArgs } from "@remix-run/server-runtime"
 import { useTranslation } from "react-i18next"
 import { json } from "@remix-run/node"
 import { getSessionStorage } from "~/sessions"
-import { CHANNEL_TOKEN_SESSION_KEY } from '~/graphqlWrapper'; // Adjust path as needed
+import { CHANNEL_TOKEN_SESSION_KEY } from "~/graphqlWrapper"
+import { CustomBannersQuery } from "~/generated/graphql"
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  // Get collections
   const collections = await getCollections(request, { take: 20 })
 
-  // Get channel ID from session or default to "1"
   const sessionStorage = await getSessionStorage()
   const session = await sessionStorage.getSession(request.headers.get("Cookie"))
-  
-  // Get channel token from session
   const channelToken = session.get(CHANNEL_TOKEN_SESSION_KEY)
-  
-  // Extract channel ID from URL or use default
-  const url = new URL(request.url)
-  const channelId = url.searchParams.get("channelId") || "5" // Default to '1' if not provided
 
-  // Fetch banners with the request object to ensure auth context is passed
-  const bannersResponse = await getCustomBanners(request, channelId)
-  const banners = bannersResponse ? bannersResponse.data : []
+  let banners: CustomBannersQuery["customBanners"] = []  // <-- typed here
+
+  try {
+    const bannersResponse = await getCustomBanners(request, channelToken)
+    banners = bannersResponse ? bannersResponse.data : []
+  } catch (error) {
+    console.error("Error fetching banners:", error)
+  }
 
   return json(
     {
       collections,
       banners,
-      channelToken, // Pass channel token to the frontend for debugging if needed
     },
     {
-      headers: {
-        ...(bannersResponse ? bannersResponse.headers : {}),
-      },
-    }
+      headers: {},
+    },
   )
 }
+
 export default function Index() {
   const { collections, banners } = useLoaderData<typeof loader>()
   const { t } = useTranslation()
-  const headerImage = collections[0]?.featuredAsset?.preview
 
   return (
     <>
-     
-
       {/* Banner Carousel Section */}
       {banners && banners.length > 0 && (
         <section className="mt-8 mb-12 px-4 sm:px-6 lg:px-8 xl:max-w-7xl xl:mx-auto">
@@ -58,7 +50,7 @@ export default function Index() {
         </section>
       )}
 
-      <section aria-labelledby="category-heading" className="pt-24 sm:pt-32 xl:max-w-7xl xl:mx-auto xl:px-8">
+      <section aria-labelledby="category-heading" className="pt-5 sm:pt-10 xl:max-w-7xl xl:mx-auto xl:px-8">
         <div className="px-4 sm:px-6 lg:px-8 xl:px-0">
           <h2 id="category-heading" className="text-2xl font-light tracking-tight text-gray-900">
             {t("common.shopByCategory")}

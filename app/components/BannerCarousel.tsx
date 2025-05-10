@@ -47,10 +47,10 @@ export function BannerCarousel({
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth < 768)
     }
-    
+
     checkIsMobile()
     window.addEventListener('resize', checkIsMobile)
-    
+
     return () => {
       window.removeEventListener('resize', checkIsMobile)
     }
@@ -58,7 +58,7 @@ export function BannerCarousel({
 
   // Calculate how many items to show at once
   const itemsPerView = isMobile ? 1 : 2
-  
+
   // Calculate total number of slides
   const totalSlides = Math.ceil(banners.length / itemsPerView)
 
@@ -110,14 +110,14 @@ export function BannerCarousel({
     setIsDragging(true)
     setDragStartX(e.clientX)
     setDragOffset(0)
-    
+
     // Prevent default behavior to avoid text selection during drag
     e.preventDefault()
   }
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return
-    
+
     const currentX = e.clientX
     const newOffset = currentX - dragStartX
     setDragOffset(newOffset)
@@ -125,16 +125,16 @@ export function BannerCarousel({
 
   const handleMouseUp = () => {
     if (!isDragging) return
-    
+
     setIsDragging(false)
-    
+
     // Determine if we should navigate based on drag distance
     if (dragOffset > 100) {
       goToPrev()
     } else if (dragOffset < -100) {
       goToNext()
     }
-    
+
     // Reset drag offset
     setDragOffset(0)
   }
@@ -143,7 +143,7 @@ export function BannerCarousel({
     if (isDragging) {
       handleMouseUp()
     }
-    
+
     // Resume autoplay
     if (isPlaying && banners.length > 1) {
       timerRef.current = setInterval(goToNext, autoPlayInterval)
@@ -187,7 +187,7 @@ export function BannerCarousel({
 
   // Create a continuous loop by duplicating banners if needed
   const visibleBanners = getBannersForView(currentIndex % Math.ceil(banners.length / itemsPerView))
-  
+
   // If we don't have enough banners to fill the view, add from the beginning
   if (visibleBanners.length < itemsPerView && banners.length > itemsPerView) {
     const neededBanners = itemsPerView - visibleBanners.length
@@ -197,7 +197,7 @@ export function BannerCarousel({
   return (
     <div
       ref={carouselRef}
-      className="banner-carousel relative overflow-hidden w-full"
+      className="banner-carousel relative overflow-hidden w-full pb-10"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onTouchStart={handleTouchStart}
@@ -210,40 +210,43 @@ export function BannerCarousel({
     >
       <div
         className="carousel-inner flex transition-transform duration-500 ease-in-out"
-        style={{ 
+        style={{
           transform: `translateX(calc(-${currentIndex * 100}% + ${dragOffset}px))`,
           transitionProperty: isDragging ? 'none' : 'transform'
         }}
       >
         {Array.from({ length: totalSlides }).map((_, slideIndex) => {
           const slideBanners = getBannersForView(slideIndex)
-          
+
           return (
             <div key={slideIndex} className="carousel-slide min-w-full flex">
               {slideBanners.map((banner, bannerIndex) => (
-                <div 
-                  key={banner.id} 
+                <div
+                  key={banner.id}
                   className={`carousel-item ${isMobile ? 'w-full' : 'w-1/2'} px-1`}
                   style={{ flex: `0 0 ${isMobile ? '100%' : '50%'}` }}
                 >
-                  {banner.assets && banner.assets.length > 0 && (
-                    <img
-                      src={banner.assets[0].source || "/placeholder.svg"}
-                      alt={banner.assets[0].name}
-                      className="w-full h-auto object-cover rounded"
-                      draggable="false"
-                    />
-                  )}
+                  <div className="w-full aspect-[16/9]">
+                    {banner.assets && banner.assets.length > 0 && (
+                      <img
+                        src={banner.assets[0].source || "/placeholder.svg"}
+                        alt={banner.assets[0].name}
+                        className="w-full h-full object-cover rounded"
+                        draggable="false"
+                      />
+                    )}
+                  </div>
                 </div>
+
               ))}
-              
+
               {/* Fill empty slots if needed */}
               {slideBanners.length < itemsPerView && (
                 Array.from({ length: itemsPerView - slideBanners.length }).map((_, emptyIndex) => {
                   const banner = banners[emptyIndex]
                   return (
-                    <div 
-                      key={`empty-${emptyIndex}`} 
+                    <div
+                      key={`empty-${emptyIndex}`}
                       className={`carousel-item ${isMobile ? 'w-full' : 'w-1/2'} px-1`}
                       style={{ flex: `0 0 ${isMobile ? '100%' : '50%'}` }}
                     >
@@ -266,7 +269,7 @@ export function BannerCarousel({
 
       {showControls && banners.length > 1 && (
         <>
-          <button
+          {/* <button
             className="carousel-control absolute top-1/2 left-4 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full z-10 hover:bg-opacity-70 focus:outline-none"
             onClick={goToPrev}
             aria-label="Previous banner"
@@ -295,8 +298,8 @@ export function BannerCarousel({
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-          </button>
-          <button
+          </button> */}
+          {/* <button
             className="carousel-play-pause absolute bottom-4 right-4 bg-black bg-opacity-50 text-white p-2 rounded-full z-10 hover:bg-opacity-70 focus:outline-none"
             onClick={togglePlayPause}
             aria-label={isPlaying ? "Pause carousel" : "Play carousel"}
@@ -338,22 +341,30 @@ export function BannerCarousel({
                 />
               </svg>
             )}
-          </button>
+          </button> */}
         </>
       )}
 
-      {showIndicators && totalSlides > 1 && (
-        <div className="carousel-indicators absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
-          {Array.from({ length: totalSlides }).map((_, index) => (
-            <button
-              key={index}
-              className={`h-2 w-2 rounded-full ${index === currentIndex ? "bg-white" : "bg-white bg-opacity-50"}`}
-              onClick={() => goToSlide(index)}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
-      )}
+{showIndicators && totalSlides > 1 && (
+  <div className="carousel-indicators absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
+    {Array.from({ length: totalSlides }).map((_, index) => (
+      <button
+        key={index}
+        className={`transition-all duration-300 ${
+          index === currentIndex
+            ? "w-6 h-2 rounded-full bg-black"
+            : "w-2 h-2 rounded-full bg-black bg-opacity-50"
+        }`}
+        onClick={() => goToSlide(index)}
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        aria-label={`Go to slide ${index + 1}`}
+      />
+    ))}
+  </div>
+)}
+
+
     </div>
   )
 }

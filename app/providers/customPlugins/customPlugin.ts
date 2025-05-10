@@ -228,29 +228,40 @@ query CheckUniquePhone($phoneNumber: String!){
 
 export async function getCustomBanners(
   request: Request,
-  channelId: string
-): Promise<{ data: CustomBannersQuery['customBanners']; headers: any } | false> {
+  channelToken?: string,
+): Promise<{ data: CustomBannersQuery["customBanners"]; headers: any } | false> {
   try {
+    // Create custom headers with the channel token if provided
+    const customHeaders: Record<string, string> = {}
+    if (channelToken) {
+      customHeaders["vendure-token"] = channelToken
+    }
+
+    // Pass the request and custom headers to ensure the channel token is used
     const response = await sdk.customBanners(
-      { channelId },
-      request // <- Pass the request here
-    );
+      {}, // No parameters needed for the query
+      {
+        request,
+        customHeaders, // Pass the channel token in headers
+      },
+    )
 
     return {
       data: response.customBanners,
       headers: response._headers,
-    };
+    }
   } catch (error) {
-    console.error('Error in getCustomBanners:', error);
-    return false;
+    console.error("Error in getCustomBanners:", error)
+    return false
   }
 }
 
 
 
+
 gql`
-query customBanners($channelId: ID!) {
-    customBanners(channelId: $channelId) {
+query customBanners{
+    customBanners {
         id
         assets {
             id

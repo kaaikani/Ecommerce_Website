@@ -2984,11 +2984,6 @@ export type QueryCollectionsArgs = {
 };
 
 
-export type QueryCustomBannersArgs = {
-  channelId: Scalars['ID'];
-};
-
-
 export type QueryFacetArgs = {
   id: Scalars['ID'];
 };
@@ -3761,9 +3756,7 @@ export type CheckUniquePhoneQueryVariables = Exact<{
 
 export type CheckUniquePhoneQuery = { __typename?: 'Query', checkUniquePhone: boolean };
 
-export type CustomBannersQueryVariables = Exact<{
-  channelId: Scalars['ID'];
-}>;
+export type CustomBannersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type CustomBannersQuery = { __typename?: 'Query', customBanners: Array<{ __typename?: 'CustomBanner', id: string, assets: Array<{ __typename?: 'Asset', id: string, name: string, source: string }>, channels: Array<{ __typename?: 'Channel', id: string, code: string }> }> };
@@ -4353,8 +4346,8 @@ export const CheckUniquePhoneDocument = gql`
 }
     `;
 export const CustomBannersDocument = gql`
-    query customBanners($channelId: ID!) {
-  customBanners(channelId: $channelId) {
+    query customBanners {
+  customBanners {
     id
     assets {
       id
@@ -4743,7 +4736,7 @@ export function getSdk<C, E>(requester: Requester<C, E>) {
     CheckUniquePhone(variables: CheckUniquePhoneQueryVariables, options?: C): Promise<CheckUniquePhoneQuery> {
       return requester<CheckUniquePhoneQuery, CheckUniquePhoneQueryVariables>(CheckUniquePhoneDocument, variables, options) as Promise<CheckUniquePhoneQuery>;
     },
-    customBanners(variables: CustomBannersQueryVariables, options?: C): Promise<CustomBannersQuery> {
+    customBanners(variables?: CustomBannersQueryVariables, options?: C): Promise<CustomBannersQuery> {
       return requester<CustomBannersQuery, CustomBannersQueryVariables>(CustomBannersDocument, variables, options) as Promise<CustomBannersQuery>;
     },
     activeCustomer(variables?: ActiveCustomerQueryVariables, options?: C): Promise<ActiveCustomerQuery> {
