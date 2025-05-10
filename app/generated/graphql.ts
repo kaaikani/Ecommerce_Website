@@ -1746,9 +1746,10 @@ export type Mutation = {
    * that verification token to the Customer, which is then used to verify the change of email address.
    */
   requestUpdateCustomerEmailAddress: RequestUpdateCustomerEmailAddressResult;
+  resendPhoneOtp?: Maybe<Scalars['String']>;
   /** Resets a Customer's password based on the provided token */
   resetPassword: ResetPasswordResult;
-  sendPhoneOtp?: Maybe<Scalars['Boolean']>;
+  sendPhoneOtp?: Maybe<Scalars['String']>;
   /** Set the Customer for the Order. Required only if the Customer is not currently logged in */
   setCustomerForOrder: SetCustomerForOrderResult;
   /** Sets the billing address for this order */
@@ -1873,6 +1874,11 @@ export type MutationRequestPasswordResetArgs = {
 export type MutationRequestUpdateCustomerEmailAddressArgs = {
   newEmailAddress: Scalars['String'];
   password: Scalars['String'];
+};
+
+
+export type MutationResendPhoneOtpArgs = {
+  phoneNumber: Scalars['String'];
 };
 
 
@@ -2929,6 +2935,7 @@ export type Query = {
   generateBraintreeClientToken?: Maybe<Scalars['String']>;
   getChannelList: Array<Channel>;
   getChannelsByCustomerEmail: Array<Channel>;
+  getChannelsByCustomerPhoneNumber: Array<Channel>;
   getCouponCodeList: CoupcodesList;
   getPasswordResetToken: Scalars['String'];
   /** Returns information about the current authenticated User */
@@ -2994,6 +3001,11 @@ export type QueryFacetsArgs = {
 
 export type QueryGetChannelsByCustomerEmailArgs = {
   email: Scalars['String'];
+};
+
+
+export type QueryGetChannelsByCustomerPhoneNumberArgs = {
+  phoneNumber: Scalars['String'];
 };
 
 
@@ -3726,7 +3738,35 @@ export type SendPhoneOtpMutationVariables = Exact<{
 }>;
 
 
-export type SendPhoneOtpMutation = { __typename?: 'Mutation', sendPhoneOtp?: boolean | null };
+export type SendPhoneOtpMutation = { __typename?: 'Mutation', sendPhoneOtp?: string | null };
+
+export type ResendPhoneOtpMutationVariables = Exact<{
+  phoneNumber: Scalars['String'];
+}>;
+
+
+export type ResendPhoneOtpMutation = { __typename?: 'Mutation', resendPhoneOtp?: string | null };
+
+export type GetChannelsByCustomerPhonenumberQueryVariables = Exact<{
+  phoneNumber: Scalars['String'];
+}>;
+
+
+export type GetChannelsByCustomerPhonenumberQuery = { __typename?: 'Query', getChannelsByCustomerPhoneNumber: Array<{ __typename?: 'Channel', id: string, code: string, token: string, defaultCurrencyCode: CurrencyCode }> };
+
+export type CheckUniquePhoneQueryVariables = Exact<{
+  phoneNumber: Scalars['String'];
+}>;
+
+
+export type CheckUniquePhoneQuery = { __typename?: 'Query', checkUniquePhone: boolean };
+
+export type CustomBannersQueryVariables = Exact<{
+  channelId: Scalars['ID'];
+}>;
+
+
+export type CustomBannersQuery = { __typename?: 'Query', customBanners: Array<{ __typename?: 'CustomBanner', id: string, assets: Array<{ __typename?: 'Asset', id: string, name: string, source: string }>, channels: Array<{ __typename?: 'Channel', id: string, code: string }> }> };
 
 export type ActiveCustomerQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4292,6 +4332,42 @@ export const SendPhoneOtpDocument = gql`
   sendPhoneOtp(phoneNumber: $phoneNumber)
 }
     `;
+export const ResendPhoneOtpDocument = gql`
+    mutation resendPhoneOtp($phoneNumber: String!) {
+  resendPhoneOtp(phoneNumber: $phoneNumber)
+}
+    `;
+export const GetChannelsByCustomerPhonenumberDocument = gql`
+    query getChannelsByCustomerPhonenumber($phoneNumber: String!) {
+  getChannelsByCustomerPhoneNumber(phoneNumber: $phoneNumber) {
+    id
+    code
+    token
+    defaultCurrencyCode
+  }
+}
+    `;
+export const CheckUniquePhoneDocument = gql`
+    query CheckUniquePhone($phoneNumber: String!) {
+  checkUniquePhone(phone: $phoneNumber)
+}
+    `;
+export const CustomBannersDocument = gql`
+    query customBanners($channelId: ID!) {
+  customBanners(channelId: $channelId) {
+    id
+    assets {
+      id
+      name
+      source
+    }
+    channels {
+      id
+      code
+    }
+  }
+}
+    `;
 export const ActiveCustomerDocument = gql`
     query activeCustomer {
   activeCustomer {
@@ -4657,6 +4733,18 @@ export function getSdk<C, E>(requester: Requester<C, E>) {
     },
     SendPhoneOtp(variables: SendPhoneOtpMutationVariables, options?: C): Promise<SendPhoneOtpMutation> {
       return requester<SendPhoneOtpMutation, SendPhoneOtpMutationVariables>(SendPhoneOtpDocument, variables, options) as Promise<SendPhoneOtpMutation>;
+    },
+    resendPhoneOtp(variables: ResendPhoneOtpMutationVariables, options?: C): Promise<ResendPhoneOtpMutation> {
+      return requester<ResendPhoneOtpMutation, ResendPhoneOtpMutationVariables>(ResendPhoneOtpDocument, variables, options) as Promise<ResendPhoneOtpMutation>;
+    },
+    getChannelsByCustomerPhonenumber(variables: GetChannelsByCustomerPhonenumberQueryVariables, options?: C): Promise<GetChannelsByCustomerPhonenumberQuery> {
+      return requester<GetChannelsByCustomerPhonenumberQuery, GetChannelsByCustomerPhonenumberQueryVariables>(GetChannelsByCustomerPhonenumberDocument, variables, options) as Promise<GetChannelsByCustomerPhonenumberQuery>;
+    },
+    CheckUniquePhone(variables: CheckUniquePhoneQueryVariables, options?: C): Promise<CheckUniquePhoneQuery> {
+      return requester<CheckUniquePhoneQuery, CheckUniquePhoneQueryVariables>(CheckUniquePhoneDocument, variables, options) as Promise<CheckUniquePhoneQuery>;
+    },
+    customBanners(variables: CustomBannersQueryVariables, options?: C): Promise<CustomBannersQuery> {
+      return requester<CustomBannersQuery, CustomBannersQueryVariables>(CustomBannersDocument, variables, options) as Promise<CustomBannersQuery>;
     },
     activeCustomer(variables?: ActiveCustomerQueryVariables, options?: C): Promise<ActiveCustomerQuery> {
       return requester<ActiveCustomerQuery, ActiveCustomerQueryVariables>(ActiveCustomerDocument, variables, options) as Promise<ActiveCustomerQuery>;
