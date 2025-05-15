@@ -25,7 +25,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const otp = body.get("otp") as string
   const actionType = body.get("actionType") as string
   const rememberMe = !!body.get("rememberMe")
-  const redirectTo = (body.get("redirectTo") || "/") as string
+  const redirectTo = (body.get("redirectTo") || "/home") as string
 
   const sessionStorage = await getSessionStorage()
   const session = await sessionStorage.getSession(request.headers.get("Cookie"))

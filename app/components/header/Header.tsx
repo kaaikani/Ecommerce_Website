@@ -56,7 +56,7 @@ export function Header({
       </div>
       <div className="max-w-6xl mx-auto p-4 flex items-center space-x-4">
         <h1 className="text-white w-10">
-          <Link to="/">
+          <Link to="/home">
             <img
               src="/cube-logo-small.webp"
               width={40}

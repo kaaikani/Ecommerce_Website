@@ -89,7 +89,7 @@ export default function AccountDashboard() {
     onClick={() => {
       // Wait briefly, then force full reload to reset state
       setTimeout(() => {
-        window.location.href = '/home';
+        window.location.href = '/';
       }, 50); // Allow Remix to process the POST first
     }}
   >

@@ -275,3 +275,72 @@ query customBanners{
     }
 }
 `;
+
+
+export async function getRazorpayOrderId(
+  orderId: string,
+  request: Request,
+  channelToken?: string,
+): Promise<
+  | {
+      razorpayOrderId: string
+      headers: any
+    }
+  | {
+      error: string
+      errorCode: string
+    }
+  | false
+> {
+  try {
+    const customHeaders: Record<string, string> = {}
+    if (channelToken) {
+      customHeaders["vendure-token"] = channelToken
+    }
+
+    const response = await sdk.GenerateRazorpayOrderId(
+      { orderId },
+      {
+        request,
+        customHeaders,
+      },
+    )
+
+    const result = response.generateRazorpayOrderId
+
+    if (result.__typename === "RazorpayOrderIdSuccess") {
+      return {
+        razorpayOrderId: result.razorpayOrderId,
+        headers: response._headers,
+      }
+    } else if (result.__typename === "RazorpayOrderIdGenerationError") {
+      return {
+        error: result.message ?? "Unknown error",
+        errorCode: result.errorCode ?? "UNKNOWN_ERROR",
+      }
+    }
+
+    return false
+  } catch (error) {
+    console.error("Error in getRazorpayOrderId:", error)
+    return false
+  }
+}
+
+
+
+gql`
+  mutation GenerateRazorpayOrderId($orderId: ID!) {
+    generateRazorpayOrderId(orderId: $orderId) {
+      ... on RazorpayOrderIdSuccess {
+        __typename
+        razorpayOrderId
+      }
+      ... on RazorpayOrderIdGenerationError {
+        __typename
+        errorCode
+        message
+      }
+    }
+  }
+`

@@ -41,7 +41,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   // Always destroy local session
-  return redirect('/home', {
+  return redirect('/', {
     
     headers: {
       'Set-Cookie': await sessionStorage.destroySession(session),
