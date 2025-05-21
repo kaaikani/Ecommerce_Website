@@ -1985,7 +1985,6 @@ type Mutation {
 
   """Delete an existing Address"""
   deleteCustomerAddress(id: ID!): Success!
-  generateRazorpayOrderId(orderId: ID!): generateRazorpayOrderIdResult!
 
   """
   Authenticates the user using the native authentication strategy. This mutation is an alias for authenticate({ native: { ... }})
@@ -2253,7 +2252,6 @@ type OrderAddress {
 type OrderCustomFields {
   clientRequestToCancel: Int
   otherInstructions: String
-  razorpay_order_id: String
 }
 
 input OrderFilterParameter {
@@ -2267,7 +2265,6 @@ input OrderFilterParameter {
   id: IDOperators
   orderPlacedAt: DateOperators
   otherInstructions: StringOperators
-  razorpay_order_id: StringOperators
   shipping: NumberOperators
   shippingWithTax: NumberOperators
   state: StringOperators
@@ -2418,7 +2415,6 @@ input OrderSortParameter {
   id: SortOrder
   orderPlacedAt: SortOrder
   otherInstructions: SortOrder
-  razorpay_order_id: SortOrder
   shipping: SortOrder
   shippingWithTax: SortOrder
   state: SortOrder
@@ -3256,15 +3252,6 @@ type Query {
   search(input: SearchInput!): SearchResponse!
 }
 
-type RazorpayOrderIdGenerationError {
-  errorCode: String
-  message: String
-}
-
-type RazorpayOrderIdSuccess {
-  razorpayOrderId: String!
-}
-
 union RefreshCustomerVerificationResult = NativeAuthStrategyError | Success
 
 type Refund implements Node {
@@ -3454,7 +3441,7 @@ type ShippingMethod implements Node {
   checker: ConfigurableOperation!
   code: String!
   createdAt: DateTime!
-  customFields: JSON
+  customFields: ShippingMethodCustomFields
   description: String!
   fulfillmentHandlerCode: String!
   id: ID!
@@ -3464,6 +3451,12 @@ type ShippingMethod implements Node {
   updatedAt: DateTime!
 }
 
+type ShippingMethodCustomFields {
+  dataType1: String
+  dataType2: String
+  messageTemplateId: String
+}
+
 type ShippingMethodList implements PaginatedList {
   items: [ShippingMethod!]!
   totalItems: Int!
@@ -3471,7 +3464,7 @@ type ShippingMethodList implements PaginatedList {
 
 type ShippingMethodQuote {
   code: String!
-  customFields: JSON
+  customFields: ShippingMethodCustomFields
   description: String!
   id: ID!
 
@@ -3657,7 +3650,6 @@ union UpdateCustomerPasswordResult = InvalidCredentialsError | NativeAuthStrateg
 input UpdateOrderCustomFieldsInput {
   clientRequestToCancel: Int
   otherInstructions: String
-  razorpay_order_id: String
 }
 
 input UpdateOrderInput {
@@ -3709,5 +3701,3 @@ type Zone implements Node {
   name: String!
   updatedAt: DateTime!
 }
-
-union generateRazorpayOrderIdResult = RazorpayOrderIdGenerationError | RazorpayOrderIdSuccess

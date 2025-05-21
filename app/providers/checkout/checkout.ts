@@ -43,6 +43,11 @@ gql`
       metadata
       price
       priceWithTax
+      customFields{
+        messageTemplateId
+        dataType1
+        dataType2
+      }
     }
   }
 `;

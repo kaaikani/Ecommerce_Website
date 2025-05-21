@@ -6,15 +6,13 @@ export default function AddAddressCard() {
   const { t } = useTranslation();
 
   return (
-    <>
-      <Link
-        preventScrollReset
-        className="border border-black-500 p-5 min-h-[100px] h-full w-full flex flex-col justify-between mt-3"
-        to="/account/addresses/new"
-      >
-        <span className="text-base-semi">{t('address.new')}</span>
-        <PlusIcon className="w-6 h-6"></PlusIcon>
-      </Link>
-    </>
+    <Link
+      preventScrollReset
+      to="/account/addresses/new"
+      className="flex items-center justify-center gap-2 mt-3 w-full min-h-[64px] border-2 border-dashed border-blue-500 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg shadow-sm transition-all duration-200 ease-in-out"
+    >
+      <PlusIcon className="w-5 h-5" />
+      <span className="font-semibold">{t('address.new')}</span>
+    </Link>
   );
 }

@@ -1702,7 +1702,6 @@ export type Mutation = {
   createStripePaymentIntent?: Maybe<Scalars['String']>;
   /** Delete an existing Address */
   deleteCustomerAddress: Success;
-  generateRazorpayOrderId: GenerateRazorpayOrderIdResult;
   /**
    * Authenticates the user using the native authentication strategy. This mutation is an alias for authenticate({ native: { ... }})
    *
@@ -1831,11 +1830,6 @@ export type MutationCreateCustomerAddressArgs = {
 
 export type MutationDeleteCustomerAddressArgs = {
   id: Scalars['ID'];
-};
-
-
-export type MutationGenerateRazorpayOrderIdArgs = {
-  orderId: Scalars['ID'];
 };
 
 
@@ -2109,7 +2103,6 @@ export type OrderCustomFields = {
   __typename?: 'OrderCustomFields';
   clientRequestToCancel?: Maybe<Scalars['Int']>;
   otherInstructions?: Maybe<Scalars['String']>;
-  razorpay_order_id?: Maybe<Scalars['String']>;
 };
 
 export type OrderFilterParameter = {
@@ -2123,7 +2116,6 @@ export type OrderFilterParameter = {
   id?: InputMaybe<IdOperators>;
   orderPlacedAt?: InputMaybe<DateOperators>;
   otherInstructions?: InputMaybe<StringOperators>;
-  razorpay_order_id?: InputMaybe<StringOperators>;
   shipping?: InputMaybe<NumberOperators>;
   shippingWithTax?: InputMaybe<NumberOperators>;
   state?: InputMaybe<StringOperators>;
@@ -2248,7 +2240,6 @@ export type OrderSortParameter = {
   id?: InputMaybe<SortOrder>;
   orderPlacedAt?: InputMaybe<SortOrder>;
   otherInstructions?: InputMaybe<SortOrder>;
-  razorpay_order_id?: InputMaybe<SortOrder>;
   shipping?: InputMaybe<SortOrder>;
   shippingWithTax?: InputMaybe<SortOrder>;
   state?: InputMaybe<SortOrder>;
@@ -3038,17 +3029,6 @@ export type QuerySearchArgs = {
   input: SearchInput;
 };
 
-export type RazorpayOrderIdGenerationError = {
-  __typename?: 'RazorpayOrderIdGenerationError';
-  errorCode?: Maybe<Scalars['String']>;
-  message?: Maybe<Scalars['String']>;
-};
-
-export type RazorpayOrderIdSuccess = {
-  __typename?: 'RazorpayOrderIdSuccess';
-  razorpayOrderId: Scalars['String'];
-};
-
 export type RefreshCustomerVerificationResult = NativeAuthStrategyError | Success;
 
 export type Refund = Node & {
@@ -3246,7 +3226,7 @@ export type ShippingMethod = Node & {
   checker: ConfigurableOperation;
   code: Scalars['String'];
   createdAt: Scalars['DateTime'];
-  customFields?: Maybe<Scalars['JSON']>;
+  customFields?: Maybe<ShippingMethodCustomFields>;
   description: Scalars['String'];
   fulfillmentHandlerCode: Scalars['String'];
   id: Scalars['ID'];
@@ -3254,6 +3234,13 @@ export type ShippingMethod = Node & {
   name: Scalars['String'];
   translations: Array<ShippingMethodTranslation>;
   updatedAt: Scalars['DateTime'];
+};
+
+export type ShippingMethodCustomFields = {
+  __typename?: 'ShippingMethodCustomFields';
+  dataType1?: Maybe<Scalars['String']>;
+  dataType2?: Maybe<Scalars['String']>;
+  messageTemplateId?: Maybe<Scalars['String']>;
 };
 
 export type ShippingMethodList = PaginatedList & {
@@ -3265,7 +3252,7 @@ export type ShippingMethodList = PaginatedList & {
 export type ShippingMethodQuote = {
   __typename?: 'ShippingMethodQuote';
   code: Scalars['String'];
-  customFields?: Maybe<Scalars['JSON']>;
+  customFields?: Maybe<ShippingMethodCustomFields>;
   description: Scalars['String'];
   id: Scalars['ID'];
   /** Any optional metadata returned by the ShippingCalculator in the ShippingCalculationResult */
@@ -3459,7 +3446,6 @@ export type UpdateCustomerPasswordResult = InvalidCredentialsError | NativeAuthS
 export type UpdateOrderCustomFieldsInput = {
   clientRequestToCancel?: InputMaybe<Scalars['Int']>;
   otherInstructions?: InputMaybe<Scalars['String']>;
-  razorpay_order_id?: InputMaybe<Scalars['String']>;
 };
 
 export type UpdateOrderInput = {
@@ -3512,8 +3498,6 @@ export type Zone = Node & {
   name: Scalars['String'];
   updatedAt: Scalars['DateTime'];
 };
-
-export type GenerateRazorpayOrderIdResult = RazorpayOrderIdGenerationError | RazorpayOrderIdSuccess;
 
 export type LoginMutationVariables = Exact<{
   email: Scalars['String'];
@@ -3603,7 +3587,7 @@ export type ActiveChannelQuery = { __typename?: 'Query', activeChannel: { __type
 export type EligibleShippingMethodsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type EligibleShippingMethodsQuery = { __typename?: 'Query', eligibleShippingMethods: Array<{ __typename?: 'ShippingMethodQuote', id: string, name: string, description: string, metadata?: any | null, price: number, priceWithTax: number }> };
+export type EligibleShippingMethodsQuery = { __typename?: 'Query', eligibleShippingMethods: Array<{ __typename?: 'ShippingMethodQuote', id: string, name: string, description: string, metadata?: any | null, price: number, priceWithTax: number, customFields?: { __typename?: 'ShippingMethodCustomFields', messageTemplateId?: string | null, dataType1?: string | null, dataType2?: string | null } | null }> };
 
 export type EligiblePaymentMethodsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3783,13 +3767,6 @@ export type CustomBannersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type CustomBannersQuery = { __typename?: 'Query', customBanners: Array<{ __typename?: 'CustomBanner', id: string, assets: Array<{ __typename?: 'Asset', id: string, name: string, source: string }>, channels: Array<{ __typename?: 'Channel', id: string, code: string }> }> };
-
-export type GenerateRazorpayOrderIdMutationVariables = Exact<{
-  orderId: Scalars['ID'];
-}>;
-
-
-export type GenerateRazorpayOrderIdMutation = { __typename?: 'Mutation', generateRazorpayOrderId: { __typename: 'RazorpayOrderIdGenerationError', errorCode?: string | null, message?: string | null } | { __typename: 'RazorpayOrderIdSuccess', razorpayOrderId: string } };
 
 export type ActiveCustomerQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4201,6 +4178,11 @@ export const EligibleShippingMethodsDocument = gql`
     metadata
     price
     priceWithTax
+    customFields {
+      messageTemplateId
+      dataType1
+      dataType2
+    }
   }
 }
     `;
@@ -4387,21 +4369,6 @@ export const CustomBannersDocument = gql`
     channels {
       id
       code
-    }
-  }
-}
-    `;
-export const GenerateRazorpayOrderIdDocument = gql`
-    mutation GenerateRazorpayOrderId($orderId: ID!) {
-  generateRazorpayOrderId(orderId: $orderId) {
-    ... on RazorpayOrderIdSuccess {
-      __typename
-      razorpayOrderId
-    }
-    ... on RazorpayOrderIdGenerationError {
-      __typename
-      errorCode
-      message
     }
   }
 }
@@ -4783,9 +4750,6 @@ export function getSdk<C, E>(requester: Requester<C, E>) {
     },
     customBanners(variables?: CustomBannersQueryVariables, options?: C): Promise<CustomBannersQuery> {
       return requester<CustomBannersQuery, CustomBannersQueryVariables>(CustomBannersDocument, variables, options) as Promise<CustomBannersQuery>;
-    },
-    GenerateRazorpayOrderId(variables: GenerateRazorpayOrderIdMutationVariables, options?: C): Promise<GenerateRazorpayOrderIdMutation> {
-      return requester<GenerateRazorpayOrderIdMutation, GenerateRazorpayOrderIdMutationVariables>(GenerateRazorpayOrderIdDocument, variables, options) as Promise<GenerateRazorpayOrderIdMutation>;
     },
     activeCustomer(variables?: ActiveCustomerQueryVariables, options?: C): Promise<ActiveCustomerQuery> {
       return requester<ActiveCustomerQuery, ActiveCustomerQueryVariables>(ActiveCustomerDocument, variables, options) as Promise<ActiveCustomerQuery>;
