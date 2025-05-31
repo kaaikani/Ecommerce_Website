@@ -29,7 +29,7 @@ import { CartContents } from "~/components/cart/CartContents"
 import { CartTotals } from "~/components/cart/CartTotals"
 import { Link } from "@remix-run/react"
 import { ChevronRightIcon } from "@heroicons/react/24/solid"
-import { RazorpayPayments } from "~/components/checkout/razorpay/RazorpayPayments"
+import {RazorpayPayments} from "~/components/checkout/razorpay/RazorpayPayments"
 
 export async function loader({ request }: DataFunctionArgs) {
   const session = await getSessionStorage().then((sessionStorage) =>
@@ -52,6 +52,12 @@ export async function loader({ request }: DataFunctionArgs) {
   const { eligiblePaymentMethods } = await getEligiblePaymentMethods({
     request,
   })
+
+  // Add this after getting eligiblePaymentMethods
+  // console.log(
+  //   "Eligible payment methods:",
+  //   eligiblePaymentMethods.map((m) => ({ id: m.id, code: m.code, name: m.name })),
+  // )
 
   const error = session.get("activeOrderError")
 
@@ -85,8 +91,7 @@ export async function loader({ request }: DataFunctionArgs) {
     }
   }
 
-  // Add Razorpay key
-  const razorpayKeyId = process.env.RAZORPAY_KEY_ID
+
 
   return json({
     availableCountries,
@@ -101,7 +106,6 @@ export async function loader({ request }: DataFunctionArgs) {
     stripeError,
     brainTreeKey,
     brainTreeError,
-    razorpayKeyId,
   })
 }
 
@@ -139,22 +143,36 @@ export async function action({ request }: DataFunctionArgs) {
     // Create metadata object based on payment method
     let metadata = {}
 
-    if (paymentMethodCode === "razorpay" && paymentNonce) {
+    if (paymentMethodCode === "online" && paymentNonce) {
       try {
-        // For online payments, parse the JSON metadata
-        metadata = { nonce: paymentNonce, ...JSON.parse(paymentNonce as string) }
+        // For Razorpay payments, parse the JSON metadata
+        const paymentData = JSON.parse(paymentNonce as string)
+        metadata = {
+          method: "online",
+          amount: (Number(paymentData.amount) / 100).toFixed(2) || 0,
+          currencyCode: paymentData.currencyCode || "INR",
+          razorpay_payment_id: paymentData.razorpay_payment_id,
+          razorpay_order_id: paymentData.razorpay_order_id,
+          razorpay_signature: paymentData.razorpay_signature,
+          orderCode: paymentData.orderCode,
+        }
       } catch (e) {
+        console.error("Error parsing payment nonce:", e)
         metadata = { nonce: paymentNonce }
       }
-    } else {
+    } else if (paymentMethodCode === "offline") {
       // For offline payments, include basic metadata with amount
       metadata = {
-        // nonce: paymentNonce || "offline-payment",
         method: "offline",
-amount: Number(((activeOrder?.totalWithTax || 0) / 100).toFixed(2)),
+        amount: Number(((activeOrder?.totalWithTax || 0) / 100).toFixed(2)),
         currencyCode: activeOrder?.currencyCode || "INR",
       }
     }
+
+    console.log("Adding payment to order with:", {
+      method: paymentMethodCode,
+      metadata,
+    })
 
     const result = await addPaymentToOrder({ method: paymentMethodCode, metadata }, { request })
 
@@ -180,12 +198,7 @@ export default function CheckoutPage() {
     activeOrder,
     couponCodes,
     eligiblePaymentMethods,
-    stripePaymentIntent,
-    stripePublishableKey,
-    stripeError,
-    brainTreeKey,
-    brainTreeError,
-    razorpayKeyId,
+    
   } = useLoaderData<typeof loader>()
 
   const { activeOrderFetcher, removeItem, adjustOrderLine } = useOutletContext<OutletContext>()
@@ -437,9 +450,11 @@ export default function CheckoutPage() {
                     <div className="mb-6">
                       <h2 className="text-lg font-medium text-gray-900 mb-6">{t("checkout.paymentTitle")}</h2>
 
+
                       <div className="flex flex-col items-center divide-gray-200 divide-y space-y-6">
                         {eligiblePaymentMethods.map((method) => (
                           <div key={method.id} className="py-6 w-full">
+                            <h3 className="text-base font-medium text-gray-900 mb-4">{method.name}</h3>
                             {method.code === "online" ? (
                               <RazorpayPayments
                                 orderCode={activeOrder?.code ?? ""}
@@ -448,7 +463,6 @@ export default function CheckoutPage() {
                                 customerEmail={customer?.emailAddress ?? ""}
                                 customerName={`${customer?.firstName ?? ""} ${customer?.lastName ?? ""}`.trim()}
                                 customerPhone={shippingAddress?.phoneNumber ?? ""}
-                                razorpayKeyId={razorpayKeyId ?? ""}
                               />
                             ) : method.code === "offline" ? (
                               <Form method="post">
@@ -465,7 +479,6 @@ export default function CheckoutPage() {
                                   })}
                                 />
                                 <div className="w-full">
-                                  <h3 className="text-base font-medium text-gray-900 mb-4">Pay on Delivery</h3>
                                   <p className="text-sm text-gray-500 mb-4">
                                     Pay with cash when your order is delivered.
                                   </p>
@@ -477,9 +490,20 @@ export default function CheckoutPage() {
                                   </button>
                                 </div>
                               </Form>
-                            ) : null}
+                            ) : (
+                              <div className="text-sm text-gray-500">Payment method "{method.code}" not supported</div>
+                            )}
                           </div>
                         ))}
+                        {!eligiblePaymentMethods.find((m) => m.code === "online") && (
+                          <div className="py-6 w-full">
+                            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                              <p className="text-sm text-yellow-800">
+                                Online payment is not available. Please contact support if you need to pay online.
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 

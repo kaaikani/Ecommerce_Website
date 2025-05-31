@@ -1,139 +1,19 @@
 import gql from 'graphql-tag';
-import { CheckUniquePhoneQuery,CustomBanner, CustomBannersQuery, GetChannelListQuery, GetChannelsByCustomerEmailQuery,
-    GetChannelsByCustomerEmailQueryVariables,GetChannelsByCustomerPhonenumberQuery,GetPasswordResetTokenQuery,RequestPasswordResetMutation, RequestPasswordResetMutationVariables,ResetPasswordMutation, SendPhoneOtpMutation, SendPhoneOtpMutationVariables,} from '~/generated/graphql';
+import {
+  CheckUniquePhoneQuery, CustomBanner, CustomBannersQuery, GetChannelListQuery, GetChannelsByCustomerEmailQuery,
+  GetChannelsByCustomerEmailQueryVariables, GetChannelsByCustomerPhonenumberQuery, GetPasswordResetTokenQuery, RequestPasswordResetMutation, RequestPasswordResetMutationVariables, ResetPasswordMutation, SendPhoneOtpMutation, SendPhoneOtpMutationVariables,
+} from '~/generated/graphql';
 import { QueryOptions, sdk, WithHeaders } from '~/graphqlWrapper';
 
 export async function getChannelList(p0: { request: Request; }): Promise<WithHeaders<GetChannelListQuery['getChannelList']>> {
-    return sdk.getChannelList().then((res) => {
-      const data = res.getChannelList;
+  return sdk.getChannelList().then((res) => {
+    const data = res.getChannelList;
 
-      
-      const result = Object.assign([...data], { _headers: res._headers });
-      return result;
-    });
-  }
 
-  export async function getChannelsByCustomerEmail(
-    email: string
-  ): Promise<WithHeaders<GetChannelsByCustomerEmailQuery['getChannelsByCustomerEmail']>> {
-    const response = await sdk.GetChannelsByCustomerEmail({ email }); // 👈 lowercase "g"
-    const result = Object.assign([...response.getChannelsByCustomerEmail], {
-      _headers: response._headers,
-    });
+    const result = Object.assign([...data], { _headers: res._headers });
     return result;
-  }
-
-  export async function getChannelsByCustomerPhonenumber(
-  phoneNumber: string
-): Promise<WithHeaders<GetChannelsByCustomerPhonenumberQuery['getChannelsByCustomerPhoneNumber']>> {
-  const response = await sdk.getChannelsByCustomerPhonenumber({ phoneNumber });
-  const result = Object.assign([...response.getChannelsByCustomerPhoneNumber], {
-    _headers: response._headers,
   });
-  return result;
 }
-
-  
-  export async function getPasswordResetToken(email: string, p0: { request: Request; customHeaders: { 'vendure-token': string; }; }): Promise<WithHeaders<string>> {
-    // Create a Headers instance and append the custom header
-    const headers = new Headers();
-    headers.append('vendure-token', p0.customHeaders['vendure-token']);
-  
-    // Pass the headers instance inside the QueryOptions
-    const queryOptions: QueryOptions = {
-      headers: headers,  // Pass the Headers object
-    };
-  
-    return sdk.GetPasswordResetToken({}, queryOptions).then((res) => {
-      const result = Object.assign(res.getPasswordResetToken, {
-        _headers: res._headers,
-      });
-      return result;
-    });
-  }
-  
-  
-  
-  
-  export async function requestPasswordReset(
-    email: string
-  ): Promise<WithHeaders<RequestPasswordResetMutation['requestPasswordReset']>> {
-    const response = await sdk.RequestPasswordReset({ email });
-    const { requestPasswordReset, _headers } = response;
-  
-    if (!requestPasswordReset) {
-      // If it's null or undefined, return it with headers but explicitly typed
-      return {
-        __typename: 'NativeAuthStrategyError', // or some fallback typename if your schema expects it
-        _headers,
-      } as WithHeaders<RequestPasswordResetMutation['requestPasswordReset']>;
-    }
-  
-    return {
-      ...requestPasswordReset,
-      _headers,
-    };
-  }
-
-
-
-  export async function resetPassword(
-token: string, password: string, p0: { request: Request; customHeaders: { 'vendure-token': string; }; }  ): Promise<WithHeaders<any>> {
-    const response = await sdk.ResetPassword({
-      token,
-      password,
-    });
-  
-    const { resetPassword, _headers } = response;
-  
-    if (!resetPassword) {
-      return {
-        __typename: 'PasswordResetTokenInvalidError',
-        _headers,
-      };
-    }
-  
-    return {
-      ...resetPassword,
-      _headers,
-    };
-  }
-  
-  export async function sendPhoneOtp(phoneNumber: string): Promise<string | false> {
-    try {
-      const response = await sdk.SendPhoneOtp({ phoneNumber });
-      const otp = response.sendPhoneOtp;
-      console.log('Generated OTP:', otp); // 👈 Log OTP to console
-      return otp || false;
-    } catch (error) {
-      console.error('Error in sendPhoneOtp:', error);
-      return false;
-    }
-  }
-  
-  
-  export async function resendPhoneOtp(phoneNumber: string): Promise<string | false> {
-    try {
-      const response = await sdk.resendPhoneOtp({ phoneNumber });
-      return response.resendPhoneOtp || false;
-    } catch (error) {
-      console.error('Error in resendPhoneOtp:', error);
-      return false;
-    }
-  }
-
-  export async function checkUniquePhone(
-    phone: string
-  ): Promise<WithHeaders<CheckUniquePhoneQuery['checkUniquePhone']>> {
-    const response = await sdk.CheckUniquePhone({ phoneNumber: phone });
-    
-    const result = Object.assign(response.checkUniquePhone, {
-      _headers: response._headers,
-    });
-  
-    return result;
-  }
-
 
 gql`
  query getChannelList{
@@ -144,6 +24,130 @@ gql`
   }
  }
 `;
+
+export async function getChannelsByCustomerEmail(
+  email: string
+): Promise<WithHeaders<GetChannelsByCustomerEmailQuery['getChannelsByCustomerEmail']>> {
+  const response = await sdk.GetChannelsByCustomerEmail({ email }); // 👈 lowercase "g"
+  const result = Object.assign([...response.getChannelsByCustomerEmail], {
+    _headers: response._headers,
+  });
+  return result;
+}
+
+export async function getChannelsByCustomerPhonenumber(
+  phoneNumber: string
+): Promise<WithHeaders<GetChannelsByCustomerPhonenumberQuery['getChannelsByCustomerPhoneNumber']>> {
+  const response = await sdk.getChannelsByCustomerPhonenumber({ phoneNumber });
+  const result = Object.assign([...response.getChannelsByCustomerPhoneNumber], {
+    _headers: response._headers,
+  });
+  return result;
+}
+
+
+export async function getPasswordResetToken(email: string, p0: { request: Request; customHeaders: { 'vendure-token': string; }; }): Promise<WithHeaders<string>> {
+  // Create a Headers instance and append the custom header
+  const headers = new Headers();
+  headers.append('vendure-token', p0.customHeaders['vendure-token']);
+
+  // Pass the headers instance inside the QueryOptions
+  const queryOptions: QueryOptions = {
+    headers: headers,  // Pass the Headers object
+  };
+
+  return sdk.GetPasswordResetToken({}, queryOptions).then((res) => {
+    const result = Object.assign(res.getPasswordResetToken, {
+      _headers: res._headers,
+    });
+    return result;
+  });
+}
+
+
+
+
+export async function requestPasswordReset(
+  email: string
+): Promise<WithHeaders<RequestPasswordResetMutation['requestPasswordReset']>> {
+  const response = await sdk.RequestPasswordReset({ email });
+  const { requestPasswordReset, _headers } = response;
+
+  if (!requestPasswordReset) {
+    // If it's null or undefined, return it with headers but explicitly typed
+    return {
+      __typename: 'NativeAuthStrategyError', // or some fallback typename if your schema expects it
+      _headers,
+    } as WithHeaders<RequestPasswordResetMutation['requestPasswordReset']>;
+  }
+
+  return {
+    ...requestPasswordReset,
+    _headers,
+  };
+}
+
+
+
+export async function resetPassword(
+  token: string, password: string, p0: { request: Request; customHeaders: { 'vendure-token': string; }; }): Promise<WithHeaders<any>> {
+  const response = await sdk.ResetPassword({
+    token,
+    password,
+  });
+
+  const { resetPassword, _headers } = response;
+
+  if (!resetPassword) {
+    return {
+      __typename: 'PasswordResetTokenInvalidError',
+      _headers,
+    };
+  }
+
+  return {
+    ...resetPassword,
+    _headers,
+  };
+}
+
+export async function sendPhoneOtp(phoneNumber: string): Promise<string | false> {
+  try {
+    const response = await sdk.SendPhoneOtp({ phoneNumber });
+    const otp = response.sendPhoneOtp;
+    console.log('Generated OTP:', otp); // 👈 Log OTP to console
+    return otp || false;
+  } catch (error) {
+    console.error('Error in sendPhoneOtp:', error);
+    return false;
+  }
+}
+
+
+export async function resendPhoneOtp(phoneNumber: string): Promise<string | false> {
+  try {
+    const response = await sdk.resendPhoneOtp({ phoneNumber });
+    return response.resendPhoneOtp || false;
+  } catch (error) {
+    console.error('Error in resendPhoneOtp:', error);
+    return false;
+  }
+}
+
+export async function checkUniquePhone(
+  phone: string
+): Promise<WithHeaders<CheckUniquePhoneQuery['checkUniquePhone']>> {
+  const response = await sdk.CheckUniquePhone({ phoneNumber: phone });
+
+  const result = Object.assign(response.checkUniquePhone, {
+    _headers: response._headers,
+  });
+
+  return result;
+}
+
+
+
 
 gql`
 query GetChannelsByCustomerEmail($email: String!) {
@@ -156,13 +160,13 @@ query GetChannelsByCustomerEmail($email: String!) {
   }
     `;
 
-    gql`
+gql`
     query GetPasswordResetToken {
       getPasswordResetToken
     }
   `;
 
- 
+
 gql`
 mutation RequestPasswordReset($email: String!){
     requestPasswordReset(emailAddress: $email){
@@ -277,70 +281,69 @@ query customBanners{
 `;
 
 
-// export async function getRazorpayOrderId(
-//   orderId: string,
-//   request: Request,
-//   channelToken?: string,
-// ): Promise<
-//   | {
-//       razorpayOrderId: string
-//       headers: any
-//     }
-//   | {
-//       error: string
-//       errorCode: string
-//     }
-//   | false
-// > {
-//   try {
-//     const customHeaders: Record<string, string> = {}
-//     if (channelToken) {
-//       customHeaders["vendure-token"] = channelToken
-//     }
+export async function getRazorpayOrderId(
+  orderId: number | string,
+  request: Request,
+  channelToken?: string,
+): Promise<
+  | {
+      razorpayOrderId: string;
+      keyId: string;
+      keySecret: string;
+      headers: any;
+    }
+  | { message: string; headers: any }
+  | false
+> {
+  try {
+    const customHeaders: Record<string, string> = {}
+    if (channelToken) {
+      customHeaders['vendure-token'] = channelToken
+    }
 
-//     const response = await sdk.GenerateRazorpayOrderId(
-//       { orderId },
-//       {
-//         request,
-//         customHeaders,
-//       },
-//     )
+    const response = await sdk.generateRazorpayOrderId(
+      { orderId: String(orderId) },
+      {
+        request,
+        customHeaders,
+      },
+    )
 
-//     const result = response.generateRazorpayOrderId
+    const result = response.generateRazorpayOrderId
 
-//     if (result.__typename === "RazorpayOrderIdSuccess") {
-//       return {
-//         razorpayOrderId: result.razorpayOrderId,
-//         headers: response._headers,
-//       }
-//     } else if (result.__typename === "RazorpayOrderIdGenerationError") {
-//       return {
-//         error: result.message ?? "Unknown error",
-//         errorCode: result.errorCode ?? "UNKNOWN_ERROR",
-//       }
-//     }
+    if ('razorpayOrderId' in result) {
+      return {
+        razorpayOrderId: result.razorpayOrderId,
+        keyId: result.keyId,
+        keySecret: result.keySecret,
+        headers: response._headers,
+      }
+    } else if ('message' in result) {
+      return {
+        message: result.message ?? 'Unknown error',
+        headers: response._headers,
+      }
+    }
 
-//     return false
-//   } catch (error) {
-//     console.error("Error in getRazorpayOrderId:", error)
-//     return false
-//   }
-// }
+    return false
+  } catch (error) {
+    console.error('Error in getRazorpayOrderId:', error)
+    return false
+  }
+}
 
 
-
-// gql`
-//   mutation GenerateRazorpayOrderId($orderId: ID!) {
-//     generateRazorpayOrderId(orderId: $orderId) {
-//       ... on RazorpayOrderIdSuccess {
-//         __typename
-//         razorpayOrderId
-//       }
-//       ... on RazorpayOrderIdGenerationError {
-//         __typename
-//         errorCode
-//         message
-//       }
-//     }
-//   }
-// `
+gql`
+mutation generateRazorpayOrderId($orderId: ID!) {
+  generateRazorpayOrderId(orderId: $orderId) {
+    ... on RazorpayOrderIdSuccess {
+      razorpayOrderId
+      keyId
+      keySecret
+    }
+    ... on RazorpayOrderIdGenerationError {
+      message
+    }
+  }
+}
+`

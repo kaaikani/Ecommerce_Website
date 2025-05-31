@@ -56,15 +56,15 @@ export function Header({
       </div>
       <div className="max-w-6xl mx-auto p-4 flex items-center space-x-4">
         <h1 className="text-white w-10">
-          <Link to="/home">
-            <img
-              src="/cube-logo-small.webp"
-              width={40}
-              height={31}
-              alt={t('commmon.logoAlt')}
-            />
-          </Link>
-        </h1>
+  <a href="/home">
+    <img
+      src="/cube-logo-small.webp"
+      width={40}
+      height={31}
+      alt="Logo"
+    />
+  </a>
+</h1>
         <div className="flex space-x-4  sm:block">
           {collections.map((collection) => (
             <Link
