@@ -68,7 +68,7 @@ export async function action({ request, params }: DataFunctionArgs) {
 
 export default function EditAddress() {
   const { address, availableCountries } = useLoaderData<typeof loader>();
-  const actionData = useActionData();
+const actionData = useActionData<{ saved?: boolean }>();
   const navigation = useNavigation();
   const navigate = useNavigate();
   const { state, close } = useToggleState(true);

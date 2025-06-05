@@ -71,8 +71,10 @@ gql`
   query activeCustomerOrderList($orderListOptions: OrderListOptions) {
     activeCustomer {
       orders(options: $orderListOptions) {
+    
         totalItems
         items {
+        id
           code
           state
           orderPlacedAt
@@ -95,6 +97,10 @@ gql`
           fulfillments {
             trackingCode
           }
+            customFields {
+    clientRequestToCancel
+    otherInstructions
+  }
           lines {
             quantity
             discountedLinePriceWithTax

@@ -220,12 +220,12 @@ export default function AccountDetails() {
                   name="email"
                   required
                 />
-                <Input
+                {/* <Input
                   label={t('account.password')}
                   type="password"
                   name="password"
                   required
-                />
+                /> */}
                 <input type="submit" hidden />
               </div>
               {formError && formError.intent === FormIntent.UpdateEmail && (

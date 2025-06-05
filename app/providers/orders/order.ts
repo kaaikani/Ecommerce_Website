@@ -419,6 +419,9 @@ gql`
     activeOrder {
       ...OrderDetail
       couponCodes
+       customFields {
+        otherInstructions
+      }
     }
   }
 `;
