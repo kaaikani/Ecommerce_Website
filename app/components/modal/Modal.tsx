@@ -48,7 +48,7 @@ const Modal: React.FC<PropsWithChildren<ModalProps>> & {
             >
               <Dialog.Panel
                 className={clsx(
-                  'flex flex-col justify-start w-full h-full overflow-auto transform bg-white p-10 text-left align-middle shadow-xl transition-all',
+                  'flex flex-col justify-start w-full h-full overflow-auto transform bg-white p-5 text-left align-middle shadow-xl transition-all',
                   {
                     'max-w-md': size === 'small',
                     'max-w-xl': size === 'medium',

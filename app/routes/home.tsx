@@ -1,3 +1,5 @@
+"use client"
+
 import { useLoaderData } from "@remix-run/react"
 import { getCollections } from "~/providers/collections/collections"
 import { getCustomBanners } from "~/providers/customPlugins/customPlugin"
@@ -5,19 +7,34 @@ import { CollectionCard } from "~/components/collections/CollectionCard"
 import { BannerCarousel } from "~/components/BannerCarousel"
 import type { LoaderFunctionArgs } from "@remix-run/server-runtime"
 import { useTranslation } from "react-i18next"
-import { json } from "@remix-run/node"
+import { json, redirect } from "@remix-run/node"
 import { getSessionStorage } from "~/sessions"
 import { CHANNEL_TOKEN_SESSION_KEY } from "~/graphqlWrapper"
-import { CustomBannersQuery } from "~/generated/graphql"
+import type { CustomBannersQuery } from "~/generated/graphql"
+import { Header } from "~/components/header/Header"
+import { useEffect, useState } from "react"
+import { useActiveOrder } from "~/utils/use-active-order"
+import type { RootLoaderData } from "~/root"
+import { getActiveCustomer } from "~/providers/customer/customer"
+import Footer from "~/components/footer/Footer"
 
 export async function loader({ request }: LoaderFunctionArgs) {
+  // Check if user is authenticated
+  const activeCustomer = await getActiveCustomer({ request })
+
+  // If user is NOT logged in, redirect to sign-in page
+  if (!activeCustomer.activeCustomer?.id) {
+    return redirect("/sign-in")
+  }
+
+  // User is authenticated, proceed with loading data
   const collections = await getCollections(request, { take: 20 })
 
   const sessionStorage = await getSessionStorage()
   const session = await sessionStorage.getSession(request.headers.get("Cookie"))
   const channelToken = session.get(CHANNEL_TOKEN_SESSION_KEY)
 
-  let banners: CustomBannersQuery["customBanners"] = []  // <-- typed here
+  let banners: CustomBannersQuery["customBanners"] = []
 
   try {
     const bannersResponse = await getCustomBanners(request, channelToken)
@@ -29,6 +46,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   return json(
     {
       collections,
+      activeCustomer,
       banners,
     },
     {
@@ -38,10 +56,34 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export default function home() {
-const { collections, banners } = useLoaderData<typeof loader>()
+  const { collections, banners } = useLoaderData<typeof loader>()
   const { t } = useTranslation()
+  const loaderData = useLoaderData<RootLoaderData>()
+  const { activeCustomer } = loaderData
+
+  const [open, setOpen] = useState(false)
+
+  const { activeOrderFetcher, activeOrder, adjustOrderLine, removeItem, refresh } = useActiveOrder()
+
+  const [isSignedIn, setIsSignedIn] = useState(!!activeCustomer.activeCustomer?.id)
+
+  useEffect(() => {
+    setIsSignedIn(!!loaderData.activeCustomer.activeCustomer?.id)
+  }, [loaderData.activeCustomer.activeCustomer?.id])
+
+  useEffect(() => {
+    refresh()
+  }, [loaderData])
+
   return (
     <>
+      <Header
+        onCartIconClick={() => setOpen(!open)}
+        cartQuantity={activeOrder?.totalQuantity ?? 0}
+        isSignedIn={isSignedIn}
+        collections={collections}
+      />
+
       {/* Banner Carousel Section */}
       {banners && banners.length > 0 && (
         <section className="mt-8 mb-12 px-4 sm:px-6 lg:px-8 xl:max-w-7xl xl:mx-auto">
@@ -78,6 +120,8 @@ const { collections, banners } = useLoaderData<typeof loader>()
           </a>
         </div>
       </section>
+
+      <Footer collections={collections} />
     </>
   )
 }

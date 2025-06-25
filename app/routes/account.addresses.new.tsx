@@ -82,7 +82,7 @@ export default function NewAddress() {
   return (
     <div>
       <Modal isOpen={state} close={close} afterClose={afterClose}>
-        <Modal.Title>{t('address.new')}</Modal.Title>
+        <Modal.Title></Modal.Title>
         <Modal.Body>
           <CustomerAddressForm
             availableCountries={availableCountries}
@@ -90,7 +90,7 @@ export default function NewAddress() {
             submit={submitForm}
           ></CustomerAddressForm>
         </Modal.Body>
-        <Modal.Footer>
+        {/* <Modal.Footer>
           <Button type="button" onClick={close}>
             {t('common.cancel')}
           </Button>
@@ -101,7 +101,7 @@ export default function NewAddress() {
           >
             {t('common.save')}
           </HighlightedButton>
-        </Modal.Footer>
+        </Modal.Footer> */}
       </Modal>
     </div>
   );

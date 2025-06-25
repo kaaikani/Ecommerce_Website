@@ -32,6 +32,8 @@ import { ChevronRightIcon } from "@heroicons/react/24/solid"
 import { RazorpayPayments } from "~/components/checkout/razorpay/RazorpayPayments"
 import { OrderInstructions } from "~/components/checkout/OrderInstructions"
 import { otherInstructions } from "~/providers/customPlugins/customPlugin"
+import { Header } from "~/components/header/Header"
+import { getCollections } from "~/providers/collections/collections"
 
 export async function loader({ request }: DataFunctionArgs) {
   const session = await getSessionStorage().then((sessionStorage) =>
@@ -40,6 +42,7 @@ export async function loader({ request }: DataFunctionArgs) {
 
   const activeOrder = await getActiveOrder({ request })
   const couponCodes = await getCouponCodeList({ request })
+  const collections = await getCollections(request, { take: 20 });
 
   //check if there is an active order if not redirect to homepage
   if (!session || !activeOrder || !activeOrder.active || activeOrder.lines.length === 0) {
@@ -102,6 +105,7 @@ export async function loader({ request }: DataFunctionArgs) {
     error,
     activeOrder,
     couponCodes,
+    collections,
     eligiblePaymentMethods,
     stripePaymentIntent,
     stripePublishableKey,
@@ -210,6 +214,7 @@ export async function action({ request }: DataFunctionArgs) {
 
 export default function CheckoutPage() {
   const {
+    collections,
     availableCountries,
     eligibleShippingMethods,
     activeCustomer,
@@ -318,9 +323,17 @@ export default function CheckoutPage() {
       }
     }
   }, [isSignedIn, activeCustomer?.addresses, addressFormChanged, shippingAddress?.streetLine1])
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="bg-gray-50">
+
+         <Header
+              onCartIconClick={() => setOpen(!open)}
+              cartQuantity={activeOrder?.totalQuantity ?? 0}
+              isSignedIn={isSignedIn}
+              collections={collections}
+            />
       <div className="lg:max-w-7xl max-w-2xl mx-auto pt-8 pb-24 px-4 sm:px-6 lg:px-8">
         <h2 className="sr-only">{t("cart.checkout")}</h2>
 

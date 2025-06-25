@@ -1,5 +1,5 @@
 import { DataFunctionArgs, json } from '@remix-run/server-runtime';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Price } from '~/components/products/Price';
 import { getProductBySlug } from '~/providers/products/products';
 import {
@@ -20,8 +20,14 @@ import { StockLevelLabel } from '~/components/products/StockLevelLabel';
 import TopReviews from '~/components/products/TopReviews';
 import { ScrollableContainer } from '~/components/products/ScrollableContainer';
 import { useTranslation } from 'react-i18next';
+import { getCollections } from '~/providers/collections/collections';
+import { getActiveCustomer } from '~/providers/customer/customer';
+import {Header} from '~/components/header/Header';
+import Footer from '~/components/footer/Footer';
+import { CartTray } from '~/components/cart/CartTray';
+import { useActiveOrder } from '~/utils/use-active-order';
 
-export const meta: MetaFunction = ({ data }) => {
+export const meta: MetaFunction<typeof loader> = ({ data }) => {
   return [
     {
       title: data?.product?.name
@@ -38,13 +44,18 @@ export async function loader({ params, request }: DataFunctionArgs) {
       status: 404,
     });
   }
+
   const sessionStorage = await getSessionStorage();
   const session = await sessionStorage.getSession(
     request?.headers.get('Cookie'),
   );
   const error = session.get('activeOrderError');
+
+  const collections = await getCollections(request, { take: 20 });
+  const activeCustomer = await getActiveCustomer({ request });
+
   return json(
-    { product: product!, error },
+    { product: product!, error, collections, activeCustomer },
     {
       headers: {
         'Set-Cookie': await sessionStorage.commitSession(session),
@@ -56,7 +67,8 @@ export async function loader({ params, request }: DataFunctionArgs) {
 export const shouldRevalidate: ShouldRevalidateFunction = () => true;
 
 export default function ProductSlug() {
-  const { product, error } = useLoaderData<typeof loader>();
+  const { product, error, collections, activeCustomer } =
+    useLoaderData<typeof loader>();
   const { activeOrderFetcher } = useOutletContext<{
     activeOrderFetcher: FetcherWithComponents<CartLoaderData>;
   }>();
@@ -64,9 +76,20 @@ export default function ProductSlug() {
   const addItemToOrderError = getAddItemToOrderError(error);
   const { t } = useTranslation();
 
-  if (!product) {
-    return <div>{t('product.notFound')}</div>;
-  }
+  const [open, setOpen] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(
+    !!activeCustomer?.activeCustomer?.id,
+  );
+
+  const {
+      adjustOrderLine,
+      removeItem,
+      refresh,
+    } = useActiveOrder();
+
+  useEffect(() => {
+    setIsSignedIn(!!activeCustomer?.activeCustomer?.id);
+  }, [activeCustomer]);
 
   const findVariantById = (id: string) =>
     product.variants.find((v) => v.id === id);
@@ -83,17 +106,26 @@ export default function ProductSlug() {
     activeOrder?.lines.find((l) => l.productVariant.id === selectedVariantId)
       ?.quantity ?? 0;
 
-  const asset = product.assets[0];
-  const brandName = product.facetValues.find(
-    (fv) => fv.facet.code === 'brand',
-  )?.name;
-
   const [featuredAsset, setFeaturedAsset] = useState(
     selectedVariant?.featuredAsset,
   );
 
   return (
     <div>
+      <Header
+        onCartIconClick={() => setOpen(!open)}
+        cartQuantity={activeOrder?.totalQuantity ?? 0}
+        isSignedIn={isSignedIn}
+        collections={collections}
+      />
+       <CartTray
+            open={open}
+            onClose={setOpen}
+            activeOrder={activeOrder}
+            adjustOrderLine={adjustOrderLine}
+            removeItem={removeItem}
+          />
+
       <div className="max-w-6xl mx-auto px-4">
         <h2 className="text-3xl sm:text-5xl font-light tracking-tight text-gray-900 my-8">
           {product.name}
@@ -103,7 +135,7 @@ export default function ProductSlug() {
             product.collections[product.collections.length - 1]?.breadcrumbs ??
             []
           }
-        ></Breadcrumbs>
+        />
         <div className="lg:grid lg:grid-cols-2 lg:gap-x-8 lg:items-start mt-4 md:mt-12">
           {/* Image gallery */}
           <div className="w-full max-w-2xl mx-auto sm:block lg:max-w-none">
@@ -124,22 +156,18 @@ export default function ProductSlug() {
               <ScrollableContainer>
                 {product.assets.map((asset) => (
                   <div
+                    key={asset.id}
                     className={`basis-1/3 md:basis-1/4 flex-shrink-0 select-none touch-pan-x rounded-lg ${
                       featuredAsset?.id == asset.id
                         ? 'outline outline-2 outline-primary outline-offset-[-2px]'
                         : ''
                     }`}
-                    onClick={() => {
-                      setFeaturedAsset(asset);
-                    }}
+                    onClick={() => setFeaturedAsset(asset)}
                   >
                     <img
                       draggable="false"
                       className="rounded-lg select-none h-24 w-full object-cover"
-                      src={
-                        asset.preview +
-                        '?preset=full' /* not ideal, but technically prevents loading 2 seperate images */
-                      }
+                      src={asset.preview + '?preset=full'}
                     />
                   </div>
                 ))}
@@ -149,19 +177,13 @@ export default function ProductSlug() {
 
           {/* Product info */}
           <div className="mt-10 px-4 sm:px-0 sm:mt-16 lg:mt-0">
-            <div className="">
-              <h3 className="sr-only">{t('product.description')}</h3>
+            <div className="text-base text-gray-700"
+              dangerouslySetInnerHTML={{ __html: product.description }}
+            />
 
-              <div
-                className="text-base text-gray-700"
-                dangerouslySetInnerHTML={{
-                  __html: product.description,
-                }}
-              />
-            </div>
             <activeOrderFetcher.Form method="post" action="/api/active-order">
               <input type="hidden" name="action" value="addItemToOrder" />
-              {1 < product.variants.length ? (
+              {product.variants.length > 1 ? (
                 <div className="mt-4">
                   <label
                     htmlFor="option"
@@ -176,10 +198,9 @@ export default function ProductSlug() {
                     name="variantId"
                     onChange={(e) => {
                       setSelectedVariantId(e.target.value);
-
                       const variant = findVariantById(e.target.value);
                       if (variant) {
-                        setFeaturedAsset(variant!.featuredAsset);
+                        setFeaturedAsset(variant.featuredAsset);
                       }
                     }}
                   >
@@ -195,7 +216,7 @@ export default function ProductSlug() {
                   type="hidden"
                   name="variantId"
                   value={selectedVariantId}
-                ></input>
+                />
               )}
 
               <div className="mt-10 flex flex-col sm:flex-row sm:items-center">
@@ -203,7 +224,7 @@ export default function ProductSlug() {
                   <Price
                     priceWithTax={selectedVariant?.priceWithTax}
                     currencyCode={selectedVariant?.currencyCode}
-                  ></Price>
+                  />
                 </p>
                 <div className="flex sm:flex-col1 align-baseline">
                   <button
@@ -215,9 +236,9 @@ export default function ProductSlug() {
                         ? 'bg-primary-600 hover:bg-primary-700'
                         : 'bg-green-600 active:bg-green-700 hover:bg-green-700'
                     }
-                                     transition-colors border border-transparent rounded-md py-3 px-8 flex items-center
-                                      justify-center text-base font-medium text-white focus:outline-none
-                                      focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-50 focus:ring-primary-500 sm:w-full`}
+                      transition-colors border border-transparent rounded-md py-3 px-8 flex items-center
+                      justify-center text-base font-medium text-white focus:outline-none
+                      focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-50 focus:ring-primary-500 sm:w-full`}
                     disabled={activeOrderFetcher.state !== 'idle'}
                   >
                     {qtyInCart ? (
@@ -229,15 +250,11 @@ export default function ProductSlug() {
                       t('product.addToCart')
                     )}
                   </button>
-
                   <button
                     type="button"
                     className="ml-4 py-3 px-3 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-500"
                   >
-                    <HeartIcon
-                      className="h-6 w-6 flex-shrink-0"
-                      aria-hidden="true"
-                    />
+                    <HeartIcon className="h-6 w-6 flex-shrink-0" />
                     <span className="sr-only">
                       {t('product.addToFavorites')}
                     </span>
@@ -268,9 +285,12 @@ export default function ProductSlug() {
           </div>
         </div>
       </div>
+
       <div className="mt-24">
-        <TopReviews></TopReviews>
+        <TopReviews />
       </div>
+                    <Footer collections={collections} />
+      
     </div>
   );
 }
@@ -284,16 +304,14 @@ export function CatchBoundary() {
         {t('product.notFound')}
       </h2>
       <div className="lg:grid lg:grid-cols-2 lg:gap-x-8 lg:items-start mt-4 md:mt-12">
-        {/* Image gallery */}
         <div className="w-full max-w-2xl mx-auto sm:block lg:max-w-none">
           <span className="rounded-md overflow-hidden">
             <div className="w-full h-96 bg-slate-200 rounded-lg flex content-center justify-center">
-              <PhotoIcon className="w-48 text-white"></PhotoIcon>
+              <PhotoIcon className="w-48 text-white" />
             </div>
           </span>
         </div>
 
-        {/* Product info */}
         <div className="mt-10 px-4 sm:px-0 sm:mt-16 lg:mt-0">
           <div className="">{t('product.notFoundInfo')}</div>
           <div className="flex-1 space-y-3 py-1">
@@ -313,9 +331,7 @@ export function CatchBoundary() {
 }
 
 function getAddItemToOrderError(error?: ErrorResult): string | undefined {
-  if (!error || !error.errorCode) {
-    return undefined;
-  }
+  if (!error || !error.errorCode) return undefined;
   switch (error.errorCode) {
     case ErrorCode.OrderModificationError:
     case ErrorCode.OrderLimitError:

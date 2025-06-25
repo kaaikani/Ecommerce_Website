@@ -136,7 +136,7 @@ export default function App() {
           collections={collections}
         /> */}
 
-{isSignedIn && (
+{/* {isSignedIn && (
   <>
     <Header
       onCartIconClick={() => setOpen(!open)}
@@ -145,7 +145,15 @@ export default function App() {
       collections={collections}
     />
   </>
-)}
+)} */}
+ {/* <>
+    <Header
+      onCartIconClick={() => setOpen(!open)}
+      cartQuantity={activeOrder?.totalQuantity ?? 0}
+      isSignedIn={isSignedIn}
+      collections={collections}
+    />
+  </> */}
         <main>
           <Outlet
             context={{
@@ -165,7 +173,7 @@ export default function App() {
       adjustOrderLine={adjustOrderLine}
       removeItem={removeItem}
     />
-    <Footer collections={collections} />
+    {/* <Footer collections={collections} /> */}
   </>
 )}
         <ScrollRestoration />

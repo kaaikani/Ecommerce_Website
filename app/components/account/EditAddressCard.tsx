@@ -27,13 +27,12 @@ export default function EditAddressCard({
   const setShipping = useFetcher();
   const setBilling = useFetcher();
   const deleteAddress = useFetcher<ErrorResult>();
-  const [isDeleteModalVisible, setDeleteModalVisible] =
-    useState<boolean>(false);
+  const [isDeleteModalVisible, setDeleteModalVisible] = useState(false);
   const { t } = useTranslation();
 
   return (
     <>
-      {/* Note: Only allow closing when it isnt loading to prevent accidental closing via outside-click */}
+      {/* Delete Confirmation Modal */}
       <Modal
         isOpen={isDeleteModalVisible}
         close={() =>
@@ -76,132 +75,119 @@ export default function EditAddressCard({
           </Modal.Footer>
         </deleteAddress.Form>
       </Modal>
+
+      {/* Address Card */}
       <div
         className={clsx(
-          'border border-gray-200 p-5 min-h-[220px] h-full w-full flex flex-col justify-between gap-8 transition-colors',
+          'border rounded-xl shadow-sm p-6 bg-white min-h-[220px] flex flex-col justify-between transition-all hover:shadow-md',
           {
-            'border-gray-900': isActive,
-          },
+            'border-primary': isActive,
+            'border-gray-200': !isActive,
+          }
         )}
       >
-        <div className="flex justify-between">
-          {/* Customer Data Section */}
-          <div className="flex flex-col">
-            <span className="text-left text-base-semi">{address.fullName}</span>
-            {address.company && (
-              <span className="text-small-regular text-gray-700">
-                {address.company}
-              </span>
-            )}
-            <div className="flex flex-col text-left text-base-regular mt-2">
-              <span>
+        <div className="flex justify-between gap-4">
+          {/* Address Info */}
+          <div className="space-y-1 text-sm text-gray-800">
+            <p className="font-semibold text-base">{address.fullName}</p>
+            {address.company && <p>{address.company}</p>}
+            <div className="text-gray-600">
+              <p>
                 {address.streetLine1}
-                {address.streetLine2 && <span>, {address.streetLine2}</span>}
-              </span>
-              <span>
-                {address.postalCode}, {address.city}
-              </span>
-              <span>
+                {address.streetLine2 && `, ${address.streetLine2}`}
+              </p>
+              <p>{address.postalCode}, {address.city}</p>
+              <p>
                 {address.province && `${address.province}, `}
                 {address.country?.code?.toUpperCase()}
-              </span>
+              </p>
             </div>
           </div>
-          {/* Default Shipping/Billing Section */}
-          {(address.defaultShippingAddress ||
-            address.defaultBillingAddress) && (
-            <div className="text-end text-gray-500 uppercase tracking-wider">
-              <span className="block text-sm font-medium">
-                {t('common.default')}
-              </span>
-              <span className="block text-xs mt-1">
+
+          {/* Default Labels */}
+          {(address.defaultShippingAddress || address.defaultBillingAddress) && (
+            <div className="text-end text-xs uppercase text-gray-400 font-semibold leading-tight">
+              <p className="text-sm text-gray-500">{t('common.default')}</p>
+              <p className="mt-1">
                 {address.defaultShippingAddress && t('common.shipping')}
-                {address.defaultShippingAddress &&
-                  address.defaultBillingAddress && (
-                    <>
-                      <br />
-                      &amp;&nbsp;
-                    </>
-                  )}
+                {address.defaultShippingAddress && address.defaultBillingAddress && <br />}
                 {address.defaultBillingAddress && t('common.billing')}
-              </span>
+              </p>
             </div>
           )}
         </div>
-        {/* CRUD Actions */}
-        <div className="flex flex-col md:flex-row items-start gap-4">
-          <div className="flex items-center gap-4">
+
+        {/* Action Buttons */}
+        <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-sm text-gray-700">
+          <div className="flex gap-4">
             <Link
               role="button"
               preventScrollReset
-              className="text-gray-700 flex items-center gap-x-2"
+              className="flex items-center gap-2 hover:text-primary transition-colors"
               to={`/account/addresses/${address.id}`}
             >
-              <PencilIcon className="w-4 h-4"></PencilIcon>
+              <PencilIcon className="w-4 h-4" />
               {t('common.edit')}
             </Link>
+
             <button
               type="button"
               title="Delete this address"
-              className="text-gray-700 flex items-center gap-x-2"
+              className="flex items-center gap-2 hover:text-destructive transition-colors"
               disabled={deleteAddress.state !== 'idle'}
               onClick={() => setDeleteModalVisible(true)}
             >
               {deleteAddress.state === 'idle' ? (
-                <TrashIcon className="w-4 h-4"></TrashIcon>
+                <TrashIcon className="w-4 h-4" />
               ) : (
-                <ArrowPathIcon className="w-4 h-4 animate-spin"></ArrowPathIcon>
+                <ArrowPathIcon className="w-4 h-4 animate-spin" />
               )}
               {t('common.remove')}
             </button>
           </div>
-          {(!address.defaultShippingAddress ||
-            !address.defaultBillingAddress) && (
-            <div>
-              <span className="text-gray-500 flex gap-4">
-                {/* Default shipping */}
-                {!address.defaultShippingAddress && (
-                  <setShipping.Form method="post">
-                    <input type="hidden" name="id" value={address.id} />
-                    <button
-                      name="_action"
-                      value="setDefaultShipping"
-                      type="submit"
-                      title="Set as default shipping address"
-                      className="text-gray-700 flex items-center gap-2"
-                      disabled={setShipping.state !== 'idle'}
-                    >
-                      {setShipping.state === 'idle' ? (
-                        <TruckIcon className="w-4 h-4"></TruckIcon>
-                      ) : (
-                        <ArrowPathIcon className="w-4 h-4 animate-spin"></ArrowPathIcon>
-                      )}
-                      {t('common.shipping')}
-                    </button>
-                  </setShipping.Form>
-                )}
 
-                {!address.defaultBillingAddress && (
-                  <setBilling.Form method="post">
-                    <input type="hidden" name="id" value={address.id} />
-                    <button
-                      name="_action"
-                      value="setDefaultBilling"
-                      type="submit"
-                      title="Set as default billing address"
-                      className="text-gray-700 flex items-center gap-2"
-                      disabled={setBilling.state !== 'idle'}
-                    >
-                      {setBilling.state === 'idle' ? (
-                        <CreditCardIcon className="w-4 h-4"></CreditCardIcon>
-                      ) : (
-                        <ArrowPathIcon className="w-4 h-4 animate-spin"></ArrowPathIcon>
-                      )}
-                      {t('common.billing')}
-                    </button>
-                  </setBilling.Form>
-                )}
-              </span>
+          {/* Shipping/Billing buttons if not already default */}
+          {(!address.defaultShippingAddress || !address.defaultBillingAddress) && (
+            <div className="flex gap-4 mt-2 sm:mt-0">
+              {!address.defaultShippingAddress && (
+                <setShipping.Form method="post">
+                  <input type="hidden" name="id" value={address.id} />
+                  <button
+                    name="_action"
+                    value="setDefaultShipping"
+                    type="submit"
+                    className="flex items-center gap-2 hover:text-primary transition-colors"
+                    disabled={setShipping.state !== 'idle'}
+                  >
+                    {setShipping.state === 'idle' ? (
+                      <TruckIcon className="w-4 h-4" />
+                    ) : (
+                      <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                    )}
+                    {t('common.shipping')}
+                  </button>
+                </setShipping.Form>
+              )}
+
+              {!address.defaultBillingAddress && (
+                <setBilling.Form method="post">
+                  <input type="hidden" name="id" value={address.id} />
+                  <button
+                    name="_action"
+                    value="setDefaultBilling"
+                    type="submit"
+                    className="flex items-center gap-2 hover:text-primary transition-colors"
+                    disabled={setBilling.state !== 'idle'}
+                  >
+                    {setBilling.state === 'idle' ? (
+                      <CreditCardIcon className="w-4 h-4" />
+                    ) : (
+                      <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                    )}
+                    {t('common.billing')}
+                  </button>
+                </setBilling.Form>
+              )}
             </div>
           )}
         </div>
