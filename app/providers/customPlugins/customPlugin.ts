@@ -2,6 +2,8 @@ import gql from 'graphql-tag';
 import {
   CheckUniquePhoneQuery, CustomBanner, CustomBannersQuery, GetChannelListQuery, GetChannelsByCustomerEmailQuery,
   GetChannelsByCustomerEmailQueryVariables, GetChannelsByCustomerPhonenumberQuery, GetPasswordResetTokenQuery, RequestPasswordResetMutation, RequestPasswordResetMutationVariables, ResetPasswordMutation, SendPhoneOtpMutation, SendPhoneOtpMutationVariables,
+ CancelOrderOnClientRequestMutation,
+  OtherInstructionsMutation
 } from '~/generated/graphql';
 import { QueryOptions, sdk, WithHeaders } from '~/graphqlWrapper';
 
@@ -347,3 +349,151 @@ mutation generateRazorpayOrderId($orderId: ID!) {
   }
 }
 `
+
+export async function cancelOrderOnClientRequest(
+  orderId: string,
+  value: number,
+  options?: { request: Request; customHeaders?: Record<string, string> }
+): Promise<WithHeaders<CancelOrderOnClientRequestMutation['cancelOrderOnClientRequest']>> {
+  const response = await sdk.CancelOrderOnClientRequest(
+    { orderId, value },
+    options
+  );
+
+  return Object.assign(response.cancelOrderOnClientRequest, {
+    _headers: response._headers,
+  });
+}
+
+gql`
+ mutation CancelOrderOnClientRequest($orderId: ID!, $value: Int!) {
+    cancelOrderOnClientRequest(orderId: $orderId, value: $value) {
+              ...Cart
+    }
+  }
+
+  fragment Cart on Order {
+    id
+    code
+    state
+    active
+    couponCodes
+    promotions {
+        couponCode
+        name
+        enabled
+        actions {
+            args {
+                value
+                name
+            }
+            code
+        }
+        conditions {
+            code
+            args {
+                name
+                value
+            }
+        }
+    }
+    lines {
+        id
+        customFields
+        featuredAsset {
+            ...Asset
+            __typename
+        }
+        unitPrice
+        unitPriceWithTax
+        quantity
+        linePriceWithTax
+        discountedLinePriceWithTax
+        productVariant {
+            id
+            name
+            __typename
+        }
+        discounts {
+            amount
+            amountWithTax
+            description
+            adjustmentSource
+            type
+            __typename
+        }
+        __typename
+    }
+    totalQuantity
+    subTotal
+    subTotalWithTax
+    total
+    totalWithTax
+    shipping
+    shippingWithTax
+    shippingLines {
+        priceWithTax
+        shippingMethod {
+            id
+            code
+            name
+            description
+            __typename
+        }
+        __typename
+    }
+    discounts {
+        amount
+        amountWithTax
+        description
+        adjustmentSource
+        type
+        __typename
+    }
+    customFields {
+        clientRequestToCancel
+    }
+    __typename
+}
+
+fragment Asset on Asset {
+    id
+    width
+    height
+    name
+    preview
+    focalPoint {
+        x
+        y
+        __typename
+    }
+    __typename
+}
+`
+
+
+export async function otherInstructions(
+  orderId: string,
+  value: string,
+  options?: { request: Request; customHeaders?: Record<string, string> }
+): Promise<WithHeaders<OtherInstructionsMutation['otherInstructions']>> {
+  const response = await sdk.OtherInstructions(
+    { orderId, value },
+    options
+  );
+
+  return Object.assign(response.otherInstructions, {
+    _headers: response._headers,
+  });
+}
+gql`
+  mutation OtherInstructions($orderId: ID!, $value: String!) {
+    otherInstructions(orderId: $orderId, value: $value) {
+      id
+      customFields {
+        otherInstructions
+      }
+    }
+  }
+`
+

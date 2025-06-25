@@ -1,6 +1,6 @@
 "use client"
 
-import { type FormEvent, useState } from "react"
+import { type FormEvent, useState, useEffect } from "react"
 import { Form, useLoaderData, useOutletContext } from "@remix-run/react"
 import type { OutletContext } from "~/types"
 import { type DataFunctionArgs, json, redirect } from "@remix-run/server-runtime"
@@ -29,7 +29,11 @@ import { CartContents } from "~/components/cart/CartContents"
 import { CartTotals } from "~/components/cart/CartTotals"
 import { Link } from "@remix-run/react"
 import { ChevronRightIcon } from "@heroicons/react/24/solid"
-import {RazorpayPayments} from "~/components/checkout/razorpay/RazorpayPayments"
+import { RazorpayPayments } from "~/components/checkout/razorpay/RazorpayPayments"
+import { OrderInstructions } from "~/components/checkout/OrderInstructions"
+import { otherInstructions } from "~/providers/customPlugins/customPlugin"
+import { Header } from "~/components/header/Header"
+import { getCollections } from "~/providers/collections/collections"
 
 export async function loader({ request }: DataFunctionArgs) {
   const session = await getSessionStorage().then((sessionStorage) =>
@@ -38,6 +42,7 @@ export async function loader({ request }: DataFunctionArgs) {
 
   const activeOrder = await getActiveOrder({ request })
   const couponCodes = await getCouponCodeList({ request })
+  const collections = await getCollections(request, { take: 20 });
 
   //check if there is an active order if not redirect to homepage
   if (!session || !activeOrder || !activeOrder.active || activeOrder.lines.length === 0) {
@@ -91,7 +96,7 @@ export async function loader({ request }: DataFunctionArgs) {
     }
   }
 
-
+  const orderInstructions = activeOrder?.customFields?.otherInstructions || ""
 
   return json({
     availableCountries,
@@ -100,12 +105,14 @@ export async function loader({ request }: DataFunctionArgs) {
     error,
     activeOrder,
     couponCodes,
+    collections,
     eligiblePaymentMethods,
     stripePaymentIntent,
     stripePublishableKey,
     stripeError,
     brainTreeKey,
     brainTreeError,
+    orderInstructions,
   })
 }
 
@@ -119,6 +126,22 @@ export async function action({ request }: DataFunctionArgs) {
   if (action === "setOrderCustomer" || action === "setCheckoutShipping") {
     // Handle customer and shipping data
     return json({ success: true })
+  }
+
+  if (action === "updateOrderInstructions") {
+    const orderId = body.get("orderId")
+    const instructions = body.get("instructions")
+
+    if (typeof orderId === "string" && typeof instructions === "string") {
+      try {
+        await otherInstructions(orderId, instructions, { request })
+        return json({ success: true })
+      } catch (error) {
+        return json({ success: false, error: "Failed to save instructions" })
+      }
+    }
+
+    return json({ success: false, error: "Invalid data" })
   }
 
   const paymentMethodCode = body.get("paymentMethodCode")
@@ -191,6 +214,7 @@ export async function action({ request }: DataFunctionArgs) {
 
 export default function CheckoutPage() {
   const {
+    collections,
     availableCountries,
     eligibleShippingMethods,
     activeCustomer,
@@ -198,7 +222,7 @@ export default function CheckoutPage() {
     activeOrder,
     couponCodes,
     eligiblePaymentMethods,
-    
+    orderInstructions,
   } = useLoaderData<typeof loader>()
 
   const { activeOrderFetcher, removeItem, adjustOrderLine } = useOutletContext<OutletContext>()
@@ -284,8 +308,32 @@ export default function CheckoutPage() {
 
   const paymentError = getPaymentError(error)
 
+  // Auto-select default shipping address on component mount
+  useEffect(() => {
+    if (isSignedIn && activeCustomer?.addresses?.length && !addressFormChanged && !shippingAddress?.streetLine1) {
+      const defaultShippingAddress = activeCustomer.addresses.find((addr) => addr.defaultShippingAddress)
+      const addressToShow = defaultShippingAddress || activeCustomer.addresses[0]
+
+      if (addressToShow) {
+        const formData = new FormData()
+        Object.keys(addressToShow).forEach((key) => formData.append(key, (addressToShow as any)[key]))
+        formData.append("countryCode", addressToShow.country.code)
+        formData.append("action", "setCheckoutShipping")
+        setShippingAddress(formData)
+      }
+    }
+  }, [isSignedIn, activeCustomer?.addresses, addressFormChanged, shippingAddress?.streetLine1])
+  const [open, setOpen] = useState(false);
+
   return (
     <div className="bg-gray-50">
+
+         <Header
+              onCartIconClick={() => setOpen(!open)}
+              cartQuantity={activeOrder?.totalQuantity ?? 0}
+              isSignedIn={isSignedIn}
+              collections={collections}
+            />
       <div className="lg:max-w-7xl max-w-2xl mx-auto pt-8 pb-24 px-4 sm:px-6 lg:px-8">
         <h2 className="sr-only">{t("cart.checkout")}</h2>
 
@@ -295,8 +343,8 @@ export default function CheckoutPage() {
             {["shipping", "payment", "confirmation"].map((step, stepIdx) => (
               <li key={step} className="flex items-center">
                 {step === currentStep ||
-                (step === "shipping" && currentStep === "payment") ||
-                (step === "confirmation" && false) ? (
+                  (step === "shipping" && currentStep === "payment") ||
+                  (step === "confirmation" && false) ? (
                   <span aria-current="page" className="text-primary-600 font-medium">
                     {t(`checkout.steps.${step}`)}
                   </span>
@@ -317,7 +365,7 @@ export default function CheckoutPage() {
                 <div>
                   <h2 className="text-lg font-medium text-gray-900">{t("checkout.detailsTitle")}</h2>
 
-                  {isSignedIn ? (
+                  {/* {isSignedIn ? (
                     <div>
                       <p className="mt-2 text-gray-600">
                         {customer?.firstName} {customer?.lastName}
@@ -387,7 +435,7 @@ export default function CheckoutPage() {
                         </div>
                       </div>
                     </Form>
-                  )}
+                  )} */}
                 </div>
 
                 {/* Shipping Address */}
@@ -398,16 +446,80 @@ export default function CheckoutPage() {
                   onChange={() => setAddressFormChanged(true)}
                 >
                   <input type="hidden" name="action" value="setCheckoutShipping" />
-                  <div className="mt-10 border-t border-gray-200 pt-10">
-                    <h2 className="text-lg font-medium text-gray-900">{t("checkout.shippingTitle")}</h2>
+                  <div className="mt-10 ">
+                    {/* <h2 className="text-lg font-medium text-gray-900">{t("checkout.shippingTitle")}</h2> */}
                   </div>
                   {isSignedIn && activeCustomer.addresses?.length ? (
-                    <div>
-                      <ShippingAddressSelector
-                        addresses={activeCustomer.addresses}
-                        selectedAddressIndex={selectedAddressIndex}
-                        onChange={submitSelectedAddress}
-                      />
+                    <div className="mt-4 bg-white border rounded-lg shadow-sm p-4">
+                      {(() => {
+                        const defaultShippingAddress = activeCustomer.addresses.find(
+                          (addr) => addr.defaultShippingAddress,
+                        )
+                        const addressToShow = defaultShippingAddress || activeCustomer.addresses[0]
+
+                        return (
+                          <>
+                            <div className="flex justify-between items-start mb-4">
+                              <h3 className="text-sm font-medium text-gray-900">
+                                {defaultShippingAddress
+                                  ? "Default Shipping Address"
+                                  : "Saved Address"}
+                              </h3>
+                              <Link
+                                to="/account/addresses"
+                                className="text-sm font-medium text-primary-600 hover:text-primary-500"
+                              >
+                                {t("common.edit")}
+                              </Link>
+                            </div>
+
+                            <div className="text-sm text-gray-700 leading-5">
+                              <p className="font-medium">
+                                {addressToShow?.fullName} • {addressToShow?.phoneNumber}
+                              </p>
+                              <p className="text-gray-600">
+                                {[
+                                  addressToShow?.streetLine1,
+                                  addressToShow?.streetLine2,
+                                  addressToShow?.city,
+                                  addressToShow?.province,
+                                  addressToShow?.postalCode,
+                                  addressToShow?.country?.name,
+                                ]
+                                  .filter(Boolean)
+                                  .join(', ')}
+                              </p>
+                            </div>
+
+
+                            <div className="mt-4 flex space-x-3">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAddressFormChanged(true)
+                                }}
+                                className="text-sm text-primary-600 hover:text-primary-500 font-medium"
+                              >
+                                UseAnotherAddress
+                              </button>
+                            </div>
+                          </>
+                        )
+                      })()}
+
+                      {/* Show address selector or form if user clicked "Use another address" */}
+                      {addressFormChanged && (
+                        <div className="mt-6 pt-6 border-t border-gray-200">
+                          <h3 className="text-sm font-medium text-gray-900 mb-4">
+                            Select Another Address
+                          </h3>
+                          <ShippingAddressSelector
+                            addresses={activeCustomer.addresses}
+                            selectedAddressIndex={selectedAddressIndex}
+                            onChange={submitSelectedAddress}
+                          />
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <AddressForm
@@ -417,7 +529,7 @@ export default function CheckoutPage() {
                     ></AddressForm>
                   )}
                 </Form>
-                <AddAddressCard />
+                {/* <AddAddressCard /> */}
 
                 {/* Shipping Method */}
                 <div className="mt-10 border-t border-gray-200 pt-10">
@@ -449,7 +561,6 @@ export default function CheckoutPage() {
                     {/* Payment Methods */}
                     <div className="mb-6">
                       <h2 className="text-lg font-medium text-gray-900 mb-6">{t("checkout.paymentTitle")}</h2>
-
 
                       <div className="flex flex-col items-center divide-gray-200 divide-y space-y-6">
                         {eligiblePaymentMethods.map((method) => (
@@ -543,6 +654,15 @@ export default function CheckoutPage() {
                 </Link>
               </div>
               <CartTotals order={activeOrder as any} />
+
+              {/* Order Instructions */}
+              {activeOrder?.id && (
+                <OrderInstructions
+                  orderId={activeOrder.id}
+                  initialValue={orderInstructions}
+                  disabled={currentStep === "payment"}
+                />
+              )}
 
               {/* Shipping Address Summary (when on payment step) */}
               {currentStep === "payment" && shippingAddress && (

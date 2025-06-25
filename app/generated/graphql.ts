@@ -3801,6 +3801,26 @@ export type GenerateRazorpayOrderIdMutationVariables = Exact<{
 
 export type GenerateRazorpayOrderIdMutation = { __typename?: 'Mutation', generateRazorpayOrderId: { __typename?: 'RazorpayOrderIdGenerationError', message?: string | null } | { __typename?: 'RazorpayOrderIdSuccess', razorpayOrderId: string, keyId: string, keySecret: string } };
 
+export type CancelOrderOnClientRequestMutationVariables = Exact<{
+  orderId: Scalars['ID'];
+  value: Scalars['Int'];
+}>;
+
+
+export type CancelOrderOnClientRequestMutation = { __typename?: 'Mutation', cancelOrderOnClientRequest: { __typename: 'Order', id: string, code: string, state: string, active: boolean, couponCodes: Array<string>, totalQuantity: number, subTotal: number, subTotalWithTax: number, total: number, totalWithTax: number, shipping: number, shippingWithTax: number, promotions: Array<{ __typename?: 'Promotion', couponCode?: string | null, name: string, enabled: boolean, actions: Array<{ __typename?: 'ConfigurableOperation', code: string, args: Array<{ __typename?: 'ConfigArg', value: string, name: string }> }>, conditions: Array<{ __typename?: 'ConfigurableOperation', code: string, args: Array<{ __typename?: 'ConfigArg', name: string, value: string }> }> }>, lines: Array<{ __typename: 'OrderLine', id: string, customFields?: any | null, unitPrice: number, unitPriceWithTax: number, quantity: number, linePriceWithTax: number, discountedLinePriceWithTax: number, featuredAsset?: { __typename: 'Asset', id: string, width: number, height: number, name: string, preview: string, focalPoint?: { __typename: 'Coordinate', x: number, y: number } | null } | null, productVariant: { __typename: 'ProductVariant', id: string, name: string }, discounts: Array<{ __typename: 'Discount', amount: number, amountWithTax: number, description: string, adjustmentSource: string, type: AdjustmentType }> }>, shippingLines: Array<{ __typename: 'ShippingLine', priceWithTax: number, shippingMethod: { __typename: 'ShippingMethod', id: string, code: string, name: string, description: string } }>, discounts: Array<{ __typename: 'Discount', amount: number, amountWithTax: number, description: string, adjustmentSource: string, type: AdjustmentType }>, customFields?: { __typename?: 'OrderCustomFields', clientRequestToCancel?: number | null } | null } };
+
+export type CartFragment = { __typename: 'Order', id: string, code: string, state: string, active: boolean, couponCodes: Array<string>, totalQuantity: number, subTotal: number, subTotalWithTax: number, total: number, totalWithTax: number, shipping: number, shippingWithTax: number, promotions: Array<{ __typename?: 'Promotion', couponCode?: string | null, name: string, enabled: boolean, actions: Array<{ __typename?: 'ConfigurableOperation', code: string, args: Array<{ __typename?: 'ConfigArg', value: string, name: string }> }>, conditions: Array<{ __typename?: 'ConfigurableOperation', code: string, args: Array<{ __typename?: 'ConfigArg', name: string, value: string }> }> }>, lines: Array<{ __typename: 'OrderLine', id: string, customFields?: any | null, unitPrice: number, unitPriceWithTax: number, quantity: number, linePriceWithTax: number, discountedLinePriceWithTax: number, featuredAsset?: { __typename: 'Asset', id: string, width: number, height: number, name: string, preview: string, focalPoint?: { __typename: 'Coordinate', x: number, y: number } | null } | null, productVariant: { __typename: 'ProductVariant', id: string, name: string }, discounts: Array<{ __typename: 'Discount', amount: number, amountWithTax: number, description: string, adjustmentSource: string, type: AdjustmentType }> }>, shippingLines: Array<{ __typename: 'ShippingLine', priceWithTax: number, shippingMethod: { __typename: 'ShippingMethod', id: string, code: string, name: string, description: string } }>, discounts: Array<{ __typename: 'Discount', amount: number, amountWithTax: number, description: string, adjustmentSource: string, type: AdjustmentType }>, customFields?: { __typename?: 'OrderCustomFields', clientRequestToCancel?: number | null } | null };
+
+export type AssetFragment = { __typename: 'Asset', id: string, width: number, height: number, name: string, preview: string, focalPoint?: { __typename: 'Coordinate', x: number, y: number } | null };
+
+export type OtherInstructionsMutationVariables = Exact<{
+  orderId: Scalars['ID'];
+  value: Scalars['String'];
+}>;
+
+
+export type OtherInstructionsMutation = { __typename?: 'Mutation', otherInstructions: { __typename?: 'Order', id: string, customFields?: { __typename?: 'OrderCustomFields', otherInstructions?: string | null } | null } };
+
 export type ActiveCustomerQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -3821,7 +3841,7 @@ export type ActiveCustomerOrderListQueryVariables = Exact<{
 }>;
 
 
-export type ActiveCustomerOrderListQuery = { __typename?: 'Query', activeCustomer?: { __typename?: 'Customer', orders: { __typename?: 'OrderList', totalItems: number, items: Array<{ __typename?: 'Order', code: string, state: string, orderPlacedAt?: any | null, currencyCode: CurrencyCode, subTotal: number, subTotalWithTax: number, total: number, totalWithTax: number, shippingWithTax: number, shippingLines: Array<{ __typename?: 'ShippingLine', priceWithTax: number }>, taxSummary: Array<{ __typename?: 'OrderTaxSummary', taxBase: number, taxTotal: number }>, discounts: Array<{ __typename?: 'Discount', amountWithTax: number }>, fulfillments?: Array<{ __typename?: 'Fulfillment', trackingCode?: string | null }> | null, lines: Array<{ __typename?: 'OrderLine', quantity: number, discountedLinePriceWithTax: number, discountedUnitPriceWithTax: number, fulfillmentLines?: Array<{ __typename?: 'FulfillmentLine', quantity: number, fulfillment: { __typename?: 'Fulfillment', state: string, updatedAt: any } }> | null, featuredAsset?: { __typename?: 'Asset', name: string, source: string, preview: string } | null, productVariant: { __typename?: 'ProductVariant', name: string, sku: string, currencyCode: CurrencyCode, priceWithTax: number, product: { __typename?: 'Product', slug: string } } }> }> } } | null };
+export type ActiveCustomerOrderListQuery = { __typename?: 'Query', activeCustomer?: { __typename?: 'Customer', orders: { __typename?: 'OrderList', totalItems: number, items: Array<{ __typename?: 'Order', id: string, code: string, state: string, orderPlacedAt?: any | null, currencyCode: CurrencyCode, subTotal: number, subTotalWithTax: number, total: number, totalWithTax: number, shippingWithTax: number, shippingLines: Array<{ __typename?: 'ShippingLine', priceWithTax: number }>, taxSummary: Array<{ __typename?: 'OrderTaxSummary', taxBase: number, taxTotal: number }>, discounts: Array<{ __typename?: 'Discount', amountWithTax: number }>, fulfillments?: Array<{ __typename?: 'Fulfillment', trackingCode?: string | null }> | null, customFields?: { __typename?: 'OrderCustomFields', clientRequestToCancel?: number | null, otherInstructions?: string | null } | null, lines: Array<{ __typename?: 'OrderLine', quantity: number, discountedLinePriceWithTax: number, discountedUnitPriceWithTax: number, fulfillmentLines?: Array<{ __typename?: 'FulfillmentLine', quantity: number, fulfillment: { __typename?: 'Fulfillment', state: string, updatedAt: any } }> | null, featuredAsset?: { __typename?: 'Asset', name: string, source: string, preview: string } | null, productVariant: { __typename?: 'ProductVariant', name: string, sku: string, currencyCode: CurrencyCode, priceWithTax: number, product: { __typename?: 'Product', slug: string } } }> }> } } | null };
 
 export type SetCustomerForOrderMutationVariables = Exact<{
   input: CreateCustomerInput;
@@ -3872,7 +3892,7 @@ export type OrderDetailFragment = { __typename: 'Order', id: string, code: strin
 export type ActiveOrderQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ActiveOrderQuery = { __typename?: 'Query', activeOrder?: { __typename: 'Order', couponCodes: Array<string>, id: string, code: string, active: boolean, createdAt: any, state: string, currencyCode: CurrencyCode, totalQuantity: number, subTotal: number, subTotalWithTax: number, shippingWithTax: number, totalWithTax: number, taxSummary: Array<{ __typename?: 'OrderTaxSummary', description: string, taxRate: number, taxTotal: number }>, customer?: { __typename?: 'Customer', id: string, firstName: string, lastName: string, emailAddress: string } | null, shippingAddress?: { __typename?: 'OrderAddress', fullName?: string | null, streetLine1?: string | null, streetLine2?: string | null, company?: string | null, city?: string | null, province?: string | null, postalCode?: string | null, countryCode?: string | null, phoneNumber?: string | null } | null, shippingLines: Array<{ __typename?: 'ShippingLine', priceWithTax: number, shippingMethod: { __typename?: 'ShippingMethod', id: string, name: string } }>, lines: Array<{ __typename?: 'OrderLine', id: string, unitPriceWithTax: number, linePriceWithTax: number, quantity: number, featuredAsset?: { __typename?: 'Asset', id: string, preview: string } | null, productVariant: { __typename?: 'ProductVariant', id: string, name: string, price: number, product: { __typename?: 'Product', id: string, slug: string } } }>, payments?: Array<{ __typename?: 'Payment', id: string, state: string, method: string, amount: number, metadata?: any | null }> | null } | null };
+export type ActiveOrderQuery = { __typename?: 'Query', activeOrder?: { __typename: 'Order', couponCodes: Array<string>, id: string, code: string, active: boolean, createdAt: any, state: string, currencyCode: CurrencyCode, totalQuantity: number, subTotal: number, subTotalWithTax: number, shippingWithTax: number, totalWithTax: number, customFields?: { __typename?: 'OrderCustomFields', otherInstructions?: string | null } | null, taxSummary: Array<{ __typename?: 'OrderTaxSummary', description: string, taxRate: number, taxTotal: number }>, customer?: { __typename?: 'Customer', id: string, firstName: string, lastName: string, emailAddress: string } | null, shippingAddress?: { __typename?: 'OrderAddress', fullName?: string | null, streetLine1?: string | null, streetLine2?: string | null, company?: string | null, city?: string | null, province?: string | null, postalCode?: string | null, countryCode?: string | null, phoneNumber?: string | null } | null, shippingLines: Array<{ __typename?: 'ShippingLine', priceWithTax: number, shippingMethod: { __typename?: 'ShippingMethod', id: string, name: string } }>, lines: Array<{ __typename?: 'OrderLine', id: string, unitPriceWithTax: number, linePriceWithTax: number, quantity: number, featuredAsset?: { __typename?: 'Asset', id: string, preview: string } | null, productVariant: { __typename?: 'ProductVariant', id: string, name: string, price: number, product: { __typename?: 'Product', id: string, slug: string } } }>, payments?: Array<{ __typename?: 'Payment', id: string, state: string, method: string, amount: number, metadata?: any | null }> | null } | null };
 
 export type OrderByCodeQueryVariables = Exact<{
   code: Scalars['String'];
@@ -3933,6 +3953,106 @@ export const ErrorResultFragmentDoc = gql`
   __typename
 }
     `;
+export const AssetFragmentDoc = gql`
+    fragment Asset on Asset {
+  id
+  width
+  height
+  name
+  preview
+  focalPoint {
+    x
+    y
+    __typename
+  }
+  __typename
+}
+    `;
+export const CartFragmentDoc = gql`
+    fragment Cart on Order {
+  id
+  code
+  state
+  active
+  couponCodes
+  promotions {
+    couponCode
+    name
+    enabled
+    actions {
+      args {
+        value
+        name
+      }
+      code
+    }
+    conditions {
+      code
+      args {
+        name
+        value
+      }
+    }
+  }
+  lines {
+    id
+    customFields
+    featuredAsset {
+      ...Asset
+      __typename
+    }
+    unitPrice
+    unitPriceWithTax
+    quantity
+    linePriceWithTax
+    discountedLinePriceWithTax
+    productVariant {
+      id
+      name
+      __typename
+    }
+    discounts {
+      amount
+      amountWithTax
+      description
+      adjustmentSource
+      type
+      __typename
+    }
+    __typename
+  }
+  totalQuantity
+  subTotal
+  subTotalWithTax
+  total
+  totalWithTax
+  shipping
+  shippingWithTax
+  shippingLines {
+    priceWithTax
+    shippingMethod {
+      id
+      code
+      name
+      description
+      __typename
+    }
+    __typename
+  }
+  discounts {
+    amount
+    amountWithTax
+    description
+    adjustmentSource
+    type
+    __typename
+  }
+  customFields {
+    clientRequestToCancel
+  }
+  __typename
+}
+    ${AssetFragmentDoc}`;
 export const OrderDetailFragmentDoc = gql`
     fragment OrderDetail on Order {
   __typename
@@ -4420,6 +4540,23 @@ export const GenerateRazorpayOrderIdDocument = gql`
   }
 }
     `;
+export const CancelOrderOnClientRequestDocument = gql`
+    mutation CancelOrderOnClientRequest($orderId: ID!, $value: Int!) {
+  cancelOrderOnClientRequest(orderId: $orderId, value: $value) {
+    ...Cart
+  }
+}
+    ${CartFragmentDoc}`;
+export const OtherInstructionsDocument = gql`
+    mutation OtherInstructions($orderId: ID!, $value: String!) {
+  otherInstructions(orderId: $orderId, value: $value) {
+    id
+    customFields {
+      otherInstructions
+    }
+  }
+}
+    `;
 export const ActiveCustomerDocument = gql`
     query activeCustomer {
   activeCustomer {
@@ -4472,6 +4609,7 @@ export const ActiveCustomerOrderListDocument = gql`
     orders(options: $orderListOptions) {
       totalItems
       items {
+        id
         code
         state
         orderPlacedAt
@@ -4493,6 +4631,10 @@ export const ActiveCustomerOrderListDocument = gql`
         }
         fulfillments {
           trackingCode
+        }
+        customFields {
+          clientRequestToCancel
+          otherInstructions
         }
         lines {
           quantity
@@ -4596,6 +4738,9 @@ export const ActiveOrderDocument = gql`
   activeOrder {
     ...OrderDetail
     couponCodes
+    customFields {
+      otherInstructions
+    }
   }
 }
     ${OrderDetailFragmentDoc}`;
@@ -4800,6 +4945,12 @@ export function getSdk<C, E>(requester: Requester<C, E>) {
     },
     generateRazorpayOrderId(variables: GenerateRazorpayOrderIdMutationVariables, options?: C): Promise<GenerateRazorpayOrderIdMutation> {
       return requester<GenerateRazorpayOrderIdMutation, GenerateRazorpayOrderIdMutationVariables>(GenerateRazorpayOrderIdDocument, variables, options) as Promise<GenerateRazorpayOrderIdMutation>;
+    },
+    CancelOrderOnClientRequest(variables: CancelOrderOnClientRequestMutationVariables, options?: C): Promise<CancelOrderOnClientRequestMutation> {
+      return requester<CancelOrderOnClientRequestMutation, CancelOrderOnClientRequestMutationVariables>(CancelOrderOnClientRequestDocument, variables, options) as Promise<CancelOrderOnClientRequestMutation>;
+    },
+    OtherInstructions(variables: OtherInstructionsMutationVariables, options?: C): Promise<OtherInstructionsMutation> {
+      return requester<OtherInstructionsMutation, OtherInstructionsMutationVariables>(OtherInstructionsDocument, variables, options) as Promise<OtherInstructionsMutation>;
     },
     activeCustomer(variables?: ActiveCustomerQueryVariables, options?: C): Promise<ActiveCustomerQuery> {
       return requester<ActiveCustomerQuery, ActiveCustomerQueryVariables>(ActiveCustomerDocument, variables, options) as Promise<ActiveCustomerQuery>;

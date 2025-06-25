@@ -13,14 +13,7 @@ interface RazorpayPaymentResponse {
     redirectUrl?: string
 }
 
-function verifySignature(orderId: string, paymentId: string, razorpaySignature: string, keySecret: string): boolean {
-  const generatedSignature = crypto
-    .createHmac("sha256", keySecret)
-    .update(`${orderId}|${paymentId}`)
-    .digest("hex");
 
-  return generatedSignature === razorpaySignature;
-}
 
 export const action: ActionFunction = async ({ request }) => {
   // try {

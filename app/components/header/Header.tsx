@@ -9,7 +9,7 @@ import { UserIcon } from '@heroicons/react/24/solid';
 export function Header({
   onCartIconClick,
   cartQuantity,
-  isSignedIn, // <== passed as prop
+  isSignedIn,
   collections,
 }: {
   onCartIconClick: () => void;
@@ -23,76 +23,58 @@ export function Header({
   return (
     <header
       className={classNames(
-        isScrollingUp ? 'sticky top-0 z-10 animate-dropIn' : '',
-        'bg-gradient-to-r from-zinc-700 to-gray-900  transform shadow-xl',
+        isScrollingUp ? 'sticky top-0 z-20 backdrop-blur-lg shadow-lg' : '',
+        'bg-gradient-to-r from-gray-800 to-gray-900 text-white'
       )}
     >
-      <div className="bg-zinc-100 text-gray-600 shadow-inner text-center text-sm py-2 px-2 xl:px-0">
-        <div className="max-w-6xl mx-2 md:mx-auto flex items-center justify-between">
-          <div>
-            <p className="hidden sm:block">
-              {t('vendure.exclusive')}{' '}
-              <a
-                href="https://github.com/vendure-ecommerce/storefront-remix-starter"
-                target="_blank"
-                className="underline"
-              >
-                {t('vendure.repoLinkLabel')}
-              </a>
-            </p>
-          </div>
-          <div>
-            <Link
-              to={isSignedIn ? '/account' : '/sign-in'}
-              className="flex space-x-1"
-            >
-              <UserIcon className="w-4 h-4" />
-              <span>
-                {isSignedIn ? t('account.myAccount') : t('account.signIn')}
+      <div className="max-w-7xl mx-auto px-4 py-2 flex justify-between items-center border-b border-gray-700">
+        <Link to="/home" className="flex items-center space-x-2">
+          <img
+            src="/cube-logo-small.webp"
+            width={40}
+            height={31}
+            alt="Logo"
+            className="rounded-md shadow-md"
+          />
+          <span className="text-xl font-semibold hidden sm:inline">KaaiKani</span>
+        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            to={isSignedIn ? '/account' : '/sign-in'}
+            className="flex items-center gap-1 text-sm hover:text-primary-400"
+          >
+            <UserIcon className="w-5 h-5" />
+            <span>{isSignedIn ? t('account.myAccount') : t('account.signIn')}</span>
+          </Link>
+          <button
+            className="relative p-2 bg-white/10 hover:bg-white/20 rounded-full"
+            onClick={onCartIconClick}
+            aria-label="Open cart tray"
+          >
+            <ShoppingBagIcon className="w-6 h-6" />
+            {cartQuantity > 0 && (
+              <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                {cartQuantity}
               </span>
-            </Link>
-          </div>
+            )}
+          </button>
         </div>
       </div>
-      <div className="max-w-6xl mx-auto p-4 flex items-center space-x-4">
-        <h1 className="text-white w-10">
-  <a href="/home">
-    <img
-      src="/cube-logo-small.webp"
-      width={40}
-      height={31}
-      alt="Logo"
-    />
-  </a>
-</h1>
-        <div className="flex space-x-4  sm:block">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-4">
+        <nav className="flex flex-wrap gap-4">
           {collections.map((collection) => (
             <Link
-              className="text-sm md:text-base text-gray-200 hover:text-white"
+              key={collection.id}
               to={`/collections/${collection.slug}`}
               prefetch="intent"
-              key={collection.id}
+              className="text-sm font-medium text-gray-300 hover:text-white"
             >
               {collection.name}
             </Link>
           ))}
-        </div>
-        <div className="flex-1 md:pr-8">
+        </nav>
+        <div className="flex-1">
           <SearchBar />
-        </div>
-        <div className="">
-          <button
-            className="relative w-9 h-9 bg-white bg-opacity-20 rounded text-white p-1"
-            onClick={onCartIconClick}
-            aria-label="Open cart tray"
-          >
-            <ShoppingBagIcon />
-            {cartQuantity ? (
-              <div className="absolute rounded-full -top-2 -right-2 bg-primary-600 min-w-6 min-h-6 flex items-center justify-center text-xs p-1">
-                {cartQuantity}
-              </div>
-            ) : null}
-          </button>
         </div>
       </div>
     </header>
