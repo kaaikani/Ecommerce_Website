@@ -1,28 +1,29 @@
-import { DataFunctionArgs, json } from '@remix-run/server-runtime';
+'use client';
+
+import { type DataFunctionArgs, json } from '@remix-run/server-runtime';
 import { useState, useEffect } from 'react';
 import { Price } from '~/components/products/Price';
 import { getProductBySlug } from '~/providers/products/products';
 import {
-  FetcherWithComponents,
-  ShouldRevalidateFunction,
+  type FetcherWithComponents,
+  type ShouldRevalidateFunction,
   useLoaderData,
   useOutletContext,
-  MetaFunction,
+  type MetaFunction,
 } from '@remix-run/react';
-import { CheckIcon, HeartIcon, PhotoIcon } from '@heroicons/react/24/solid';
+import { CheckIcon, PhotoIcon } from '@heroicons/react/24/solid';
 import { Breadcrumbs } from '~/components/Breadcrumbs';
 import { APP_META_TITLE } from '~/constants';
-import { CartLoaderData } from '~/routes/api.active-order';
+import type { CartLoaderData } from '~/routes/api.active-order';
 import { getSessionStorage } from '~/sessions';
-import { ErrorCode, ErrorResult } from '~/generated/graphql';
+import { ErrorCode, type ErrorResult } from '~/generated/graphql';
 import Alert from '~/components/Alert';
 import { StockLevelLabel } from '~/components/products/StockLevelLabel';
-import TopReviews from '~/components/products/TopReviews';
 import { ScrollableContainer } from '~/components/products/ScrollableContainer';
 import { useTranslation } from 'react-i18next';
 import { getCollections } from '~/providers/collections/collections';
 import { getActiveCustomer } from '~/providers/customer/customer';
-import {Header} from '~/components/header/Header';
+import { Header } from '~/components/header/Header';
 import Footer from '~/components/footer/Footer';
 import { CartTray } from '~/components/cart/CartTray';
 import { useActiveOrder } from '~/utils/use-active-order';
@@ -50,7 +51,6 @@ export async function loader({ params, request }: DataFunctionArgs) {
     request?.headers.get('Cookie'),
   );
   const error = session.get('activeOrderError');
-
   const collections = await getCollections(request, { take: 20 });
   const activeCustomer = await getActiveCustomer({ request });
 
@@ -75,21 +75,20 @@ export default function ProductSlug() {
   const { activeOrder } = activeOrderFetcher.data ?? {};
   const addItemToOrderError = getAddItemToOrderError(error);
   const { t } = useTranslation();
-
   const [open, setOpen] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(
     !!activeCustomer?.activeCustomer?.id,
   );
 
-  const {
-      adjustOrderLine,
-      removeItem,
-      refresh,
-    } = useActiveOrder();
+  const { adjustOrderLine, removeItem, refresh } = useActiveOrder();
 
   useEffect(() => {
     setIsSignedIn(!!activeCustomer?.activeCustomer?.id);
   }, [activeCustomer]);
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const findVariantById = (id: string) =>
     product.variants.find((v) => v.id === id);
@@ -97,7 +96,9 @@ export default function ProductSlug() {
   const [selectedVariantId, setSelectedVariantId] = useState(
     product.variants[0].id,
   );
+
   const selectedVariant = findVariantById(selectedVariantId);
+
   if (!selectedVariant) {
     setSelectedVariantId(product.variants[0].id);
   }
@@ -118,186 +119,168 @@ export default function ProductSlug() {
         isSignedIn={isSignedIn}
         collections={collections}
       />
-       <CartTray
-            open={open}
-            onClose={setOpen}
-            activeOrder={activeOrder}
-            adjustOrderLine={adjustOrderLine}
-            removeItem={removeItem}
-          />
-
-      <div className="max-w-6xl mx-auto px-4">
-        <h2 className="text-3xl sm:text-5xl font-light tracking-tight text-gray-900 my-8">
-          {product.name}
-        </h2>
+      <CartTray
+        open={open}
+        onClose={setOpen}
+        activeOrder={activeOrder}
+        adjustOrderLine={adjustOrderLine}
+        removeItem={removeItem}
+      />
+      <div className="max-w-6xl mx-auto px-4 py-4 sm:py-6">
         <Breadcrumbs
           items={
             product.collections[product.collections.length - 1]?.breadcrumbs ??
             []
           }
         />
-        <div className="lg:grid lg:grid-cols-2 lg:gap-x-8 lg:items-start mt-4 md:mt-12">
-          {/* Image gallery */}
-          <div className="w-full max-w-2xl mx-auto sm:block lg:max-w-none">
-            <span className="rounded-md overflow-hidden">
-              <div className="w-full h-full object-center object-cover rounded-lg">
+        <div className="mt-6">
+          {/* Card layout */}
+          <div className="flex flex-col lg:flex-row items-stretch gap-6">
+            <div className="w-full lg:w-1/2 bg-white p-6 rounded-lg shadow-md flex flex-col">
+              {/* Image section */}
+              <div className="relative w-full h-96">
+                {' '}
+                {/* Fixed height for consistency */}
                 <img
                   src={
                     (featuredAsset?.preview || product.featuredAsset?.preview) +
                     '?w=800'
                   }
                   alt={product.name}
-                  className="w-full h-full object-center object-cover rounded-lg"
+                  className="w-full h-full object-cover rounded-lg"
                 />
               </div>
-            </span>
-
-            {product.assets.length > 1 && (
-              <ScrollableContainer>
-                {product.assets.map((asset) => (
-                  <div
-                    key={asset.id}
-                    className={`basis-1/3 md:basis-1/4 flex-shrink-0 select-none touch-pan-x rounded-lg ${
-                      featuredAsset?.id == asset.id
-                        ? 'outline outline-2 outline-primary outline-offset-[-2px]'
-                        : ''
-                    }`}
-                    onClick={() => setFeaturedAsset(asset)}
-                  >
-                    <img
-                      draggable="false"
-                      className="rounded-lg select-none h-24 w-full object-cover"
-                      src={asset.preview + '?preset=full'}
-                    />
-                  </div>
-                ))}
-              </ScrollableContainer>
-            )}
-          </div>
-
-          {/* Product info */}
-          <div className="mt-10 px-4 sm:px-0 sm:mt-16 lg:mt-0">
-            <div className="text-base text-gray-700"
-              dangerouslySetInnerHTML={{ __html: product.description }}
-            />
-
-            <activeOrderFetcher.Form method="post" action="/api/active-order">
-              <input type="hidden" name="action" value="addItemToOrder" />
-              {product.variants.length > 1 ? (
+              {product.assets.length > 1 && (
                 <div className="mt-4">
-                  <label
-                    htmlFor="option"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    {t('product.selectOption')}
-                  </label>
-                  <select
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
-                    id="productVariant"
-                    value={selectedVariantId}
-                    name="variantId"
-                    onChange={(e) => {
-                      setSelectedVariantId(e.target.value);
-                      const variant = findVariantById(e.target.value);
-                      if (variant) {
-                        setFeaturedAsset(variant.featuredAsset);
-                      }
-                    }}
-                  >
-                    {product.variants.map((variant) => (
-                      <option key={variant.id} value={variant.id}>
-                        {variant.name}
-                      </option>
+                  <ScrollableContainer>
+                    {product.assets.map((asset) => (
+                      <div
+                        key={asset.id}
+                        className={`basis-1/3 flex-shrink-0 select-none touch-pan-x rounded-lg cursor-pointer ${
+                          featuredAsset?.id === asset.id
+                            ? 'border-2 border-primary-500'
+                            : 'border border-gray-200'
+                        }`}
+                        onClick={() => setFeaturedAsset(asset)}
+                      >
+                        <img
+                          draggable="false"
+                          className="rounded-lg h-20 w-full object-cover"
+                          src={
+                            asset.preview + '?preset=full' || '/placeholder.svg'
+                          }
+                        />
+                      </div>
                     ))}
-                  </select>
+                  </ScrollableContainer>
                 </div>
-              ) : (
-                <input
-                  type="hidden"
-                  name="variantId"
-                  value={selectedVariantId}
+              )}
+            </div>
+
+            {/* Product info section */}
+            <div className="w-full lg:w-1/2 bg-white p-6 rounded-lg shadow-md flex flex-col justify-between">
+              <div className="flex-1">
+                <h2 className="text-3xl font-semibold font-light tracking-tight text-gray-900 mb-4">
+                  {product.name}
+                </h2>
+                <div
+                  className="text-base text-gray-700 mb-4"
+                  dangerouslySetInnerHTML={{ __html: product.description }}
                 />
-              )}
+              </div>
 
-              <div className="mt-10 flex flex-col sm:flex-row sm:items-center">
-                <p className="text-3xl text-gray-900 mr-4">
-                  <Price
-                    priceWithTax={selectedVariant?.priceWithTax}
-                    currencyCode={selectedVariant?.currencyCode}
-                  />
-                </p>
-                <div className="flex sm:flex-col1 align-baseline">
-                  <button
-                    type="submit"
-                    className={`max-w-xs flex-1 ${
-                      activeOrderFetcher.state !== 'idle'
-                        ? 'bg-gray-400'
-                        : qtyInCart === 0
-                        ? 'bg-primary-600 hover:bg-primary-700'
-                        : 'bg-green-600 active:bg-green-700 hover:bg-green-700'
-                    }
-                      transition-colors border border-transparent rounded-md py-3 px-8 flex items-center
-                      justify-center text-base font-medium text-white focus:outline-none
-                      focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-50 focus:ring-primary-500 sm:w-full`}
-                    disabled={activeOrderFetcher.state !== 'idle'}
-                  >
-                    {qtyInCart ? (
-                      <span className="flex items-center">
-                        <CheckIcon className="w-5 h-5 mr-1" /> {qtyInCart}{' '}
-                        {t('product.inCart')}
-                      </span>
-                    ) : (
-                      t('product.addToCart')
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    className="ml-4 py-3 px-3 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-500"
-                  >
-                    <HeartIcon className="h-6 w-6 flex-shrink-0" />
-                    <span className="sr-only">
-                      {t('product.addToFavorites')}
-                    </span>
-                  </button>
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <div className="flex items-baseline space-x-2 mb-6">
+                  <span className="text-2xl font-bold text-gray-900">
+                    <Price
+                      priceWithTax={selectedVariant?.priceWithTax}
+                      currencyCode={selectedVariant?.currencyCode}
+                    />
+                  </span>
+                  <span className="text-gray-500">{selectedVariant?.sku}</span>
+                  <StockLevelLabel stockLevel={selectedVariant?.stockLevel} />
+                </div>
+
+                <div className="flex items-center space-x-4">
+                  <div className="flex-1">
+                    <activeOrderFetcher.Form
+                      method="post"
+                      action="/api/active-order"
+                    >
+                      <input
+                        type="hidden"
+                        name="action"
+                        value="addItemToOrder"
+                      />
+                      {product.variants.length > 1 ? (
+                        <div className="mb-[25%]">
+                          <label
+                            htmlFor="option"
+                            className="block text-sm font-medium text-gray-700 mb-2"
+                          >
+                            {t('product.selectOption')}
+                          </label>
+                          <select
+                            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                            id="productVariant"
+                            value={selectedVariantId}
+                            name="variantId"
+                            onChange={(e) => {
+                              setSelectedVariantId(e.target.value);
+                              const variant = findVariantById(e.target.value);
+                              if (variant) {
+                                setFeaturedAsset(variant.featuredAsset);
+                              }
+                            }}
+                          >
+                            {product.variants.map((variant) => (
+                              <option key={variant.id} value={variant.id}>
+                                {variant.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <input
+                          type="hidden"
+                          name="variantId"
+                          value={selectedVariantId}
+                        />
+                      )}
+                      <button
+                        type="submit"
+                        className="w-full bg-black text-white py-3 rounded-md hover:bg-white hover:text-black border hover:border-black transition-colors duration-200"
+                        disabled={activeOrderFetcher.state !== 'idle'}
+                      >
+                        {qtyInCart ? (
+                          <span className="flex items-center justify-center">
+                            <CheckIcon className="w-5 h-5 mr-1" /> {qtyInCart}{' '}
+                            {t('product.inCart')}
+                          </span>
+                        ) : (
+                          t('product.addToCart')
+                        )}
+                      </button>
+                      {addItemToOrderError && (
+                        <div className="mt-4">
+                          <Alert message={addItemToOrderError} />
+                        </div>
+                      )}
+                    </activeOrderFetcher.Form>
+                  </div>
                 </div>
               </div>
-              <div className="mt-2 flex items-center space-x-2">
-                <span className="text-gray-500">{selectedVariant?.sku}</span>
-                <StockLevelLabel stockLevel={selectedVariant?.stockLevel} />
-              </div>
-              {addItemToOrderError && (
-                <div className="mt-4">
-                  <Alert message={addItemToOrderError} />
-                </div>
-              )}
-
-              <section className="mt-12 pt-12 border-t text-xs">
-                <h3 className="text-gray-600 font-bold mb-2">
-                  {t('product.shippingAndReturns')}
-                </h3>
-                <div className="text-gray-500 space-y-1">
-                  <p>{t('product.shippingInfo')}</p>
-                  <p>{t('product.shippingCostsInfo')}</p>
-                  <p>{t('product.returnsInfo')}</p>
-                </div>
-              </section>
-            </activeOrderFetcher.Form>
+            </div>
           </div>
         </div>
       </div>
-
-      <div className="mt-24">
-        <TopReviews />
-      </div>
-                    <Footer collections={collections} />
-      
+      <Footer collections={collections} />
     </div>
   );
 }
 
 export function CatchBoundary() {
   const { t } = useTranslation();
-
   return (
     <div className="max-w-6xl mx-auto px-4">
       <h2 className="text-3xl sm:text-5xl font-light tracking-tight text-gray-900 my-8">
@@ -311,7 +294,6 @@ export function CatchBoundary() {
             </div>
           </span>
         </div>
-
         <div className="mt-10 px-4 sm:px-0 sm:mt-16 lg:mt-0">
           <div className="">{t('product.notFoundInfo')}</div>
           <div className="flex-1 space-y-3 py-1">
@@ -332,6 +314,7 @@ export function CatchBoundary() {
 
 function getAddItemToOrderError(error?: ErrorResult): string | undefined {
   if (!error || !error.errorCode) return undefined;
+
   switch (error.errorCode) {
     case ErrorCode.OrderModificationError:
     case ErrorCode.OrderLimitError:

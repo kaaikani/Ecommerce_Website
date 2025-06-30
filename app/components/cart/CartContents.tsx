@@ -2,6 +2,7 @@ import { Form, Link } from '@remix-run/react';
 import { Price } from '~/components/products/Price';
 import { ActiveOrderQuery, CurrencyCode } from '~/generated/graphql';
 import { useTranslation } from 'react-i18next';
+import { TrashIcon } from '@heroicons/react/24/outline';
 
 export function CartContents({
   orderLines,
@@ -18,6 +19,16 @@ export function CartContents({
 }) {
   const { t } = useTranslation();
   const isEditable = editable !== false;
+
+  const handleQuantityChange = (lineId: string, delta: number) => {
+    if (adjustOrderLine) {
+      const line = orderLines.find((l) => l.id === lineId);
+      if (line) {
+        const newQuantity = Math.max(1, Math.min(50, line.quantity + delta));
+        adjustOrderLine(lineId, newQuantity);
+      }
+    }
+  };
 
   return (
     <div className="flow-root">
@@ -44,54 +55,50 @@ export function CartContents({
                     <Price
                       priceWithTax={line.linePriceWithTax}
                       currencyCode={currencyCode}
-                    ></Price>
+                    />
                   </p>
                 </div>
               </div>
               <div className="flex-1 flex items-center text-sm">
                 {editable ? (
-                  <Form>
+                  <div className="flex items-center space-x-2">
                     <label htmlFor={`quantity-${line.id}`} className="mr-2">
-                      {t('common.quantity')}
+                      Quantity
                     </label>
-                    <select
+                    <button
+                      type="button"
                       disabled={!isEditable}
-                      id={`quantity-${line.id}`}
-                      name={`quantity-${line.id}`}
-                      value={line.quantity}
-                      onChange={(e) =>
-                        adjustOrderLine &&
-                        adjustOrderLine(line.id, +e.target.value)
-                      }
-                      className="max-w-full rounded-md border border-gray-300 py-1.5 text-base leading-5 font-medium text-gray-700 text-left shadow-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                      onClick={() => handleQuantityChange(line.id, -1)}
+                      className="px-2 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                     >
-                      <option value={1}>1</option>
-                      <option value={2}>2</option>
-                      <option value={3}>3</option>
-                      <option value={4}>4</option>
-                      <option value={5}>5</option>
-                      <option value={6}>6</option>
-                      <option value={7}>7</option>
-                      <option value={8}>8</option>
-                    </select>
-                  </Form>
+                      -
+                    </button>
+                    <span className="w-12 text-center">{line.quantity}</span>
+                    <button
+                      type="button"
+                      disabled={!isEditable}
+                      onClick={() => handleQuantityChange(line.id, 1)}
+                      className="px-2 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                    >
+                      +
+                    </button>
+                  </div>
                 ) : (
                   <div className="text-gray-800">
-                    <span className="mr-1">{t('common.quantity')}</span>
+                    <span className="mr-1">Quantity</span>
                     <span className="font-medium">{line.quantity}</span>
                   </div>
                 )}
-                <div className="flex-1"></div>
+                <div className="flex-1" />
                 <div className="flex">
                   {isEditable && (
                     <button
-                      type="submit"
-                      name="removeItem"
-                      value={line.id}
-                      className="font-medium text-primary-600 hover:text-primary-500"
+                      type="button"
                       onClick={() => removeItem && removeItem(line.id)}
+                      className="p-2 text-red-500 hover:text-red-700"
+                      title="Remove item"
                     >
-                      {t('common.remove')}
+                      <TrashIcon className="h-5 w-5" />
                     </button>
                   )}
                 </div>
