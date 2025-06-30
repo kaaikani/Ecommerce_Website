@@ -1,10 +1,16 @@
+'use client';
+
+import type React from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from '@remix-run/react';
-import { ShoppingBagIcon } from '@heroicons/react/24/outline';
-import { SearchBar } from '~/components/header/SearchBar';
+import {
+  ShoppingBagIcon,
+  MagnifyingGlassIcon,
+  UserIcon,
+} from '@heroicons/react/24/outline';
 import { useScrollingUp } from '~/utils/use-scrolling-up';
 import { classNames } from '~/utils/class-names';
 import { useTranslation } from 'react-i18next';
-import { UserIcon } from '@heroicons/react/24/solid';
 
 export function Header({
   onCartIconClick,
@@ -19,64 +25,226 @@ export function Header({
 }) {
   const isScrollingUp = useScrollingUp();
   const { t } = useTranslation();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // Sort collections based on slug endings
+  const sortedCollections = useMemo(() => {
+    return [...collections].sort((a, b) => {
+      const aEnding = a.slug.slice(-1);
+      const bEnding = b.slug.slice(-1);
+
+      // Priority order: 1 first, then 2, then others
+      const getPriority = (ending: string) => {
+        if (ending === '1') return 1;
+        if (ending === '2') return 2;
+        return 3;
+      };
+
+      const aPriority = getPriority(aEnding);
+      const bPriority = getPriority(bEnding);
+
+      // If priorities are different, sort by priority
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority;
+      }
+
+      // If same priority, maintain original order or sort alphabetically
+      return a.name.localeCompare(b.name);
+    });
+  }, [collections]);
+
+  const toggleSearch = () => {
+    setIsSearchOpen(!isSearchOpen);
+  };
 
   return (
     <header
       className={classNames(
         isScrollingUp ? 'sticky top-0 z-20 backdrop-blur-lg shadow-lg' : '',
-        'bg-gradient-to-r from-gray-800 to-gray-900 text-white'
+        'bg-black text-white',
       )}
     >
-      <div className="max-w-7xl mx-auto px-4 py-2 flex justify-between items-center border-b border-gray-700">
-        <Link to="/home" className="flex items-center space-x-2">
-          <img
-            src="/cube-logo-small.webp"
-            width={40}
-            height={31}
-            alt="Logo"
-            className="rounded-md shadow-md"
-          />
-          <span className="text-xl font-semibold hidden sm:inline">KaaiKani</span>
-        </Link>
-        <div className="flex items-center gap-4">
+      {/* Top promotional bar - hidden on mobile */}
+      <div className="bg-black border-b border-gray-800 hidden sm:block">
+        <div className="w-full mx-auto px-2 sm:px-4 py-2 flex flex-col sm:flex-row justify-between items-center text-xs sm:text-sm gap-2 sm:gap-0">
+          <div className="flex gap-3 sm:gap-6 order-2 sm:order-1">
+            <Link to="/about" className="hover:text-gray-300 whitespace-nowrap">
+              About Us
+            </Link>
+            <Link
+              to="/support"
+              className="hover:text-gray-300 whitespace-nowrap"
+            >
+              Customer Support
+            </Link>
+          </div>
+
+          <div className="text-center order-1 sm:order-2 text-xs sm:text-sm overflow-hidden h-6">
+            <div className="animate-vertical-cycle">
+              <div className="h-6">
+                Visit our shop and get discounted prices!
+              </div>
+              <div className="h-6">For bulk orders contact us</div>
+            </div>
+          </div>
+
           <Link
             to={isSignedIn ? '/account' : '/sign-in'}
-            className="flex items-center gap-1 text-sm hover:text-primary-400"
+            className="flex items-center gap-1 sm:gap-2 hover:text-gray-300 order-3 whitespace-nowrap"
           >
-            <UserIcon className="w-5 h-5" />
-            <span>{isSignedIn ? t('account.myAccount') : t('account.signIn')}</span>
+            <UserIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="text-xs sm:text-sm">
+              {isSignedIn ? 'My Account' : 'Log In'}
+            </span>
           </Link>
-          <button
-            className="relative p-2 bg-white/10 hover:bg-white/20 rounded-full"
-            onClick={onCartIconClick}
-            aria-label="Open cart tray"
+        </div>
+      </div>
+
+      {/* Mobile account link - visible only on mobile */}
+      <div className="bg-black border-b border-gray-800 sm:hidden">
+        <div className="w-full px-4 py-2 flex justify-end">
+          <Link
+            to={isSignedIn ? '/account' : '/sign-in'}
+            className="flex items-center gap-2 hover:text-gray-300"
           >
-            <ShoppingBagIcon className="w-6 h-6" />
-            {cartQuantity > 0 && (
-              <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                {cartQuantity}
-              </span>
-            )}
-          </button>
+            <UserIcon className="w-4 h-4" />
+            <span className="text-sm">
+              {isSignedIn ? 'My Account' : 'Log In'}
+            </span>
+          </Link>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-4">
-        <nav className="flex flex-wrap gap-4">
-          {collections.map((collection) => (
-            <Link
-              key={collection.id}
-              to={`/collections/${collection.slug}`}
-              prefetch="intent"
-              className="text-sm font-medium text-gray-300 hover:text-white"
+
+      {/* Main header section - responsive */}
+      <div className="w-full px-4 sm:px-4 py-2 sm:py-4 bg-[#3C3D37]">
+        <div className="flex items-center justify-between gap-2 sm:gap-4 lg:gap-8">
+          {/* Logo */}
+          <Link
+            to="/home"
+            className="flex items-center space-x-2 flex-shrink-0"
+          >
+            <img
+              src="/KaaiKani White.png"
+              className="w-20"
+              alt="KaaiKani Logo"
+            />
+          </Link>
+
+          {/* Desktop Search bar - hidden on mobile */}
+          <div className="hidden sm:flex flex-1 max-w-xs sm:max-w-md lg:max-w-xl mx-2 sm:mx-4 lg:mx-8">
+            <div className="relative w-full">
+              <input
+                type="text"
+                placeholder="Search a product"
+                className="w-full px-3 py-2 sm:py-3 pr-10 sm:pr-12 bg-[#3C3D37] border border-gray-600 rounded-full text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent text-sm sm:text-base"
+              />
+              <button className="absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2 bg-white text-black p-1.5 sm:p-2 rounded-full hover:bg-gray-100">
+                <MagnifyingGlassIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Search and Cart container */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Mobile Search Icon - visible only on mobile */}
+            <button
+              className="sm:hidden p-1.5 bg-white/10 hover:bg-white/20 rounded-full"
+              onClick={toggleSearch}
+              aria-label="Toggle search"
             >
-              {collection.name}
-            </Link>
-          ))}
-        </nav>
-        <div className="flex-1">
-          <SearchBar />
+              <MagnifyingGlassIcon className="w-5 h-5" />
+            </button>
+
+            {/* Cart icon */}
+            <button
+              className="relative p-1.5 sm:p-2 bg-white/10 hover:bg-white/20 rounded-full"
+              onClick={onCartIconClick}
+              aria-label="Open cart tray"
+            >
+              <ShoppingBagIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+              {cartQuantity > 0 && (
+                <span className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-primary-600 text-white text-xs w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-medium">
+                  {cartQuantity}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Search bar - toggleable, visible only when isSearchOpen is true */}
+        {/* {isSearchOpen && (
+          <div className="sm:hidden mt-3 pb-1">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search a product"
+                className="w-full px-3 py-3 pr-12 bg-[#3C3D37] border border-gray-600 rounded-full text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent text-sm"
+                autoFocus
+              />
+              <button className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white text-black p-2 rounded-full hover:bg-gray-100">
+                <MagnifyingGlassIcon className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )} */}
+      </div>
+
+      {/* Scrollable Navigation Carousel - responsive with sorted collections */}
+      <div className="bg-white border-t border-gray-200">
+        <div className="w-full">
+          <div
+            className="overflow-x-auto"
+            style={
+              {
+                msOverflowStyle: 'none',
+                scrollbarWidth: 'none',
+                WebkitScrollbar: { display: 'none' },
+              } as React.CSSProperties
+            }
+          >
+            <nav className="flex gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 min-w-max">
+              {sortedCollections.map((collection) => (
+                <Link
+                  key={collection.id}
+                  to={`/collections/${collection.slug}`}
+                  prefetch="intent"
+                  className="text-xs sm:text-sm font-medium text-black hover:text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-md hover:bg-black whitespace-nowrap flex-shrink-0 transition-colors duration-200"
+                >
+                  {collection.name}
+                </Link>
+              ))}
+            </nav>
+          </div>
         </div>
       </div>
+
+      {/* Add CSS for vertical cycle animation with slight smoothness */}
+      <style>
+        {`
+          @keyframes vertical-cycle {
+            0%, 45% {
+              transform: translateY(0);
+            }
+            50%, 95% {
+              transform: translateY(-50%);
+            }
+            100% {
+              transform: translateY(0);
+            }
+          }
+          .animate-vertical-cycle {
+            animation: vertical-cycle 6s ease-in-out infinite;
+            display: flex;
+            flex-direction: column;
+            height: 48px; /* Double the container height to accommodate both texts */
+          }
+          .animate-vertical-cycle > div {
+            height: 24px; /* Match the container height for each text */
+            line-height: 24px; /* Center text vertically */
+            text-align: center;
+          }
+        `}
+      </style>
     </header>
   );
 }

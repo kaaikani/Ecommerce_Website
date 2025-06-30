@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@graphql-codegen/typescript-generic-sdk": "^3.0.4",
-    "@headlessui/react": "^1.7.4",
+    "@headlessui/react": "^1.7.19",
     "@heroicons/react": "^2.0.13",
     "@netlify/functions": "^1.3.0",
     "@radix-ui/react-avatar": "^1.1.10",

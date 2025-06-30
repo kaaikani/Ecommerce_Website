@@ -1,46 +1,48 @@
-"use client"
+'use client';
 
-import { useLoaderData } from "@remix-run/react"
-import { getCollections } from "~/providers/collections/collections"
-import { getCustomBanners } from "~/providers/customPlugins/customPlugin"
-import { CollectionCard } from "~/components/collections/CollectionCard"
-import { BannerCarousel } from "~/components/BannerCarousel"
-import type { LoaderFunctionArgs } from "@remix-run/server-runtime"
-import { useTranslation } from "react-i18next"
-import { json, redirect } from "@remix-run/node"
-import { getSessionStorage } from "~/sessions"
-import { CHANNEL_TOKEN_SESSION_KEY } from "~/graphqlWrapper"
-import type { CustomBannersQuery } from "~/generated/graphql"
-import { Header } from "~/components/header/Header"
-import { useEffect, useState } from "react"
-import { useActiveOrder } from "~/utils/use-active-order"
-import type { RootLoaderData } from "~/root"
-import { getActiveCustomer } from "~/providers/customer/customer"
-import Footer from "~/components/footer/Footer"
+import { useLoaderData } from '@remix-run/react';
+import { getCollections } from '~/providers/collections/collections';
+import { getCustomBanners } from '~/providers/customPlugins/customPlugin';
+import { CollectionCard } from '~/components/collections/CollectionCard';
+import { BannerCarousel } from '~/components/BannerCarousel';
+import type { LoaderFunctionArgs } from '@remix-run/server-runtime';
+import { json, redirect } from '@remix-run/node';
+import { getSessionStorage } from '~/sessions';
+import { CHANNEL_TOKEN_SESSION_KEY } from '~/graphqlWrapper';
+import type { CustomBannersQuery } from '~/generated/graphql';
+import { Header } from '~/components/header/Header';
+import { useEffect, useState } from 'react';
+import { useActiveOrder } from '~/utils/use-active-order';
+import type { RootLoaderData } from '~/root';
+import { getActiveCustomer } from '~/providers/customer/customer';
+import Footer from '~/components/footer/Footer';
+import { CartTray } from '~/components/cart/CartTray';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   // Check if user is authenticated
-  const activeCustomer = await getActiveCustomer({ request })
+  const activeCustomer = await getActiveCustomer({ request });
 
   // If user is NOT logged in, redirect to sign-in page
   if (!activeCustomer.activeCustomer?.id) {
-    return redirect("/sign-in")
+    return redirect('/sign-in');
   }
 
   // User is authenticated, proceed with loading data
-  const collections = await getCollections(request, { take: 20 })
+  const collections = await getCollections(request, { take: 20 });
 
-  const sessionStorage = await getSessionStorage()
-  const session = await sessionStorage.getSession(request.headers.get("Cookie"))
-  const channelToken = session.get(CHANNEL_TOKEN_SESSION_KEY)
+  const sessionStorage = await getSessionStorage();
+  const session = await sessionStorage.getSession(
+    request.headers.get('Cookie'),
+  );
+  const channelToken = session.get(CHANNEL_TOKEN_SESSION_KEY);
 
-  let banners: CustomBannersQuery["customBanners"] = []
+  let banners: CustomBannersQuery['customBanners'] = [];
 
   try {
-    const bannersResponse = await getCustomBanners(request, channelToken)
-    banners = bannersResponse ? bannersResponse.data : []
+    const bannersResponse = await getCustomBanners(request, channelToken);
+    banners = bannersResponse ? bannersResponse.data : [];
   } catch (error) {
-    console.error("Error fetching banners:", error)
+    console.error('Error fetching banners:', error);
   }
 
   return json(
@@ -52,28 +54,35 @@ export async function loader({ request }: LoaderFunctionArgs) {
     {
       headers: {},
     },
-  )
+  );
 }
 
 export default function home() {
-  const { collections, banners } = useLoaderData<typeof loader>()
-  const { t } = useTranslation()
-  const loaderData = useLoaderData<RootLoaderData>()
-  const { activeCustomer } = loaderData
+  const { collections, banners } = useLoaderData<typeof loader>();
+  const loaderData = useLoaderData<RootLoaderData>();
+  const { activeCustomer } = loaderData;
 
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
 
-  const { activeOrderFetcher, activeOrder, adjustOrderLine, removeItem, refresh } = useActiveOrder()
+  const {
+    activeOrderFetcher,
+    activeOrder,
+    adjustOrderLine,
+    removeItem,
+    refresh,
+  } = useActiveOrder();
 
-  const [isSignedIn, setIsSignedIn] = useState(!!activeCustomer.activeCustomer?.id)
+  const [isSignedIn, setIsSignedIn] = useState(
+    !!activeCustomer.activeCustomer?.id,
+  );
 
   useEffect(() => {
-    setIsSignedIn(!!loaderData.activeCustomer.activeCustomer?.id)
-  }, [loaderData.activeCustomer.activeCustomer?.id])
+    setIsSignedIn(!!loaderData.activeCustomer.activeCustomer?.id);
+  }, [loaderData.activeCustomer.activeCustomer?.id]);
 
   useEffect(() => {
-    refresh()
-  }, [loaderData])
+    refresh();
+  }, [loaderData]);
 
   return (
     <>
@@ -84,44 +93,53 @@ export default function home() {
         collections={collections}
       />
 
+      <CartTray
+        open={open}
+        onClose={setOpen}
+        activeOrder={activeOrder as any}
+        adjustOrderLine={adjustOrderLine}
+        removeItem={removeItem}
+      />
+
       {/* Banner Carousel Section */}
       {banners && banners.length > 0 && (
-        <section className="mt-8 mb-12 px-4 sm:px-6 lg:px-8 xl:max-w-7xl xl:mx-auto">
+        <section className="mt-8 mb-8 xl:mb-5 px-2 sm:px-3 lg:px-4">
           <BannerCarousel banners={banners} />
         </section>
       )}
 
-      <section aria-labelledby="category-heading" className="pt-5 sm:pt-10 xl:max-w-7xl xl:mx-auto xl:px-8">
-        <div className="px-4 sm:px-6 lg:px-8 xl:px-0">
-          <h2 id="category-heading" className="text-2xl font-light tracking-tight text-gray-900">
-            {t("common.shopByCategory")}
-          </h2>
-        </div>
-
-        <div className="mt-4 flow-root">
-          <div className="-my-2">
-            <div className="box-content py-2 px-2 relative overflow-x-auto xl:overflow-visible">
-              <div className="grid justify-items-center grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-8 sm:px-6 lg:px-8 xl:relative xl:px-0 xl:space-x-0 xl:gap-x-8">
-                {collections.map((collection) => (
-                  <CollectionCard key={collection.id} collection={collection} />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 px-4 sm:hidden">
-          <a
-            href="~/routes/__cart/index#"
-            className="block text-sm font-semibold text-primary-600 hover:text-primary-500"
+      {/* Enhanced Responsive Collections Section */}
+      <section
+        aria-labelledby="category-heading"
+        className="mb-15 sm:pt-3 md:pt-4 lg:pt-5 xl:pt-7 w-full max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 xl:px-4 2xl:px-0"
+      >
+        {/* Image and Heading Container */}
+        <div className="flex flex-col text-lg items-center mb-6 sm:mb-8 md:mb-10 lg:mb-12">
+          <p>Discover Our Finest Selection</p>
+          <h3
+            id="category-heading"
+            className="text-xl font-semibold sm:text-2xl md:text-3xl lg:text-4xl font-light tracking-tight text-gray-900 text-center"
           >
-            {t("common.browseCategories")}
-            <span aria-hidden="true"> &rarr;</span>
-          </a>
+            SHOP BY CATEGORY
+          </h3>
+        </div>
+
+        {/* Responsive Grid Container with Equal Heights */}
+        <div className="w-full">
+          <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6 md:gap-8 lg:gap-10 auto-rows-fr">
+            {collections.map((collection) => (
+              <div
+                key={collection.id}
+                className="w-full h-full min-h-[180px] xs:min-h-[200px] sm:min-h-[240px] md:min-h-[280px] lg:min-h-[320px]"
+              >
+                <CollectionCard collection={collection} />
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       <Footer collections={collections} />
     </>
-  )
+  );
 }

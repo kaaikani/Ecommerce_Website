@@ -10,12 +10,18 @@ export function Breadcrumbs({
   const { t } = useTranslation();
 
   return (
-    <nav className="flex" aria-label="Breadcrumb">
-      <ol role="list" className="flex items-center space-x-1 md:space-x-4">
-        <li>
-          <div>
-            <Link to="/" className="text-gray-400 hover:text-gray-500">
-              <HomeIcon className="flex-shrink-0 h-5 w-5" aria-hidden="true" />
+    <nav
+      aria-label="Breadcrumb"
+      className="flex border-b border-gray-200 bg-white"
+    >
+      <ol
+        role="list"
+        className="mx-auto flex w-full max-w-screen-xl space-x-4 px-4 sm:px-6 lg:px-y"
+      >
+        <li className="flex">
+          <div className="flex items-center">
+            <Link to="/home" className="text-gray-400 hover:text-gray-500">
+              <HomeIcon className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
               <span className="sr-only">{t('home')}</span>
             </Link>
           </div>
@@ -23,20 +29,21 @@ export function Breadcrumbs({
         {items
           .filter((item) => item.name !== '__root_collection__')
           .map((item, index) => (
-            <li key={item.name}>
+            <li key={item.name} className="flex">
               <div className="flex items-center">
                 <svg
-                  className="flex-shrink-0 h-5 w-5 text-gray-300"
-                  xmlns="http://www.w3.org/2000/svg"
                   fill="currentColor"
-                  viewBox="0 0 20 20"
+                  viewBox="0 0 24 44"
+                  preserveAspectRatio="none"
                   aria-hidden="true"
+                  className="h-full w-6 flex-shrink-0 text-gray-200"
                 >
-                  <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+                  <path d="M.293 0l22 22-22 22h1.414l22-22-22-22H.293z" />
                 </svg>
                 <Link
                   to={'/collections/' + item.slug}
-                  className="ml-2 md:ml-4 text-xs md:text-sm font-medium text-gray-500 hover:text-gray-700"
+                  aria-current={index === items.length - 1 ? 'page' : undefined}
+                  className="ml-4 text-sm font-medium text-gray-500 hover:text-gray-700"
                 >
                   {item.name}
                 </Link>
