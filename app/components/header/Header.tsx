@@ -33,7 +33,6 @@ export function Header({
       const aEnding = a.slug.slice(-1);
       const bEnding = b.slug.slice(-1);
 
-      // Priority order: 1 first, then 2, then others
       const getPriority = (ending: string) => {
         if (ending === '1') return 1;
         if (ending === '2') return 2;
@@ -43,12 +42,10 @@ export function Header({
       const aPriority = getPriority(aEnding);
       const bPriority = getPriority(bEnding);
 
-      // If priorities are different, sort by priority
       if (aPriority !== bPriority) {
         return aPriority - bPriority;
       }
 
-      // If same priority, maintain original order or sort alphabetically
       return a.name.localeCompare(b.name);
     });
   }, [collections]);
@@ -64,57 +61,6 @@ export function Header({
         'bg-black text-white',
       )}
     >
-      {/* Top promotional bar - hidden on mobile */}
-      <div className="bg-black border-b border-gray-800 hidden sm:block">
-        <div className="w-full mx-auto px-2 sm:px-4 py-2 flex flex-col sm:flex-row justify-between items-center text-xs sm:text-sm gap-2 sm:gap-0">
-          <div className="flex gap-3 sm:gap-6 order-2 sm:order-1">
-            <Link to="/about" className="hover:text-gray-300 whitespace-nowrap">
-              About Us
-            </Link>
-            <Link
-              to="/support"
-              className="hover:text-gray-300 whitespace-nowrap"
-            >
-              Customer Support
-            </Link>
-          </div>
-
-          <div className="text-center order-1 sm:order-2 text-xs sm:text-sm overflow-hidden h-6">
-            <div className="animate-vertical-cycle">
-              <div className="h-6">
-                Visit our shop and get discounted prices!
-              </div>
-              <div className="h-6">For bulk orders contact us</div>
-            </div>
-          </div>
-
-          <Link
-            to={isSignedIn ? '/account' : '/sign-in'}
-            className="flex items-center gap-1 sm:gap-2 hover:text-gray-300 order-3 whitespace-nowrap"
-          >
-            <UserIcon className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span className="text-xs sm:text-sm">
-              {isSignedIn ? 'My Account' : 'Log In'}
-            </span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Mobile account link - visible only on mobile */}
-      <div className="bg-black border-b border-gray-800 sm:hidden">
-        <div className="w-full px-4 py-2 flex justify-end">
-          <Link
-            to={isSignedIn ? '/account' : '/sign-in'}
-            className="flex items-center gap-2 hover:text-gray-300"
-          >
-            <UserIcon className="w-4 h-4" />
-            <span className="text-sm">
-              {isSignedIn ? 'My Account' : 'Log In'}
-            </span>
-          </Link>
-        </div>
-      </div>
-
       {/* Main header section - responsive */}
       <div className="w-full px-4 sm:px-4 py-2 sm:py-4 bg-[#3C3D37]">
         <div className="flex items-center justify-between gap-2 sm:gap-4 lg:gap-8">
@@ -130,8 +76,8 @@ export function Header({
             />
           </Link>
 
-          {/* Desktop Search bar - hidden on mobile */}
-          <div className="hidden sm:flex flex-1 max-w-xs sm:max-w-md lg:max-w-xl mx-2 sm:mx-4 lg:mx-8">
+          {/* Desktop Search bar - centered in desktop view */}
+          <div className="hidden md:flex flex-1 justify-center max-w-xs sm:max-w-md lg:max-w-xl mx-2 sm:mx-4 lg:mx-8">
             <div className="relative w-full">
               <input
                 type="text"
@@ -144,18 +90,25 @@ export function Header({
             </div>
           </div>
 
-          {/* Mobile Search and Cart container */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Mobile Search Icon - visible only on mobile */}
+          {/* Icons Container - Account, Search (mobile/tablet), and Cart */}
+          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+            <Link
+              to={isSignedIn ? '/account' : '/sign-in'}
+              className="flex items-center gap-1 sm:gap-2 hover:text-gray-300 whitespace-nowrap"
+            >
+              <UserIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm">
+                {isSignedIn ? 'My Account' : 'Log In'}
+              </span>
+            </Link>
+            {/* Search Icon - visible on mobile and tablet */}
             <button
-              className="sm:hidden p-1.5 bg-white/10 hover:bg-white/20 rounded-full"
+              className="md:hidden p-1.5 bg-white/10 hover:bg-white/20 rounded-full"
               onClick={toggleSearch}
               aria-label="Toggle search"
             >
               <MagnifyingGlassIcon className="w-5 h-5" />
             </button>
-
-            {/* Cart icon */}
             <button
               className="relative p-1.5 sm:p-2 bg-white/10 hover:bg-white/20 rounded-full"
               onClick={onCartIconClick}
@@ -172,8 +125,8 @@ export function Header({
         </div>
 
         {/* Mobile Search bar - toggleable, visible only when isSearchOpen is true */}
-        {/* {isSearchOpen && (
-          <div className="sm:hidden mt-3 pb-1">
+        {isSearchOpen && (
+          <div className="md:hidden mt-3 pb-1">
             <div className="relative">
               <input
                 type="text"
@@ -186,7 +139,7 @@ export function Header({
               </button>
             </div>
           </div>
-        )} */}
+        )}
       </div>
 
       {/* Scrollable Navigation Carousel - responsive with sorted collections */}
@@ -236,11 +189,11 @@ export function Header({
             animation: vertical-cycle 6s ease-in-out infinite;
             display: flex;
             flex-direction: column;
-            height: 48px; /* Double the container height to accommodate both texts */
+            height: 48px;
           }
           .animate-vertical-cycle > div {
-            height: 24px; /* Match the container height for each text */
-            line-height: 24px; /* Center text vertically */
+            height: 24px;
+            line-height: 24px;
             text-align: center;
           }
         `}
