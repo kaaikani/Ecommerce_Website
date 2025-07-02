@@ -1,90 +1,95 @@
-"use client"
+'use client';
 
-import { useEffect, useCallback, useState } from "react"
-import { useFetcher, useNavigate } from "@remix-run/react"
-import { CreditCardIcon } from "@heroicons/react/24/solid"
-import { useTranslation } from "react-i18next"
-import { classNames } from "~/utils/class-names"
-import type { CurrencyCode } from "~/generated/graphql"
+import { useEffect, useCallback, useState } from 'react';
+import { useFetcher, useNavigate } from '@remix-run/react';
+import { CreditCardIcon } from '@heroicons/react/24/solid';
+import { useTranslation } from 'react-i18next';
+import { classNames } from '~/utils/class-names';
+import type { CurrencyCode } from '~/generated/graphql';
 
 interface RazorpayPaymentsProps {
-  orderCode: string
-  amount: number
-  currencyCode: string | CurrencyCode
-  customerEmail?: string
-  customerName?: string
-  customerPhone?: string
+  orderCode: string;
+  amount: number;
+  currencyCode: string | CurrencyCode;
+  customerEmail?: string;
+  customerName?: string;
+  customerPhone?: string;
 }
 
 interface RazorpayPaymentResponse {
-  razorpay_payment_id: string
-  razorpay_order_id: string
-  razorpay_signature: string
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
 }
 
 declare global {
   interface Window {
-    Razorpay: any
+    Razorpay: any;
   }
 }
 
-export function doesPaymentAmountMatch(amountPaidViaRazorpay: number, orderAmount: number): boolean {
-    console.log(`Comparing amounts: Razorpay = ${amountPaidViaRazorpay}, Order = ${orderAmount}`);
-    return orderAmount === amountPaidViaRazorpay;
+export function doesPaymentAmountMatch(
+  amountPaidViaRazorpay: number,
+  orderAmount: number,
+): boolean {
+  console.log(
+    `Comparing amounts: Razorpay = ${amountPaidViaRazorpay}, Order = ${orderAmount}`,
+  );
+  return orderAmount === amountPaidViaRazorpay;
 }
 
 export function RazorpayPayments({
   orderCode,
   amount,
   currencyCode,
-  customerEmail = "",
-  customerName = "",
-  customerPhone = "",
+  customerEmail = '',
+  customerName = '',
+  customerPhone = '',
 }: RazorpayPaymentsProps) {
-  const [isLoading, setIsLoading] = useState(false)
-  const [scriptLoaded, setScriptLoaded] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const fetcher = useFetcher()
-  const verifyFetcher = useFetcher()
-  const navigate = useNavigate()
-  const { t } = useTranslation()
+  const [isLoading, setIsLoading] = useState(false);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fetcher = useFetcher();
+  const verifyFetcher = useFetcher();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const loadRazorpayScript = useCallback(() => {
     return new Promise<boolean>((resolve) => {
       if (window.Razorpay) {
-        resolve(true)
-        return
+        resolve(true);
+        return;
       }
 
-      const script = document.createElement("script")
-      script.src = "https://checkout.razorpay.com/v1/checkout.js"
-      script.onload = () => resolve(true)
-      script.onerror = () => resolve(false)
-      document.head.appendChild(script)
-    })
-  }, [])
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.head.appendChild(script);
+    });
+  }, []);
 
   useEffect(() => {
     loadRazorpayScript().then((loaded) => {
-      setScriptLoaded(loaded)
+      setScriptLoaded(loaded);
       if (!loaded) {
-        setError("Failed to load Razorpay script")
+        setError('Failed to load Razorpay script');
       }
-    })
-  }, [loadRazorpayScript])
+    });
+  }, [loadRazorpayScript]);
 
   const generateRazorpayOrderId = useCallback(() => {
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
 
-    const formData = new FormData()
-    formData.append("orderCode", orderCode)
+    const formData = new FormData();
+    formData.append('orderCode', orderCode);
 
     fetcher.submit(formData, {
-      method: "post",
-      action: "/api/razorpay-generate-order",
-    })
-  }, [orderCode, fetcher])
+      method: 'post',
+      action: '/api/razorpay-generate-order',
+    });
+  }, [orderCode, fetcher]);
 
   const openRazorpayPopup = useCallback(
     (razorpayOrderId: string, keyId: string) => {
@@ -92,9 +97,9 @@ export function RazorpayPayments({
         const options = {
           key: keyId,
           order_id: razorpayOrderId,
-amount: Math.round(Number(amount)) || 0,
-          currency: currencyCode || "INR",
-          name: "Kaaikani",
+          amount: Math.round(Number(amount)) || 0,
+          currency: currencyCode || 'INR',
+          name: 'Kaaikani',
           description: `Payment for order ${orderCode}`,
           prefill: {
             email: customerEmail,
@@ -105,138 +110,158 @@ amount: Math.round(Number(amount)) || 0,
             display: {
               blocks: {
                 card: {
-                  instruments: [{ method: "card", networks: ["MasterCard", "Visa", "RuPay"] }],
-                },
-                upi: {
-                  name: "Pay using UPI",
                   instruments: [
                     {
-                      method: "upi",
-                      flows: ["collect", "intent", "qr"],
-                      apps: ["google_pay", "bhim", "paytm", "phonepe"],
+                      method: 'card',
+                      networks: ['MasterCard', 'Visa', 'RuPay'],
+                    },
+                  ],
+                },
+                upi: {
+                  name: 'Pay using UPI',
+                  instruments: [
+                    {
+                      method: 'upi',
+                      flows: ['collect', 'intent', 'qr'],
+                      apps: ['google_pay', 'bhim', 'paytm', 'phonepe'],
                     },
                   ],
                 },
                 netbanking: {
-                  name: "Pay using netbanking",
-                  instruments: [{ method: "netbanking" }],
+                  name: 'Pay using netbanking',
+                  instruments: [{ method: 'netbanking' }],
                 },
                 wallet: {
-                  name: "Pay using wallets",
+                  name: 'Pay using wallets',
                   instruments: [
                     {
-                      method: "wallet",
-                      wallets: ["phonepe", "freecharge", "airtelmoney"],
+                      method: 'wallet',
+                      wallets: ['phonepe', 'freecharge', 'airtelmoney'],
                     },
                   ],
                 },
               },
-              sequence: ["block.card", "block.upi", "block.netbanking", "block.wallet"],
+              sequence: [
+                'block.card',
+                'block.upi',
+                'block.netbanking',
+                'block.wallet',
+              ],
               preferences: { show_default_blocks: false },
             },
           },
           handler: (response: RazorpayPaymentResponse) => {
-            console.log("Payment successful:", response)
-            onRazorpayPaymentSuccess(response)
+            console.log('Payment successful:', response);
+            onRazorpayPaymentSuccess(response);
           },
           modal: {
             ondismiss: () => {
-              console.log("Payment modal dismissed")
-              setIsLoading(false)
+              console.log('Payment modal dismissed');
+              setIsLoading(false);
             },
           },
-        }
+        };
 
-        const rzp = new window.Razorpay(options)
-        rzp.on("payment.failed", (response: any) => {
-          console.error("Razorpay payment failed:", response)
-          setError(`Payment failed: ${response.error?.description || "Unknown error"}`)
-          setIsLoading(false)
-        })
-        rzp.open()
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', (response: any) => {
+          console.error('Razorpay payment failed:', response);
+          setError(
+            `Payment failed: ${response.error?.description || 'Unknown error'}`,
+          );
+          setIsLoading(false);
+        });
+        rzp.open();
       } catch (error) {
-        console.error("Error opening Razorpay:", error)
-        setError("Failed to open payment gateway")
-        setIsLoading(false)
+        console.error('Error opening Razorpay:', error);
+        setError('Failed to open payment gateway');
+        setIsLoading(false);
       }
     },
-    [amount, currencyCode, orderCode, customerEmail, customerPhone, customerName],
-  )
+    [
+      amount,
+      currencyCode,
+      orderCode,
+      customerEmail,
+      customerPhone,
+      customerName,
+    ],
+  );
 
   const onRazorpayPaymentSuccess = useCallback(
     (response: RazorpayPaymentResponse) => {
-      console.log("Processing payment success:", response)
+      console.log('Processing payment success:', response);
 
-      const formData = new FormData()
-      formData.append("razorpay_payment_id", response.razorpay_payment_id)
-      formData.append("razorpay_order_id", response.razorpay_order_id)
-      formData.append("razorpay_signature", response.razorpay_signature)
-      formData.append("orderCode", orderCode)
-      // formData.append("amount", (amount / 100).toString())
-      formData.append("amount", (amount * 100).toString())  // if order total is ₹240, send 24000
+      const formData = new FormData();
+      formData.append('razorpay_payment_id', response.razorpay_payment_id);
+      formData.append('razorpay_order_id', response.razorpay_order_id);
+      formData.append('razorpay_signature', response.razorpay_signature);
+      formData.append('orderCode', orderCode);
+      formData.append('amount', (amount * 100).toString()); // Convert to paise (e.g., ₹240 becomes 24000)
+      formData.append('currencyCode', currencyCode.toString());
 
-      formData.append("currencyCode", currencyCode.toString())
-
-fetcher.submit(formData, { method: "post", action: "/api/razorpay-verify-payment", })
-
+      verifyFetcher.submit(formData, {
+        method: 'post',
+        action: '/api/razorpay-verify-payment',
+      });
     },
     [orderCode, amount, currencyCode, verifyFetcher],
-  )
+  );
 
   // Handle order generation response
   useEffect(() => {
     const data = fetcher.data as {
-      success?: boolean
-      razorpayOrderId?: string
-      keyId?: string
-      error?: string
-    }
+      success?: boolean;
+      razorpayOrderId?: string;
+      keyId?: string;
+      error?: string;
+    };
 
-    if (fetcher.state === "idle" && data) {
+    if (fetcher.state === 'idle' && data) {
       if (data.success && data.razorpayOrderId && data.keyId) {
-        openRazorpayPopup(data.razorpayOrderId, data.keyId)
+        openRazorpayPopup(data.razorpayOrderId, data.keyId);
       } else if (data.error) {
-        setError(data.error)
-        setIsLoading(false)
+        setError(data.error);
+        setIsLoading(false);
       }
     }
-  }, [fetcher.state, fetcher.data, openRazorpayPopup])
+  }, [fetcher.state, fetcher.data, openRazorpayPopup]);
 
-
-
-  
-  // Handle payment verification response - FIXED NAVIGATION
+  // Handle payment verification response
   useEffect(() => {
     const data = verifyFetcher.data as {
-      success?: boolean
-      redirectUrl?: string
-      error?: string
-    }
+      success?: boolean;
+      redirectUrl?: string;
+      error?: string;
+    };
 
-    if (verifyFetcher.state === "idle" && data) {
+    if (verifyFetcher.state === 'idle' && data) {
       if (data.success && data.redirectUrl) {
-        console.log("Payment verified successfully, redirecting to:", data.redirectUrl)
-        // Use Remix navigate instead of window.location.href
-        setIsLoading(false)
-        navigate(data.redirectUrl, { replace: true })
+        console.log(
+          'Payment verified successfully, redirecting to:',
+          data.redirectUrl,
+        );
+        setIsLoading(false);
+        navigate(data.redirectUrl, { replace: true });
       } else if (data.error) {
-        console.error("Payment verification failed:", data.error)
-        setError(data.error)
-        setIsLoading(false)
+        console.error('Payment verification failed:', data.error);
+        setError(data.error);
+        setIsLoading(false);
       }
     }
-  }, [verifyFetcher.state, verifyFetcher.data, navigate])
+  }, [verifyFetcher.state, verifyFetcher.data, navigate]);
 
-  const isProcessing = isLoading || fetcher.state !== "idle" || verifyFetcher.state !== "idle"
+  const isProcessing =
+    isLoading || fetcher.state !== 'idle' || verifyFetcher.state !== 'idle';
 
   return (
     <div className="flex flex-col items-center w-full">
-      <p className="text-gray-600 text-sm p-6">{t("checkout.onlinePayment")}</p>
-
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md w-full">
           <p className="text-sm font-medium">{error}</p>
-          <button onClick={() => setError(null)} className="mt-2 text-xs text-red-600 underline">
+          <button
+            onClick={() => setError(null)}
+            className="mt-2 text-xs text-red-600 underline"
+          >
             Dismiss
           </button>
         </div>
@@ -247,22 +272,23 @@ fetcher.submit(formData, { method: "post", action: "/api/razorpay-verify-payment
         onClick={generateRazorpayOrderId}
         disabled={!scriptLoaded || isProcessing}
         className={classNames(
-          scriptLoaded && !isProcessing ? "bg-primary-600 hover:bg-primary-700" : "bg-gray-400",
-          "flex px-6 items-center justify-center space-x-2 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 w-full md:w-auto",
+          scriptLoaded && !isProcessing
+            ? 'bg-black border hover:bg-white hover:text-black hover:border-black text-white'
+            : 'bg-gray-300 text-gray-600 cursor-not-allowed',
+          'rounded-md py-3 px-4 text-base font-medium w-full transition-colors duration-200',
         )}
       >
-        <CreditCardIcon className="w-5 h-5" />
         <span>
           {isProcessing
-            ? t("checkout.paymentProcessing")
+            ? 'Payment Processing'
             : !scriptLoaded
-              ? t("checkout.paymentLoading")
-              : `${t("checkout.payWith")} Razorpay`}
+            ? 'Payment Loading'
+            : 'Place order'}
         </span>
         {isProcessing && (
           <svg
             aria-hidden="true"
-            className="ml-3 w-4 h-4 text-indigo-100 animate-spin fill-white"
+            className="ml-3 w-4 h-4 text-white animate-spin fill-black"
             viewBox="0 0 100 101"
             fill="none"
           >
@@ -278,5 +304,5 @@ fetcher.submit(formData, { method: "post", action: "/api/razorpay-verify-payment
         )}
       </button>
     </div>
-  )
+  );
 }
