@@ -213,6 +213,8 @@ export default function CheckoutConfirmation() {
         <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-10 animate-bounce-in">
           <div className="flex items-center space-x-4 mb-6 animate-slide-right">
             <CheckCircleIcon className="text-blue-600 w-10 h-10 animate-bounce-once" />
+
+            <a href="/" className='p-3 border-2 bg-black text-white font-bold'>HOME</a>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
               {t('order.summary')}
             </h2>

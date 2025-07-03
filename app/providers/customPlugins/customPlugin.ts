@@ -37,15 +37,7 @@ export async function getChannelsByCustomerEmail(
   return result;
 }
 
-export async function getChannelsByCustomerPhonenumber(
-  phoneNumber: string
-): Promise<WithHeaders<GetChannelsByCustomerPhonenumberQuery['getChannelsByCustomerPhoneNumber']>> {
-  const response = await sdk.getChannelsByCustomerPhonenumber({ phoneNumber });
-  const result = Object.assign([...response.getChannelsByCustomerPhoneNumber], {
-    _headers: response._headers,
-  });
-  return result;
-}
+
 
 
 export async function getPasswordResetToken(email: string, p0: { request: Request; customHeaders: { 'vendure-token': string; }; }): Promise<WithHeaders<string>> {
@@ -213,7 +205,15 @@ mutation resendPhoneOtp($phoneNumber: String!){
 }
 `;
 
-
+export async function getChannelsByCustomerPhonenumber(
+  phoneNumber: string
+): Promise<WithHeaders<GetChannelsByCustomerPhonenumberQuery['getChannelsByCustomerPhoneNumber']>> {
+  const response = await sdk.getChannelsByCustomerPhonenumber({ phoneNumber });
+  const result = Object.assign([...response.getChannelsByCustomerPhoneNumber], {
+    _headers: response._headers,
+  });
+  return result;
+}
 gql`
     query getChannelsByCustomerPhonenumber($phoneNumber: String!){
     getChannelsByCustomerPhoneNumber(phoneNumber:$phoneNumber) {
