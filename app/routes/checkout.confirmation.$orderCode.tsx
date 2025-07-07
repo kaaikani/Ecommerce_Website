@@ -10,26 +10,36 @@ import { useEffect, useState } from 'react';
 import { OrderDetailFragment } from '~/generated/graphql';
 import { useTranslation } from 'react-i18next';
 
+import { Header } from '~/components/header/Header';
+import Footer from '~/components/footer/Footer';
+import { useActiveOrder } from '~/utils/use-active-order';
+import { getCollections } from '~/providers/collections/collections';
+
 export async function loader({ params, request }: DataFunctionArgs) {
+  const collections = await getCollections(request);
   try {
     const order = await getOrderByCode(params.orderCode!, { request });
     return {
       order,
       error: false,
+      collections,
     };
   } catch (ex) {
     return {
       order: null,
       error: true,
+      collections,
     };
   }
 }
 
 export default function CheckoutConfirmation() {
-  const { order, error } = useLoaderData<typeof loader>();
+  const { order, error, collections } = useLoaderData<typeof loader>();
   const revalidator = useRevalidator();
   const [retries, setRetries] = useState(1);
+  const [showAllItems, setShowAllItems] = useState(false);
   const { t } = useTranslation();
+  const { activeOrder } = useActiveOrder();
 
   const orderNotFound = !order && !error;
   const orderErrored = !order && error;
@@ -47,9 +57,7 @@ export default function CheckoutConfirmation() {
   };
 
   useEffect(() => {
-    if (orderErrored) {
-      retry();
-    }
+    if (orderErrored) retry();
   }, [order]);
 
   useEffect(() => {
@@ -63,7 +71,7 @@ export default function CheckoutConfirmation() {
     }
   }, [revalidator.state]);
 
-  // Confetti effect with circles, squares, and triangles from top (below navbar)
+  // 🎉 Confetti effect (same as your version, preserved)
   useEffect(() => {
     if (order && !orderErrored && !orderNotFound) {
       const canvas = document.createElement('canvas');
@@ -81,16 +89,16 @@ export default function CheckoutConfirmation() {
       canvas.height = window.innerHeight;
 
       const shapes = ['circle', 'square', 'triangle'];
-      const navbarHeight = 64; // Assuming a 64px navbar height
+      const navbarHeight = 64;
       const confetti = Array.from({ length: 100 }).map(() => ({
         x: Math.random() * canvas.width,
-        y: navbarHeight - 10, // Start just below navbar
+        y: navbarHeight - 10,
         size: Math.random() * 8 + 4,
         shape: shapes[Math.floor(Math.random() * shapes.length)],
         color: `hsl(${Math.random() * 360}, 80%, 60%)`,
         rotation: Math.random() * 360,
-        velocityX: (Math.random() - 0.5) * 6, // Slight horizontal variation
-        velocityY: Math.random() * 4 + 2, // Move downward
+        velocityX: (Math.random() - 0.5) * 6,
+        velocityY: Math.random() * 4 + 2,
         rotationSpeed: (Math.random() - 0.5) * 0.1,
       }));
 
@@ -103,7 +111,6 @@ export default function CheckoutConfirmation() {
           c.y += c.velocityY;
           c.rotation += c.rotationSpeed;
 
-          // Reset confetti that moves out of bounds
           if (c.y > canvas.height || c.x > canvas.width + 20 || c.x < -20) {
             confetti[i] = {
               ...c,
@@ -154,133 +161,127 @@ export default function CheckoutConfirmation() {
     }
   }, [order, orderErrored, orderNotFound]);
 
-  if (orderNotFound) {
+  if (orderNotFound || (orderErrored && retriesExhausted)) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-green-100 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 text-center animate-bounce-in">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4 animate-pulse">
-            {t('checkout.orderNotFound')}
-          </h2>
-          <p className="text-gray-600 animate-slide-up">
-            Please check your order details and try again.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (orderErrored && retriesExhausted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-green-100 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 text-center animate-bounce-in">
-          <div className="flex items-center justify-center space-x-3 mb-4 animate-spin-slow">
-            <XCircleIcon className="text-red-600 w-9 h-9" />
-            <h2 className="text-3xl font-bold text-gray-900">
-              {t('checkout.orderErrorTitle')}
+      <>
+        <Header
+          onCartIconClick={() => {}}
+          cartQuantity={activeOrder?.totalQuantity ?? 0}
+          isSignedIn={true}
+          collections={collections}
+        />
+        <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
+          <div className="max-w-md w-full text-center py-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              {t(
+                orderNotFound
+                  ? 'checkout.orderNotFound'
+                  : 'checkout.orderErrorTitle',
+              )}
             </h2>
+            <p className="text-gray-600">
+              {t(
+                orderNotFound
+                  ? 'checkout.orderNotFoundMessage'
+                  : 'checkout.orderErrorMessage',
+              )}
+            </p>
           </div>
-          <p className="text-gray-600 animate-slide-up">
-            {t('checkout.orderErrorMessage')}
-          </p>
         </div>
-      </div>
+        <Footer collections={collections} />
+      </>
     );
   }
 
-  if (orderErrored) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-green-100 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 text-center animate-bounce-in">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4 animate-pulse">
-            {t('checkout.orderProcessing')}
-          </h2>
-          <p className="text-gray-600 animate-slide-up">
-            We're processing your order, please wait...
-          </p>
-          <div className="mt-4 flex justify-center space-x-2">
-            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-            <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}> </div>
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const displayedLines = showAllItems ? order!.lines : order!.lines.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-green-100 py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto">
-        <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-10 animate-bounce-in">
-          <div className="flex items-center space-x-4 mb-6 animate-slide-right">
-            <CheckCircleIcon className="text-blue-600 w-10 h-10 animate-bounce-once" />
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
-              {t('order.summary')}
-            </h2>
-          </div>
-          <p className="text-gray-600 mb-8 text-base sm:text-lg animate-slide-up">
-            {t('checkout.orderSuccessMessage')}{' '}
-            <span className="font-semibold text-blue-600">{order!.code}</span>
-          </p>
+    <>
+      <Header
+        onCartIconClick={() => {}}
+        cartQuantity={activeOrder?.totalQuantity ?? 0}
+        isSignedIn={true}
+        collections={collections}
+      />
 
-          {order!.active && (
-            <div className="bg-blue-50 rounded-xl p-5 mb-8 flex items-start space-x-3 animate-pulse-slow transition-all duration-300 hover:bg-blue-100">
-              <InformationCircleIcon className="h-6 w-6 text-blue-600 flex-shrink-0 animate-spin-slow" />
-              <p className="text-sm text-blue-800">{t('checkout.paymentMessage')}</p>
-            </div>
-          )}
-
-          <div className="space-y-8">
-            <div className="border-t border-gray-200 pt-6 animate-slide-up">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4 animate-bounce-once">
-                Order Items
-              </h3>
-              <CartContents
-                orderLines={order!.lines}
-                currencyCode={order!.currencyCode}
-                editable={false}
-              />
+      <main className="min-h-screen bg-white py-10 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto shadow-lg">
+          <div className="bg-white rounded-3xl shadow-2xl p-4 sm:p-6 lg:p-10">
+            <div className="flex items-center space-x-4 mb-6">
+              <CheckCircleIcon className="text-blue-600 w-10 h-10" />
+              <h2 className="text-3xl font-bold text-gray-900">
+                {t('order.summary')}
+              </h2>
             </div>
 
-            <div className="border-t border-gray-200 pt-6 animate-slide-up">
-              <CartTotals order={order as OrderDetailFragment} />
+            <p className="text-gray-600 mb-8 text-base sm:text-lg">
+              {t('checkout.orderSuccessMessage')}{' '}
+              <span className="font-semibold text-blue-600">{order!.code}</span>
+            </p>
+
+            {order!.active && (
+              <div className="bg-blue-50 rounded-xl p-5 mb-8 flex items-start space-x-3">
+                <InformationCircleIcon className="h-6 w-6 text-blue-600 flex-shrink-0" />
+                <p className="text-sm text-blue-800">
+                  {t('checkout.paymentMessage')}
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-8">
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  Order Items
+                </h3>
+                <CartContents
+                  orderLines={displayedLines}
+                  currencyCode={order!.currencyCode}
+                  editable={false}
+                />
+
+                {order!.lines.length > 3 && (
+                  <div className="mt-4 text-center">
+                    <button
+                      onClick={() => setShowAllItems(!showAllItems)}
+                      className="text-blue-600 hover:underline text-sm font-medium flex items-center justify-center mx-auto"
+                      aria-label={showAllItems ? 'Show Less' : 'View More'}
+                    >
+                      {showAllItems ? (
+                        <img
+                          src="/show-more.png"
+                          alt="Show less"
+                          className="w-6 h-6 transform rotate-180"
+                          style={{ transform: 'rotate(180deg)' }}
+                        />
+                      ) : (
+                        <img
+                          src="/show-more.png"
+                          alt={`View More (${order!.lines.length - 3} more)`}
+                          className="w-6 h-6"
+                        />
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-gray-200 pt-6">
+                <CartTotals order={order as OrderDetailFragment} />
+                <div className="mt-8 text-center">
+                  <a
+                    href="/home"
+                    className="inline-block bg-black text-white px-6 py-2 border rounded-full shadow hover:bg-white hover:border-black hover:text-black transition-colors duration-200 text-sm sm:text-base"
+                  >
+                    Back to Home
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <style>{`
-        @keyframes bounce-in {
-          0% { transform: scale(0.3); opacity: 0; }
-          50% { transform: scale(1.05); opacity: 1; }
-          70% { transform: scale(0.95); }
-          100% { transform: scale(1); }
-        }
-        @keyframes slide-up {
-          from { transform: translateY(30px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes slide-right {
-          from { transform: translateX(-30px); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes bounce-once {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-15px); }
-        }
-        @keyframes pulse-slow {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.02); }
-        }
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-bounce-in { animation: bounce-in 0.7s ease-out; }
-        .animate-slide-up { animation: slide-up 0.6s ease-out; }
-        .animate-slide-right { animation: slide-right 0.6s ease-out; }
-        .animate-bounce-once { animation: bounce-once 0.5s ease-out; }
-        .animate-pulse-slow { animation: pulse-slow 2s ease-in-out infinite; }
-        .animate-spin-slow { animation: spin-slow 4s linear infinite; }
-      `}</style>
-    </div>
+      </main>
+
+      <Footer collections={collections} />
+    </>
   );
 }
