@@ -283,7 +283,7 @@ export function RazorpayPayments({
             ? 'Payment Processing'
             : !scriptLoaded
             ? 'Payment Loading'
-            : 'Place order'}
+            : 'Place Order'}
         </span>
         {isProcessing && (
           <svg

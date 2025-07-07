@@ -1,9 +1,12 @@
-"use client"
+'use client';
 
-import { Transition } from "@headlessui/react"
-import { CheckCircleIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline"
-import { XMarkIcon } from "@heroicons/react/20/solid"
-import { useEffect } from "react"
+import { Transition } from '@headlessui/react';
+import {
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+} from '@heroicons/react/24/outline';
+import { XMarkIcon } from '@heroicons/react/20/solid';
+import { useEffect } from 'react';
 
 export default function ToastNotification({
   show,
@@ -14,29 +17,29 @@ export default function ToastNotification({
   autoDismiss = true,
   dismissDuration = 5000,
 }: {
-  show: boolean
-  type: "success" | "error"
-  title: string
-  message: string
-  onClose: () => void
-  autoDismiss?: boolean
-  dismissDuration?: number
+  show: boolean;
+  type: 'success' | 'error';
+  title: string;
+  message: string;
+  onClose: () => void;
+  autoDismiss?: boolean;
+  dismissDuration?: number;
 }) {
-  const Icon = type === "success" ? CheckCircleIcon : ExclamationCircleIcon
-  const iconColor = type === "success" ? "text-green-400" : "text-red-400"
-  const bgColor = type === "success" ? "bg-green-50" : "bg-red-50"
-  const borderColor = type === "success" ? "ring-green-200" : "ring-red-200"
+  const Icon = type === 'success' ? CheckCircleIcon : ExclamationCircleIcon;
+  const iconColor = type === 'success' ? 'text-green-400' : 'text-red-400';
+  const bgColor = type === 'success' ? 'bg-green-50' : 'bg-red-50';
+  const borderColor = type === 'success' ? 'ring-green-200' : 'ring-red-200';
 
   // Auto-dismiss the toast after specified duration
   useEffect(() => {
     if (show && autoDismiss) {
       const timer = setTimeout(() => {
-        onClose()
-      }, dismissDuration)
+        onClose();
+      }, dismissDuration);
 
-      return () => clearTimeout(timer)
+      return () => clearTimeout(timer);
     }
-  }, [show, autoDismiss, dismissDuration, onClose])
+  }, [show, autoDismiss, dismissDuration, onClose]);
 
   return (
     <Transition
@@ -50,7 +53,7 @@ export default function ToastNotification({
       leaveTo="opacity-0 translate-y-2"
     >
       <div
-        className={`pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg ${bgColor} shadow-lg ring-1 ${borderColor} ring-opacity-5`}
+        className={`fixed bottom-6 right-6 z-[9999] pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg ${bgColor} shadow-lg ring-1 ${borderColor} ring-opacity-5`}
       >
         <div className="p-4">
           <div className="flex items-start">
@@ -59,7 +62,9 @@ export default function ToastNotification({
             </div>
             <div className="ml-3 w-0 flex-1 pt-0.5">
               <p className="text-sm font-medium text-gray-900">{title}</p>
-              <p className="mt-1 text-sm text-gray-500">{message}</p>
+              <p className="mt-1 text-sm text-gray-500 break-words whitespace-pre-line">
+                {message}
+              </p>
             </div>
             <div className="ml-4 flex flex-shrink-0">
               <button
@@ -75,5 +80,5 @@ export default function ToastNotification({
         </div>
       </div>
     </Transition>
-  )
+  );
 }
