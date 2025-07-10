@@ -78,8 +78,10 @@ export function Header({
           </Link>
 
           {/* Desktop Search bar - centered in desktop view */}
-          <div className="hidden md:flex flex-1 justify-center max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-2 sm:mx-4 lg:mx-8">
-            <SearchBar />
+
+          <div className="hidden md:flex flex-1 justify-center max-w-xs sm:max-w-md lg:max-w-xl mx-2 sm:mx-4 lg:mx-8">
+                     <SearchBar></SearchBar>
+
           </div>
 
           {/* Icons Container - Account, Search (mobile/tablet), and Cart */}

@@ -149,7 +149,7 @@ export default function CollectionSlug() {
         removeItem={removeItem}
       />
 
-      <div className="max-w-6xl px-4 xl:w-full xl:max-w-none xl:px-8">
+      <div className="max-w-6xl  px-4 xl:w-full xl:max-w-none xl:px-8">
         <div className="flex flex-row justify-between items-center mb-4">
           <Breadcrumbs items={collection.breadcrumbs} />
           <FiltersButton

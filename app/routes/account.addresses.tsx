@@ -1,24 +1,20 @@
 "use client"
 
 import type React from "react"
-
 import { Outlet, useLoaderData, NavLink, Form, useLocation } from "@remix-run/react"
 import { type ActionFunctionArgs, json } from "@remix-run/server-runtime"
 import { useTranslation } from "react-i18next"
 import { useState } from "react"
-import AddAddressCard from "~/components/account/AddAddressCard"
 import EditAddressCard from "~/components/account/EditAddressCard"
 import { type Address, ErrorCode, type ErrorResult } from "~/generated/graphql"
-import { deleteCustomerAddress, updateCustomerAddress } from "~/providers/account/account"
+import { deleteCustomerAddress, updateCustomerAddress, createCustomerAddress } from "~/providers/account/account"
 import { getActiveCustomerAddresses, getActiveCustomerDetails } from "~/providers/customer/customer"
 import { getFixedT } from "~/i18next.server"
 import type { LoaderFunctionArgs } from "@remix-run/router"
 import { useNavigate } from "@remix-run/react"
-// shadcn/ui imports
-import { Card, CardContent } from "~/components/ui/card"
 
 // Lucide icons
-import { MapPin, ShoppingBag, User, Menu, X, LogOut, Plus } from "lucide-react"
+import { MapPin, ShoppingBag, User, Menu, X, LogOut } from "lucide-react"
 import { HighlightedButton } from "~/components/HighlightedButton"
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -33,36 +29,188 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData()
-  const id = formData.get("id") as string | null
-  const _action = formData.get("_action")
+  const intent = formData.get("intent") as string
   const t = await getFixedT(request)
 
-  // Verify that id is set
+  // Handle creating a new address
+  if (intent === "createAddress") {
+    const addressData = {
+      fullName: formData.get("fullName") as string,
+      streetLine1: formData.get("streetLine1") as string,
+      streetLine2: (formData.get("streetLine2") as string) || undefined,
+      city: formData.get("city") as string,
+      province: formData.get("province") as string,
+      postalCode: formData.get("postalCode") as string,
+      countryCode: formData.get("countryCode") as string,
+      phoneNumber: formData.get("phone") as string,
+      company: (formData.get("company") as string) || undefined,
+      defaultShippingAddress: formData.get("defaultShippingAddress") === "true",
+      defaultBillingAddress: formData.get("defaultBillingAddress") === "true",
+    }
+
+    try {
+      const result = await createCustomerAddress(addressData, { request })
+
+      // Check if result is an Address object (success) or has an error
+      if (result && result.__typename === "Address") {
+        return json({ success: true, message: t("address.created") })
+      } else {
+        return json<ErrorResult>(
+          {
+            errorCode: ErrorCode.UnknownError,
+            message: t("address.createError"),
+          },
+          { status: 400 },
+        )
+      }
+    } catch (error) {
+      console.error("Create address error:", error)
+      return json<ErrorResult>(
+        {
+          errorCode: ErrorCode.UnknownError,
+          message: t("address.createError"),
+        },
+        { status: 500 },
+      )
+    }
+  }
+
+  // Handle updating an existing address
+  if (intent === "updateAddress") {
+    const id = formData.get("addressId") as string
+    if (!id) {
+      return json<ErrorResult>(
+        {
+          errorCode: ErrorCode.IdentifierChangeTokenInvalidError,
+          message: t("address.idError"),
+        },
+        { status: 400 },
+      )
+    }
+
+    const addressData = {
+      fullName: formData.get("fullName") as string,
+      streetLine1: formData.get("streetLine1") as string,
+      streetLine2: (formData.get("streetLine2") as string) || undefined,
+      city: formData.get("city") as string,
+      province: formData.get("province") as string,
+      postalCode: formData.get("postalCode") as string,
+      countryCode: formData.get("countryCode") as string,
+      phoneNumber: formData.get("phone") as string,
+      company: (formData.get("company") as string) || undefined,
+      defaultShippingAddress: formData.get("defaultShippingAddress") === "true",
+      defaultBillingAddress: formData.get("defaultBillingAddress") === "true",
+    }
+
+    try {
+      const result = await updateCustomerAddress({ id, ...addressData }, { request })
+
+      // Check if result is an Address object (success) or has an error
+      if (result && result.__typename === "Address") {
+        return json({ success: true, message: t("address.updated") })
+      } else {
+        return json<ErrorResult>(
+          {
+            errorCode: ErrorCode.UnknownError,
+            message: t("address.updateError"),
+          },
+          { status: 400 },
+        )
+      }
+    } catch (error) {
+      console.error("Update address error:", error)
+      return json<ErrorResult>(
+        {
+          errorCode: ErrorCode.UnknownError,
+          message: t("address.updateError"),
+        },
+        { status: 500 },
+      )
+    }
+  }
+
+  // Existing action handlers
+  const id = formData.get("id") as string | null
+  const _action = formData.get("_action")
+
+  // Verify that id is set for existing actions
   if (!id || id.length === 0) {
     return json<ErrorResult>(
       {
-        errorCode: ErrorCode.IdentifierChangeTokenInvalidError, // TODO: I dont think this error is 100% appropriate - decide later
+        errorCode: ErrorCode.IdentifierChangeTokenInvalidError,
         message: t("address.idError"),
       },
       {
-        status: 400, // Bad request
+        status: 400,
       },
     )
   }
 
   if (_action === "setDefaultShipping") {
-    updateCustomerAddress({ id, defaultShippingAddress: true }, { request })
-    return null
+    try {
+      const result = await updateCustomerAddress({ id, defaultShippingAddress: true }, { request })
+      if (result && result.__typename === "Address") {
+        return json({ success: true })
+      } else {
+        return json<ErrorResult>(
+          {
+            errorCode: ErrorCode.UnknownError,
+            message: t("address.updateError"),
+          },
+          { status: 400 },
+        )
+      }
+    } catch (error) {
+      return json<ErrorResult>(
+        {
+          errorCode: ErrorCode.UnknownError,
+          message: t("address.updateError"),
+        },
+        { status: 500 },
+      )
+    }
   }
 
   if (_action === "setDefaultBilling") {
-    updateCustomerAddress({ id, defaultBillingAddress: true }, { request })
-    return null
+    try {
+      const result = await updateCustomerAddress({ id, defaultBillingAddress: true }, { request })
+      if (result && result.__typename === "Address") {
+        return json({ success: true })
+      } else {
+        return json<ErrorResult>(
+          {
+            errorCode: ErrorCode.UnknownError,
+            message: t("address.updateError"),
+          },
+          { status: 400 },
+        )
+      }
+    } catch (error) {
+      return json<ErrorResult>(
+        {
+          errorCode: ErrorCode.UnknownError,
+          message: t("address.updateError"),
+        },
+        { status: 500 },
+      )
+    }
   }
 
   if (_action === "deleteAddress") {
-    const { success } = await deleteCustomerAddress(id, { request })
-    return json(null, { status: success ? 200 : 400 })
+    try {
+      const result = await deleteCustomerAddress(id, { request })
+      // Assuming deleteCustomerAddress returns a boolean or similar success indicator
+      return json({ success: true }, { status: 200 })
+    } catch (error) {
+      console.error("Delete address error:", error)
+      return json<ErrorResult>(
+        {
+          errorCode: ErrorCode.UnknownError,
+          message: t("address.deleteError"),
+        },
+        { status: 400 },
+      )
+    }
   }
 
   return json<ErrorResult>(
@@ -76,6 +224,7 @@ export async function action({ request }: ActionFunctionArgs) {
   )
 }
 
+// Rest of your component code remains the same...
 export default function AccountAddresses() {
   const { activeCustomerAddresses, activeCustomer } = useLoaderData<typeof loader>()
   const { t } = useTranslation()
@@ -99,6 +248,7 @@ export default function AccountAddresses() {
       icon: ShoppingBag,
     },
   ]
+
   const navigate = useNavigate()
 
   return (
@@ -158,40 +308,23 @@ export default function AccountAddresses() {
           {/* Page content */}
           <div className="bg-white min-h-screen">
             {/* Header Section */}
-           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 px-6 py-8 border-b bg-white">
-  <div>
-    <h1 className="text-2xl lg:text-3xl font-bold">My Addresses</h1>
-    <p className="text-muted-foreground mt-1 text-sm">Manage your shipping and billing addresses</p>
-  </div>
-  <HighlightedButton
-    type="button"
-    className="self-start lg:self-auto"
-    onClick={() => navigate("/account/addresses/new")}
-  >
-    Add Address
-  </HighlightedButton>
-</div>
-
-
-
-
-
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 px-6 py-8 border-b bg-white">
+              <div>
+                <h1 className="text-2xl lg:text-3xl font-bold">My Addresses</h1>
+                <p className="text-muted-foreground mt-1 text-sm">Manage your shipping and billing addresses</p>
+              </div>
+              <HighlightedButton
+                type="button"
+                className="self-start lg:self-auto"
+                onClick={() => navigate("/account/addresses/new")}
+              >
+                Add Address
+              </HighlightedButton>
+            </div>
 
             {/* Main Content */}
             <div className="p-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/*  Address Card */}
-                {/* <Card className="border-dashed border-2 hover:border-gray-400 transition-colors">
-                  <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                      <Plus className="h-6 w-6 text-gray-600" />
-                    </div>
-                    <h3 className="text-lg font-medium mb-2">Add New Address</h3>
-                    <p className="text-sm text-muted-foreground mb-4">Add a new shipping or billing address</p>
-                    <AddAddressCard />
-                  </CardContent>
-                </Card> */}
-
                 {/* Existing Addresses */}
                 {activeCustomerAddresses?.addresses?.map((address) => (
                   <EditAddressCard address={address as Address} key={address.id} />
@@ -271,9 +404,10 @@ function Sidebar({
             onClick={onNavigate}
             end={to === "/account"}
             className={({ isActive }) =>
-              `group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive
-                ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
-                : "text-muted-foreground hover:bg-gray-50 hover:text-gray-900"
+              `group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                isActive
+                  ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+                  : "text-muted-foreground hover:bg-gray-50 hover:text-gray-900"
               }`
             }
           >

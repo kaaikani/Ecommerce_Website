@@ -118,7 +118,7 @@ export default function home() {
           <p>Discover Our Finest Selection</p>
           <h3
             id="category-heading"
-            className="text-xl font-semibold sm:text-2xl md:text-3xl lg:text-4xl font-light tracking-tight text-gray-900 text-center"
+            className="text-xl font-semibold sm:text-2xl md:text-3xl lg:text-4xl  tracking-tight text-gray-900 text-center"
           >
             SHOP BY CATEGORY
           </h3>

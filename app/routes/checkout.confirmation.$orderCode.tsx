@@ -196,6 +196,7 @@ export default function CheckoutConfirmation() {
   const displayedLines = showAllItems ? order!.lines : order!.lines.slice(0, 3);
 
   return (
+
     <>
       <Header
         onCartIconClick={() => {}}
@@ -203,6 +204,7 @@ export default function CheckoutConfirmation() {
         isSignedIn={true}
         collections={collections}
       />
+
 
       <main className="min-h-screen bg-white py-10 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto shadow-lg">
