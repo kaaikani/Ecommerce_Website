@@ -1,7 +1,7 @@
 'use client';
 
 import { type DataFunctionArgs, json } from '@remix-run/server-runtime';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Price } from '~/components/products/Price';
 import { getProductBySlug } from '~/providers/products/products';
 import {
@@ -27,6 +27,13 @@ import { Header } from '~/components/header/Header';
 import Footer from '~/components/footer/Footer';
 import { CartTray } from '~/components/cart/CartTray';
 import { useActiveOrder } from '~/utils/use-active-order';
+import {
+  remoteConfig,
+  fetchAndActivate,
+  getBoolean,
+  getString,
+} from '~/firebase/firebase';
+import { Dialog } from '@headlessui/react';
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
   return [
@@ -79,8 +86,19 @@ export default function ProductSlug() {
   const [isSignedIn, setIsSignedIn] = useState(
     !!activeCustomer?.activeCustomer?.id,
   );
+  const formRef = useRef<HTMLFormElement>(null);
 
   const { adjustOrderLine, removeItem, refresh } = useActiveOrder();
+
+  const handleAdjustQty = async (orderLineId: string, quantity: number) => {
+    await adjustOrderLine(orderLineId, quantity);
+    activeOrderFetcher.load('/api/active-order'); // Refresh cart UI
+  };
+
+  const handleRemoveItem = async (orderLineId: string) => {
+    await removeItem(orderLineId);
+    activeOrderFetcher.load('/api/active-order'); // Refresh cart UI
+  };
 
   useEffect(() => {
     setIsSignedIn(!!activeCustomer?.activeCustomer?.id);
@@ -90,18 +108,20 @@ export default function ProductSlug() {
     refresh();
   }, []);
 
-  const findVariantById = (id: string) =>
-    product.variants.find((v) => v.id === id);
-
   const [selectedVariantId, setSelectedVariantId] = useState(
     product.variants[0].id,
   );
 
+  const findVariantById = (id: string) =>
+    product.variants.find((v) => v.id === id);
+
   const selectedVariant = findVariantById(selectedVariantId);
 
-  if (!selectedVariant) {
-    setSelectedVariantId(product.variants[0].id);
-  }
+  useEffect(() => {
+    if (!selectedVariant) {
+      setSelectedVariantId(product.variants[0].id);
+    }
+  }, [selectedVariant, product.variants]);
 
   const qtyInCart =
     activeOrder?.lines.find((l) => l.productVariant.id === selectedVariantId)
@@ -110,6 +130,26 @@ export default function ProductSlug() {
   const [featuredAsset, setFeaturedAsset] = useState(
     selectedVariant?.featuredAsset,
   );
+
+  const [isAppLeavingz, setIsAppLeaving] = useState(false);
+  const [leaveMessage, setLeaveMessage] = useState('We are currently closed.');
+  const [leaveTitle, setLeaveTitle] = useState('Sorry for the inconvenience');
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      fetchAndActivate(remoteConfig)
+        .then(() => {
+          const shouldLeave = getBoolean(remoteConfig, 'is_app_leavingz');
+          const message = getString(remoteConfig, 'leave_dialog_message');
+          const title = getString(remoteConfig, 'leave_dialog_title');
+          setIsAppLeaving(shouldLeave);
+          setLeaveMessage(message || 'We are currently closed.');
+          setLeaveTitle(title || 'Sorry for the inconvenience');
+        })
+        .catch((err) => console.error('Remote Config fetch failed:', err));
+    }
+  }, []);
 
   return (
     <div>
@@ -123,9 +163,10 @@ export default function ProductSlug() {
         open={open}
         onClose={setOpen}
         activeOrder={activeOrder}
-        adjustOrderLine={adjustOrderLine}
-        removeItem={removeItem}
+        adjustOrderLine={handleAdjustQty}
+        removeItem={handleRemoveItem}
       />
+
       <div className="max-w-6xl mx-auto px-4 py-4 sm:py-6">
         <Breadcrumbs
           items={
@@ -134,13 +175,10 @@ export default function ProductSlug() {
           }
         />
         <div className="mt-6">
-          {/* Card layout */}
           <div className="flex flex-col lg:flex-row items-stretch gap-6">
+            {/* Image Section */}
             <div className="w-full lg:w-1/2 bg-white p-6 rounded-lg shadow-md flex flex-col">
-              {/* Image section */}
               <div className="relative w-full h-96">
-                {' '}
-                {/* Fixed height for consistency */}
                 <img
                   src={
                     (featuredAsset?.preview || product.featuredAsset?.preview) +
@@ -177,7 +215,7 @@ export default function ProductSlug() {
               )}
             </div>
 
-            {/* Product info section */}
+            {/* Product Info Section */}
             <div className="w-full lg:w-1/2 bg-white p-6 rounded-lg shadow-md flex flex-col justify-between">
               <div className="flex-1">
                 <h2 className="text-3xl font-semibold  tracking-tight text-gray-900 mb-4">
@@ -206,6 +244,7 @@ export default function ProductSlug() {
                     <activeOrderFetcher.Form
                       method="post"
                       action="/api/active-order"
+                      ref={formRef}
                     >
                       <input
                         type="hidden"
@@ -214,10 +253,7 @@ export default function ProductSlug() {
                       />
                       {product.variants.length > 1 ? (
                         <div className="mb-[25%]">
-                          <label
-                            htmlFor="option"
-                            className="block text-sm font-medium text-gray-700 mb-2"
-                          >
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
                             {t('product.selectOption')}
                           </label>
                           <div className="flex flex-wrap gap-2">
@@ -256,9 +292,15 @@ export default function ProductSlug() {
                         />
                       )}
                       <button
-                        type="submit"
+                        type="button"
                         className="w-full bg-black text-white py-3 rounded-md hover:bg-white hover:text-black border hover:border-black transition-colors duration-200"
-                        disabled={activeOrderFetcher.state !== 'idle'}
+                        onClick={() => {
+                          if (isAppLeavingz) {
+                            setShowLeaveDialog(true);
+                            return;
+                          }
+                          formRef.current?.requestSubmit(); // Manually submit form
+                        }}
                       >
                         {qtyInCart ? (
                           <span className="flex items-center justify-center">
@@ -269,6 +311,7 @@ export default function ProductSlug() {
                           'Add to Cart'
                         )}
                       </button>
+
                       {addItemToOrderError && (
                         <div className="mt-4">
                           <Alert message={addItemToOrderError} />
@@ -282,6 +325,30 @@ export default function ProductSlug() {
           </div>
         </div>
       </div>
+
+      {/* Leave Dialog */}
+      {showLeaveDialog && (
+        <Dialog
+          open={showLeaveDialog}
+          onClose={() => setShowLeaveDialog(false)}
+          className="fixed z-30 inset-0 overflow-y-auto"
+        >
+          <div className="flex items-center justify-center min-h-screen px-4 text-center bg-black bg-opacity-50">
+            <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-sm mx-auto">
+              <Dialog.Title className="text-lg font-medium text-gray-900 mb-4">
+                {leaveTitle}
+              </Dialog.Title>
+              <p className="text-gray-700 mb-6">{leaveMessage}</p>
+              <button
+                className="bg-white border border-black text-black hover:text-white hover:bg-black px-6 py-1 rounded"
+                onClick={() => setShowLeaveDialog(false)}
+              >
+                OK
+              </button>
+            </Dialog.Panel>
+          </div>
+        </Dialog>
+      )}
       <Footer collections={collections} />
     </div>
   );

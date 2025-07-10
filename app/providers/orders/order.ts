@@ -62,13 +62,15 @@ export function setOrderShippingMethod(
 }
 
 export function applyCouponCode(input: string, options: QueryOptions) {
-  return sdk.ApplyCouponCode ({ input }, options)
-    .then(response => response.applyCouponCode);
+  return sdk
+    .ApplyCouponCode({ input }, options)
+    .then((response) => response.applyCouponCode);
 }
 
 export function removeCouponCode(couponCode: string, options: QueryOptions) {
-  return sdk.RemoveCouponCode({ couponCode }, options)
-    .then(response => response.removeCouponCode);
+  return sdk
+    .RemoveCouponCode({ couponCode }, options)
+    .then((response) => response.removeCouponCode);
 }
 
 export function getCouponCodeList(options: QueryOptions) {
@@ -82,6 +84,7 @@ export function getCouponCodeList(options: QueryOptions) {
       endsAt: c.endsAt,
       startsAt: c.startsAt,
       usageLimit: c.usageLimit,
+      updatedAt: c.updatedAt,
       conditions: c.conditions.map((condition) => ({
         code: condition.code,
         args: condition.args.map((arg) => ({
@@ -89,10 +92,13 @@ export function getCouponCodeList(options: QueryOptions) {
           value: arg.value,
         })),
       })),
-    }))
+    })),
   );
 }
-export async function addCouponProductToCart(couponCode: string, options: QueryOptions) {
+export async function addCouponProductToCart(
+  couponCode: string,
+  options: QueryOptions,
+) {
   try {
     console.log(`Fetching coupon code: ${couponCode}`);
     const couponList = await getCouponCodeList(options);
@@ -106,7 +112,9 @@ export async function addCouponProductToCart(couponCode: string, options: QueryO
     console.log('Coupon found:', coupon);
     const productVariantIds: string[] = [];
     for (const condition of coupon.conditions) {
-      const variantArg = condition.args.find((arg) => arg.name === 'productVariantIds');
+      const variantArg = condition.args.find(
+        (arg) => arg.name === 'productVariantIds',
+      );
       if (variantArg && variantArg.value) {
         console.log('Found productVariantIds arg:', variantArg.value);
         try {
@@ -117,20 +125,28 @@ export async function addCouponProductToCart(couponCode: string, options: QueryO
             parsedIds = [variantArg.value];
           }
           if (Array.isArray(parsedIds)) {
-            productVariantIds.push(...parsedIds.map(id => id.toString()));
+            productVariantIds.push(...parsedIds.map((id) => id.toString()));
           } else if (typeof parsedIds === 'string') {
             productVariantIds.push(parsedIds);
           }
         } catch (e) {
-          console.error('Failed to parse productVariantIds:', variantArg.value, e);
-          throw new Error(`Invalid productVariantIds format for coupon ${couponCode}`);
+          console.error(
+            'Failed to parse productVariantIds:',
+            variantArg.value,
+            e,
+          );
+          throw new Error(
+            `Invalid productVariantIds format for coupon ${couponCode}`,
+          );
         }
       }
     }
 
     if (productVariantIds.length === 0) {
       console.error(`No product variant IDs found for coupon ${couponCode}`);
-      throw new Error(`No product variant ID found for coupon code ${couponCode}`);
+      throw new Error(
+        `No product variant ID found for coupon code ${couponCode}`,
+      );
     }
 
     console.log(`Product variant IDs to add: ${productVariantIds.join(', ')}`);
@@ -138,15 +154,19 @@ export async function addCouponProductToCart(couponCode: string, options: QueryO
     // Check initial cart state
     const initialOrder = await getActiveOrder(options);
     const initialQuantities = new Map<string, number>();
-    productVariantIds.forEach(id => {
-      const quantity = initialOrder?.lines?.find(line => line.productVariant.id === id)?.quantity || 0;
+    productVariantIds.forEach((id) => {
+      const quantity =
+        initialOrder?.lines?.find((line) => line.productVariant.id === id)
+          ?.quantity || 0;
       initialQuantities.set(id, quantity);
       console.log(`Initial quantity of product variant ${id}: ${quantity}`);
     });
 
     // Add each product variant to the cart
     for (const productVariantId of productVariantIds) {
-      console.log(`Adding product variant ID: ${productVariantId} to cart with quantity 1`);
+      console.log(
+        `Adding product variant ID: ${productVariantId} to cart with quantity 1`,
+      );
       const addResult = await addItemToOrder(productVariantId, 1, options);
       console.log(`addItemToOrder result for ${productVariantId}:`, addResult);
     }
@@ -154,8 +174,10 @@ export async function addCouponProductToCart(couponCode: string, options: QueryO
     // Verify the cart update
     const updatedOrder = await getActiveOrder(options);
     const updatedQuantities = new Map<string, number>();
-    productVariantIds.forEach(id => {
-      const quantity = updatedOrder?.lines?.find(line => line.productVariant.id === id)?.quantity || 0;
+    productVariantIds.forEach((id) => {
+      const quantity =
+        updatedOrder?.lines?.find((line) => line.productVariant.id === id)
+          ?.quantity || 0;
       updatedQuantities.set(id, quantity);
       console.log(`Updated quantity of product variant ${id}: ${quantity}`);
     });
@@ -166,18 +188,24 @@ export async function addCouponProductToCart(couponCode: string, options: QueryO
       const updated = updatedQuantities.get(id) || 0;
       if (updated < initial + 1) {
         console.error(`Failed to increase quantity for product variant ${id}`);
-        throw new Error(`Failed to add product ${id} to cart: quantity did not increase`);
+        throw new Error(
+          `Failed to add product ${id} to cart: quantity did not increase`,
+        );
       }
     }
 
     return { addedProductVariantIds: productVariantIds };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
     console.error(`Error in addCouponProductToCart: ${errorMessage}`);
     throw new Error(`Failed to add products to cart: ${errorMessage}`);
   }
 }
-export async function removeCouponProductFromCart(couponCode: string, options: QueryOptions) {
+export async function removeCouponProductFromCart(
+  couponCode: string,
+  options: QueryOptions,
+) {
   try {
     console.log(`Fetching coupon code for removal: ${couponCode}`);
     const couponList = await getCouponCodeList(options);
@@ -191,7 +219,9 @@ export async function removeCouponProductFromCart(couponCode: string, options: Q
     console.log('Coupon found:', coupon);
     const productVariantIds: string[] = [];
     for (const condition of coupon.conditions) {
-      const variantArg = condition.args.find((arg) => arg.name === 'productVariantIds');
+      const variantArg = condition.args.find(
+        (arg) => arg.name === 'productVariantIds',
+      );
       if (variantArg && variantArg.value) {
         console.log('Found productVariantIds arg:', variantArg.value);
         try {
@@ -202,23 +232,33 @@ export async function removeCouponProductFromCart(couponCode: string, options: Q
             parsedIds = [variantArg.value];
           }
           if (Array.isArray(parsedIds)) {
-            productVariantIds.push(...parsedIds.map(id => id.toString()));
+            productVariantIds.push(...parsedIds.map((id) => id.toString()));
           } else if (typeof parsedIds === 'string') {
             productVariantIds.push(parsedIds);
           }
         } catch (e) {
-          console.error('Failed to parse productVariantIds:', variantArg.value, e);
-          throw new Error(`Invalid productVariantIds format for coupon ${couponCode}`);
+          console.error(
+            'Failed to parse productVariantIds:',
+            variantArg.value,
+            e,
+          );
+          throw new Error(
+            `Invalid productVariantIds format for coupon ${couponCode}`,
+          );
         }
       }
     }
 
     if (productVariantIds.length === 0) {
-      console.log(`No product variant IDs found for coupon ${couponCode}, skipping removal`);
+      console.log(
+        `No product variant IDs found for coupon ${couponCode}, skipping removal`,
+      );
       return null;
     }
 
-    console.log(`Product variant IDs to adjust/remove: ${productVariantIds.join(', ')}`);
+    console.log(
+      `Product variant IDs to adjust/remove: ${productVariantIds.join(', ')}`,
+    );
     const activeOrder = await getActiveOrder(options);
     if (!activeOrder?.lines) {
       console.log('No lines found in active order, skipping removal');
@@ -228,22 +268,40 @@ export async function removeCouponProductFromCart(couponCode: string, options: Q
     // Adjust or remove each product variant
     for (const productVariantId of productVariantIds) {
       const lineToAdjust = activeOrder.lines.find(
-        (line) => line.productVariant.id === productVariantId
+        (line) => line.productVariant.id === productVariantId,
       );
 
       if (!lineToAdjust) {
-        console.log(`No order line found for product variant ID: ${productVariantId}, skipping`);
+        console.log(
+          `No order line found for product variant ID: ${productVariantId}, skipping`,
+        );
         continue;
       }
 
       if (lineToAdjust.quantity > 1) {
-        console.log(`Adjusting quantity for order line ID: ${lineToAdjust.id} from ${lineToAdjust.quantity} to ${lineToAdjust.quantity - 1}`);
-        const adjustResult = await adjustOrderLine(lineToAdjust.id, lineToAdjust.quantity - 1, options);
-        console.log(`adjustOrderLine result for ${productVariantId}:`, adjustResult);
+        console.log(
+          `Adjusting quantity for order line ID: ${lineToAdjust.id} from ${
+            lineToAdjust.quantity
+          } to ${lineToAdjust.quantity - 1}`,
+        );
+        const adjustResult = await adjustOrderLine(
+          lineToAdjust.id,
+          lineToAdjust.quantity - 1,
+          options,
+        );
+        console.log(
+          `adjustOrderLine result for ${productVariantId}:`,
+          adjustResult,
+        );
       } else {
-        console.log(`Removing order line ID: ${lineToAdjust.id} as quantity is 1`);
+        console.log(
+          `Removing order line ID: ${lineToAdjust.id} as quantity is 1`,
+        );
         const removeResult = await removeOrderLine(lineToAdjust.id, options);
-        console.log(`removeOrderLine result for ${productVariantId}:`, removeResult);
+        console.log(
+          `removeOrderLine result for ${productVariantId}:`,
+          removeResult,
+        );
       }
     }
 
@@ -252,9 +310,12 @@ export async function removeCouponProductFromCart(couponCode: string, options: Q
 
     return updatedOrder;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
     console.error(`Error in removeCouponProductFromCart: ${errorMessage}`);
-    throw new Error(`Failed to adjust product quantities in cart: ${errorMessage}`);
+    throw new Error(
+      `Failed to adjust product quantities in cart: ${errorMessage}`,
+    );
   }
 }
 gql`
@@ -419,7 +480,7 @@ gql`
     activeOrder {
       ...OrderDetail
       couponCodes
-       customFields {
+      customFields {
         otherInstructions
       }
     }
@@ -435,51 +496,52 @@ gql`
 `;
 
 gql`
-query GetCouponCodeList{
-    getCouponCodeList{
-        items {
-            id
+  query GetCouponCodeList {
+    getCouponCodeList {
+      items {
+        id
+        name
+        couponCode
+        description
+        enabled
+        endsAt
+        startsAt
+        updatedAt
+        conditions {
+          code
+          args {
             name
-            couponCode
-            description
-            enabled
-            endsAt
-            startsAt
-            conditions{
-                code
-                args{
-                    name
-                    value
-                }
-            }
-            usageLimit
+            value
+          }
         }
-        totalItems
-        __typename
+        usageLimit
+      }
+      totalItems
+      __typename
     }
-}
+  }
 `;
 
 gql`
   mutation ApplyCouponCode($input: String!) {
     applyCouponCode(couponCode: $input) {
-        __typename
-        ... on Order {
-            id
-            couponCodes
-            total
-        }
-        ... on CouponCodeInvalidError {
-            message
-        }
+      __typename
+      ... on Order {
+        id
+        couponCodes
+        total
+      }
+      ... on CouponCodeInvalidError {
+        message
+      }
     }
-}
+  }
 `;
 
 gql`
-mutation RemoveCouponCode($couponCode: String!){
-    removeCouponCode(couponCode: $couponCode){
-        __typename
+  mutation RemoveCouponCode($couponCode: String!) {
+    removeCouponCode(couponCode: $couponCode) {
+      __typename
     }
-}
+  }
 `;

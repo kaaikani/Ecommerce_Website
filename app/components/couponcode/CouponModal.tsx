@@ -5,7 +5,7 @@ import { useFetcher } from '@remix-run/react';
 import ToastNotification from '../ToastNotification';
 import { Clock, Users, Tag, X, ChevronDown, ChevronUp } from 'lucide-react';
 
-// TypeScript interfaces
+// Interfaces
 interface Coupon {
   id: string;
   name: string;
@@ -15,6 +15,7 @@ interface Coupon {
   endsAt?: string | null;
   startsAt?: any;
   usageLimit?: number | null;
+  updatedAt?: string;
   conditions: Array<{
     code: string;
     args: Array<{ name: string; value: string }>;
@@ -22,7 +23,6 @@ interface Coupon {
 }
 
 interface Order {
-  __typename?: 'Order';
   id: string;
   code: string;
   active: boolean;
@@ -59,22 +59,16 @@ interface CouponModalProps {
   appliedCoupon: string | null;
 }
 
-// Error message formatter
-const formatErrorMessage = (
-  errorMsg: string,
-): { title: string; message: string } => {
+const formatErrorMessage = (errorMsg: string) => {
   const minimumAmountMatch = errorMsg.match(
     /Add ₹([\d.]+) more to apply this coupon/,
   );
-
   if (minimumAmountMatch) {
-    const extraAmount = minimumAmountMatch[1];
     return {
       title: 'Minimum Amount Required',
-      message: `Add ₹${extraAmount} more to unlock this coupon 🛒`,
+      message: `Add ₹${minimumAmountMatch[1]} more to unlock this coupon 🛒`,
     };
   }
-
   if (
     /(usage limit|limit reached|Coupon usage limit reached|exceed|exceeded)/i.test(
       errorMsg,
@@ -85,25 +79,42 @@ const formatErrorMessage = (
       message: 'This coupon is no longer available. Try another one! 🎫',
     };
   }
-
   if (/expired|expir/i.test(errorMsg)) {
     return {
       title: 'Coupon Expired',
       message: 'This coupon has expired. Check out our other offers! ⏰',
     };
   }
-
   if (/invalid|not found/i.test(errorMsg)) {
     return {
       title: 'Invalid Coupon',
       message: 'This coupon code is not valid. Please check and try again! ❌',
     };
   }
-
   return {
     title: 'Oops!',
     message: errorMsg || 'Something went wrong. Please try again.',
   };
+};
+
+const formatDateTime = (dateString: string | undefined | null) => {
+  if (!dateString) return 'Not available';
+
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid date';
+
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  } catch (error) {
+    return 'Invalid date';
+  }
 };
 
 export function CouponModal({
@@ -114,47 +125,42 @@ export function CouponModal({
   appliedCoupon,
 }: CouponModalProps) {
   const couponFetcher = useFetcher<CouponFetcherData>();
-
-  // State management
-  const [errorState, setErrorState] = useState<{
-    show: boolean;
-    title: string;
-    message: string;
-    key: number;
-  }>({
+  const [errorState, setErrorState] = useState({
     show: false,
     title: '',
     message: '',
     key: 0,
   });
-
   const [expandedCoupons, setExpandedCoupons] = useState<Set<string>>(
     new Set(),
   );
   const [hasProcessedResponse, setHasProcessedResponse] = useState(false);
   const lastProcessedDataRef = useRef<string>('');
 
-  // Filter enabled coupons
-  const enabledCoupons = coupons.filter(
-    (coupon) => coupon.enabled && typeof coupon.couponCode === 'string',
-  );
+  const enabledCoupons = [...coupons]
+    .filter((coupon) => coupon.enabled && coupon.couponCode)
+    .sort((a, b) => {
+      const aTime = a.updatedAt
+        ? new Date(a.updatedAt).getTime()
+        : Number.NEGATIVE_INFINITY;
+      const bTime = b.updatedAt
+        ? new Date(b.updatedAt).getTime()
+        : Number.NEGATIVE_INFINITY;
+      return bTime - aTime;
+    });
 
   const isCouponApplied = !!activeOrder?.couponCodes?.length;
 
-  // Handle coupon fetcher response with improved error handling
   useEffect(() => {
     if (!couponFetcher.data || hasProcessedResponse) return;
 
     const currentDataStr = JSON.stringify(couponFetcher.data);
-
-    // Avoid processing the same response twice
     if (currentDataStr === lastProcessedDataRef.current) return;
 
     lastProcessedDataRef.current = currentDataStr;
 
     if (couponFetcher.data.error) {
       const { title, message } = formatErrorMessage(couponFetcher.data.error);
-
       setErrorState((prev) => ({
         show: true,
         title,
@@ -162,14 +168,12 @@ export function CouponModal({
         key: prev.key + 1,
       }));
     } else if (couponFetcher.data.success) {
-      // Close modal on success
       onClose();
     }
 
     setHasProcessedResponse(true);
   }, [couponFetcher.data, hasProcessedResponse, onClose]);
 
-  // Reset states when modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setErrorState((prev) => ({ ...prev, show: false }));
@@ -178,7 +182,6 @@ export function CouponModal({
     }
   }, [isOpen]);
 
-  // Reset processed flag when fetcher becomes idle
   useEffect(() => {
     if (couponFetcher.state === 'idle' && hasProcessedResponse) {
       const timer = setTimeout(() => setHasProcessedResponse(false), 100);
@@ -186,7 +189,6 @@ export function CouponModal({
     }
   }, [couponFetcher.state, hasProcessedResponse]);
 
-  // Handlers
   const closeErrorToast = useCallback(() => {
     setErrorState((prev) => ({ ...prev, show: false }));
   }, []);
@@ -194,11 +196,7 @@ export function CouponModal({
   const toggleCouponExpansion = useCallback((couponId: string) => {
     setExpandedCoupons((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(couponId)) {
-        newSet.delete(couponId);
-      } else {
-        newSet.add(couponId);
-      }
+      newSet.has(couponId) ? newSet.delete(couponId) : newSet.add(couponId);
       return newSet;
     });
   }, []);
@@ -208,52 +206,39 @@ export function CouponModal({
     return icons[index % icons.length];
   };
 
-  // Extract product variant names for a coupon
   const getVariantNames = (coupon: Coupon): string[] => {
-    const variantNames: string[] = [];
-
+    const names: string[] = [];
     for (const condition of coupon.conditions) {
       if (condition.code === 'productVariantIds') {
         for (const arg of condition.args) {
           if (arg.name === 'productVariantIds') {
             try {
-              const variantIds = JSON.parse(arg.value);
-              const cartItems = activeOrder?.lines ?? [];
-
-              const idsToCheck = Array.isArray(variantIds)
-                ? variantIds
-                : [arg.value];
-
-              for (const variantId of idsToCheck) {
-                const matchingItem = cartItems.find(
-                  (item) => item.productVariant.id === variantId.toString(),
-                );
-                if (matchingItem?.productVariant.name) {
-                  variantNames.push(matchingItem.productVariant.name);
-                }
-              }
+              const ids = JSON.parse(arg.value);
+              const lines = activeOrder?.lines ?? [];
+              const checkIds = Array.isArray(ids) ? ids : [ids];
+              checkIds.forEach((id: string) => {
+                const item = lines.find((l) => l.productVariant.id === id);
+                if (item?.productVariant.name)
+                  names.push(item.productVariant.name);
+              });
             } catch {
-              const cartItems = activeOrder?.lines ?? [];
-              const matchingItem = cartItems.find(
-                (item) => item.productVariant.id === arg.value,
+              const item = activeOrder?.lines?.find(
+                (line) => line.productVariant.id === arg.value,
               );
-              if (matchingItem?.productVariant.name) {
-                variantNames.push(matchingItem.productVariant.name);
-              }
+              if (item?.productVariant.name)
+                names.push(item.productVariant.name);
             }
           }
         }
       }
     }
-
-    return variantNames;
+    return names;
   };
 
   if (!isOpen) return null;
 
   return (
     <>
-      {/* Modal Backdrop */}
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden shadow-2xl">
           {/* Header */}
@@ -268,7 +253,7 @@ export function CouponModal({
             </button>
           </div>
 
-          {/* Content */}
+          {/* Coupon List */}
           <div className="p-6 overflow-y-auto max-h-[calc(85vh-120px)]">
             {enabledCoupons.length > 0 ? (
               <div className="space-y-4">
@@ -283,7 +268,7 @@ export function CouponModal({
                   return (
                     <div
                       key={coupon.id}
-                      className={`relative border rounded-xl overflow-hidden transition-all duration-200 ${
+                      className={`relative border rounded-xl transition-all duration-200 ${
                         isApplied
                           ? 'border-green-400 bg-green-50 shadow-lg'
                           : 'border-gray-200 bg-white hover:shadow-md hover:border-gray-300'
@@ -292,12 +277,12 @@ export function CouponModal({
                       <div className="p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg font-bold">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white flex items-center justify-center font-bold">
                               {getCouponIcon(index)}
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="text-lg font-bold text-gray-900 tracking-wide">
+                                <span className="text-lg font-bold">
                                   {coupon.couponCode}
                                 </span>
                                 {isApplied && (
@@ -306,12 +291,11 @@ export function CouponModal({
                                   </span>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-600 font-medium">
+                              <p className="text-sm text-gray-600">
                                 {coupon.name}
                               </p>
                             </div>
                           </div>
-
                           <couponFetcher.Form method="post">
                             <input
                               type="hidden"
@@ -347,7 +331,7 @@ export function CouponModal({
                           </couponFetcher.Form>
                         </div>
 
-                        {/* Coupon Description */}
+                        {/* Description & toggle */}
                         <div className="mb-3">
                           <div
                             className="text-sm text-gray-700 leading-relaxed"
@@ -357,49 +341,43 @@ export function CouponModal({
                                 : (
                                     coupon.description || 'No details available'
                                   ).substring(0, 100) +
-                                  (coupon.description &&
+                                  (coupon.description?.length &&
                                   coupon.description.length > 100
                                     ? '...'
                                     : ''),
                             }}
                           />
-                          {coupon.description &&
-                            coupon.description.length > 100 && (
-                              <button
-                                onClick={() => toggleCouponExpansion(coupon.id)}
-                                className="text-blue-600 hover:text-blue-800 text-sm font-medium mt-1 flex items-center gap-1"
-                              >
-                                {isExpanded ? (
-                                  <>
-                                    <ChevronUp className="w-3 h-3" />
-                                    LESS
-                                  </>
-                                ) : (
-                                  <>
-                                    <ChevronDown className="w-3 h-3" />
-                                    MORE
-                                  </>
-                                )}
-                              </button>
-                            )}
+                          {coupon.description?.length > 100 && (
+                            <button
+                              onClick={() => toggleCouponExpansion(coupon.id)}
+                              className="text-blue-600 hover:text-blue-800 text-sm font-medium mt-1 flex items-center gap-1"
+                            >
+                              {isExpanded ? (
+                                <>
+                                  <ChevronUp className="w-3 h-3" /> LESS
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className="w-3 h-3" /> MORE
+                                </>
+                              )}
+                            </button>
+                          )}
                         </div>
 
-                        {/* Additional Details */}
                         {(variantNames.length > 0 ||
                           coupon.endsAt ||
                           coupon.usageLimit) && (
                           <div className="space-y-2 pt-3 border-t border-gray-100">
                             {variantNames.length > 0 && (
-                              <div className="flex items-start gap-2">
-                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                              <div className="text-xs text-gray-700">
+                                <strong className="text-gray-500 mr-1">
                                   Products:
-                                </span>
-                                <span className="text-xs text-gray-700">
-                                  {variantNames.join(', ')}
-                                </span>
+                                </strong>
+                                {variantNames.join(', ')}
                               </div>
                             )}
-                            <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <div className="flex gap-4 text-xs text-gray-500">
                               {coupon.endsAt && (
                                 <div className="flex items-center gap-1">
                                   <Clock className="w-3 h-3" />
@@ -442,7 +420,6 @@ export function CouponModal({
         </div>
       </div>
 
-      {/* Toast Notification for errors */}
       <ToastNotification
         key={errorState.key}
         show={errorState.show}
