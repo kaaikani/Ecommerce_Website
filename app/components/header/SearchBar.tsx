@@ -16,6 +16,7 @@ export function SearchBar({ isMobile = false }: SearchBarProps) {
 
   return (
     <Form method="get" action="/search" key={initialQuery}>
+
       <div
         className={
           isMobile
