@@ -180,7 +180,7 @@ export default function ProductSlug() {
             {/* Product info section */}
             <div className="w-full lg:w-1/2 bg-white p-6 rounded-lg shadow-md flex flex-col justify-between">
               <div className="flex-1">
-                <h2 className="text-3xl font-semibold font-light tracking-tight text-gray-900 mb-4">
+                <h2 className="text-3xl font-semibold  tracking-tight text-gray-900 mb-4">
                   {product.name}
                 </h2>
                 <div

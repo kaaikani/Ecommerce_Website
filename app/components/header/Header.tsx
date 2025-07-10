@@ -11,6 +11,7 @@ import {
 import { useScrollingUp } from '~/utils/use-scrolling-up';
 import { classNames } from '~/utils/class-names';
 import { useTranslation } from 'react-i18next';
+import { SearchBar } from './SearchBar';
 
 export function Header({
   onCartIconClick,
@@ -78,16 +79,7 @@ export function Header({
 
           {/* Desktop Search bar - centered in desktop view */}
           <div className="hidden md:flex flex-1 justify-center max-w-xs sm:max-w-md lg:max-w-xl mx-2 sm:mx-4 lg:mx-8">
-            <div className="relative w-full">
-              <input
-                type="text"
-                placeholder="Search a product"
-                className="w-full px-3 py-2 sm:py-3 pr-10 sm:pr-12 bg-[#3C3D37] border border-gray-600 rounded-full text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent text-sm sm:text-base"
-              />
-              <button className="absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2 bg-white text-black p-1.5 sm:p-2 rounded-full hover:bg-gray-100">
-                <MagnifyingGlassIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-            </div>
+                     <SearchBar></SearchBar>
           </div>
 
           {/* Icons Container - Account, Search (mobile/tablet), and Cart */}
