@@ -1,7 +1,7 @@
 'use client';
 
 import type React from 'react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from '@remix-run/react';
 import {
   ShoppingBagIcon,
@@ -12,6 +12,13 @@ import { useScrollingUp } from '~/utils/use-scrolling-up';
 import { classNames } from '~/utils/class-names';
 import { useTranslation } from 'react-i18next';
 import { SearchBar } from './SearchBar';
+import {
+  remoteConfig,
+  fetchAndActivate,
+  getBoolean,
+  getString,
+} from '~/firebase/firebase';
+import { Dialog } from '@headlessui/react';
 
 export function Header({
   onCartIconClick,
@@ -27,33 +34,40 @@ export function Header({
   const isScrollingUp = useScrollingUp();
   const { t } = useTranslation();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isAppLeavingz, setIsAppLeaving] = useState(false);
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [leaveMessage, setLeaveMessage] = useState('We are currently closed.');
+  const [LeaveDialogtitle, Dialogtitle] = useState('Sorry for incovninece.');
+  // Fetch Remote Config values once
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      fetchAndActivate(remoteConfig)
+        .then(() => {
+          const shouldLeave = getBoolean(remoteConfig, 'is_app_leavingz');
+          const message = getString(remoteConfig, 'leave_dialog_message');
+          setIsAppLeaving(shouldLeave);
+          setLeaveMessage(message || 'We are currently closed.');
+        })
+        .catch((err) => console.error('Remote Config fetch failed:', err));
+    }
+  }, []);
 
-  // Sort collections based on slug endings
+  // Sort collections
   const sortedCollections = useMemo(() => {
     return [...collections].sort((a, b) => {
       const aEnding = a.slug.slice(-1);
       const bEnding = b.slug.slice(-1);
-
-      const getPriority = (ending: string) => {
-        if (ending === '1') return 1;
-        if (ending === '2') return 2;
-        return 3;
-      };
-
+      const getPriority = (ending: string) =>
+        ending === '1' ? 1 : ending === '2' ? 2 : 3;
       const aPriority = getPriority(aEnding);
       const bPriority = getPriority(bEnding);
-
-      if (aPriority !== bPriority) {
-        return aPriority - bPriority;
-      }
-
-      return a.name.localeCompare(b.name);
+      return aPriority !== bPriority
+        ? aPriority - bPriority
+        : a.name.localeCompare(b.name);
     });
   }, [collections]);
 
-  const toggleSearch = () => {
-    setIsSearchOpen(!isSearchOpen);
-  };
+  const toggleSearch = () => setIsSearchOpen(!isSearchOpen);
 
   return (
     <header
@@ -62,10 +76,8 @@ export function Header({
         'bg-black text-white',
       )}
     >
-      {/* Main header section - responsive */}
-      <div className="w-full px-4 sm:px-4 py-2 sm:py-4 bg-[#3C3D37]">
+      <div className="w-full px-4 py-2 sm:py-4 bg-[#3C3D37]">
         <div className="flex items-center justify-between gap-2 sm:gap-4 lg:gap-8">
-          {/* Logo */}
           <Link
             to="/home"
             className="flex items-center space-x-2 flex-shrink-0"
@@ -77,23 +89,24 @@ export function Header({
             />
           </Link>
 
-          {/* Desktop Search bar - centered in desktop view */}
-          <div className="hidden md:flex flex-1 justify-center max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-2 sm:mx-4 lg:mx-8">
+          {/* Desktop Search */}
+          <div className="hidden md:flex flex-1 justify-center max-w-4xl mx-4">
             <SearchBar />
           </div>
 
-          {/* Icons Container - Account, Search (mobile/tablet), and Cart */}
+          {/* Icons */}
           <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
             <Link
               to={isSignedIn ? '/account' : '/sign-in'}
-              className="flex items-center gap-1 sm:gap-2 hover:text-gray-300 whitespace-nowrap"
+              className="flex items-center gap-2 hover:text-gray-300"
             >
-              <UserIcon className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="text-xs sm:text-sm">
+              <UserIcon className="w-4 h-4" />
+              <span className="text-sm">
                 {isSignedIn ? 'My Account' : 'Log In'}
               </span>
             </Link>
-            {/* Search Icon - visible on mobile and tablet */}
+
+            {/* Mobile search */}
             <button
               className="md:hidden p-1.5 bg-white/10 hover:bg-white/20 rounded-full"
               onClick={toggleSearch}
@@ -101,9 +114,18 @@ export function Header({
             >
               <MagnifyingGlassIcon className="w-5 h-5" />
             </button>
+
+            {/* Cart Icon */}
             <button
               className="relative p-1.5 sm:p-2 bg-white/10 hover:bg-white/20 rounded-full"
-              onClick={onCartIconClick}
+              onClick={(e) => {
+                if (isAppLeavingz) {
+                  e.preventDefault();
+                  setShowLeaveDialog(true);
+                } else {
+                  onCartIconClick();
+                }
+              }}
               aria-label="Open cart tray"
             >
               <ShoppingBagIcon className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -116,7 +138,7 @@ export function Header({
           </div>
         </div>
 
-        {/* Mobile Search bar - toggleable, visible only when isSearchOpen is true */}
+        {/* Mobile Search Bar */}
         {isSearchOpen && (
           <div className="md:hidden mt-3 pb-1">
             <SearchBar isMobile />
@@ -152,6 +174,30 @@ export function Header({
           </div>
         </div>
       </div>
+
+      {/* Leave Dialog */}
+      {showLeaveDialog && (
+        <Dialog
+          open={showLeaveDialog}
+          onClose={() => setShowLeaveDialog(false)}
+          className="fixed z-30 inset-0 overflow-y-auto"
+        >
+          <div className="flex items-center justify-center min-h-screen px-4 text-center bg-black bg-opacity-50">
+            <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-sm mx-auto">
+              <Dialog.Title className="text-lg font-medium text-gray-900 mb-4">
+                Sorry for the inconvenience
+              </Dialog.Title>
+              <p className="text-gray-700 mb-6">{leaveMessage}</p>
+              <button
+                className="bg-white border border-black text-black hover:text-white hover:bg-black px-6 py-1 rounded"
+                onClick={() => setShowLeaveDialog(false)}
+              >
+                OK
+              </button>
+            </Dialog.Panel>
+          </div>
+        </Dialog>
+      )}
     </header>
   );
 }
