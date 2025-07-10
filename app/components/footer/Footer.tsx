@@ -79,13 +79,13 @@ export default function Footer({
   return (
     <footer className="mt-20 bg-black" aria-labelledby="footer-heading">
       <div className="w-full px-3 pb-5 sm:px-6 lg:px-3">
-        <div className="mt-10 border-t border-white/10 pt-6 sm:mt-10 lg:mt-15">
-          <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
+        <div className="mt-5 border-t border-white/10 pt-6 sm:mt-10 lg:mt-15">
+          <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0 w-full">
             {/* Contact and About Links - visible on all views, horizontal on desktop */}
-            <div className="flex justify-center space-x-8 order-1 md:order-1">
+            <div className="flex flex-wrap justify-center items-center space-x-8 order-1 md:order-1">
               <a
                 href="/contact"
-                className="text-white hover:text-gray-400 transition-colors duration-200 text-sm font-medium"
+                className="text-white hover:text-gray-400 transition-colors duration-200 text-sm font-medium whitespace-nowrap"
               >
                 Contact Us
               </a>
@@ -97,8 +97,13 @@ export default function Footer({
               </a>
             </div>
 
-            {/* Social Media Icons */}
-            <div className="flex justify-center space-x-6 md:order-2 order-2">
+            {/* Copyright Text - always centered */}
+            <p className="text-center text-xs leading-4 text-white order-2 ">
+              &copy; 2025 KaaiKani, Inc. All rights reserved.
+            </p>
+
+            {/* Social Media Icons - right on desktop, bottom on mobile */}
+            <div className="flex justify-center md:justify-end space-x-6 order-3 w-full md:w-auto">
               {navigation.social.map((item) => (
                 <a
                   key={item.name}
@@ -110,11 +115,6 @@ export default function Footer({
                 </a>
               ))}
             </div>
-
-            {/* Copyright Text */}
-            <p className="text-center text-xs leading-5 text-white md:order-3 order-3 md:text-left">
-              &copy; 2025 KaaiKani, Inc. All rights reserved.
-            </p>
           </div>
         </div>
       </div>

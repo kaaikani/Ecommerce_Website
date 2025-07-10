@@ -8,15 +8,15 @@ export function StockLevelLabel({ stockLevel }: { stockLevel?: string }) {
   let badgeClasses = 'bg-gray-100 text-gray-800';
   switch (stockLevel as StockLevel) {
     case 'IN_STOCK':
-      stockLevelLabel = t('product.inStock');
+      stockLevelLabel = 'In Stock';
       badgeClasses = 'bg-green-100 text-green-800';
       break;
     case 'OUT_OF_STOCK':
-      stockLevelLabel = t('product.outOfStock');
+      stockLevelLabel = 'Out of Stock';
       badgeClasses = 'bg-red-100 text-red-800';
       break;
     case 'LOW_STOCK':
-      stockLevelLabel = t('product.lowStock');
+      stockLevelLabel = 'Low Stock';
       badgeClasses = 'bg-yellow-100 text-yellow-800';
       break;
   }

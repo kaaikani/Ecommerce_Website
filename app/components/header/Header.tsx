@@ -78,8 +78,10 @@ export function Header({
           </Link>
 
           {/* Desktop Search bar - centered in desktop view */}
+
           <div className="hidden md:flex flex-1 justify-center max-w-xs sm:max-w-md lg:max-w-xl mx-2 sm:mx-4 lg:mx-8">
                      <SearchBar></SearchBar>
+
           </div>
 
           {/* Icons Container - Account, Search (mobile/tablet), and Cart */}
@@ -119,17 +121,7 @@ export function Header({
         {/* Mobile Search bar - toggleable, visible only when isSearchOpen is true */}
         {isSearchOpen && (
           <div className="md:hidden mt-3 pb-1">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search a product"
-                className="w-full px-3 py-3 pr-12 bg-[#3C3D37] border border-gray-600 rounded-full text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent text-sm"
-                autoFocus
-              />
-              <button className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white text-black p-2 rounded-full hover:bg-gray-100">
-                <MagnifyingGlassIcon className="w-4 h-4" />
-              </button>
-            </div>
+            <SearchBar isMobile />
           </div>
         )}
       </div>
@@ -162,34 +154,6 @@ export function Header({
           </div>
         </div>
       </div>
-
-      {/* Add CSS for vertical cycle animation with slight smoothness */}
-      <style>
-        {`
-          @keyframes vertical-cycle {
-            0%, 45% {
-              transform: translateY(0);
-            }
-            50%, 95% {
-              transform: translateY(-50%);
-            }
-            100% {
-              transform: translateY(0);
-            }
-          }
-          .animate-vertical-cycle {
-            animation: vertical-cycle 6s ease-in-out infinite;
-            display: flex;
-            flex-direction: column;
-            height: 48px;
-          }
-          .animate-vertical-cycle > div {
-            height: 24px;
-            line-height: 24px;
-            text-align: center;
-          }
-        `}
-      </style>
     </header>
   );
 }

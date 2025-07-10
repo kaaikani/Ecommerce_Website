@@ -220,25 +220,33 @@ export default function ProductSlug() {
                           >
                             {t('product.selectOption')}
                           </label>
-                          <select
-                            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
-                            id="productVariant"
-                            value={selectedVariantId}
-                            name="variantId"
-                            onChange={(e) => {
-                              setSelectedVariantId(e.target.value);
-                              const variant = findVariantById(e.target.value);
-                              if (variant) {
-                                setFeaturedAsset(variant.featuredAsset);
-                              }
-                            }}
-                          >
+                          <div className="flex flex-wrap gap-2">
                             {product.variants.map((variant) => (
-                              <option key={variant.id} value={variant.id}>
+                              <button
+                                key={variant.id}
+                                type="button"
+                                className={`px-4 py-2 rounded-md border text-sm font-medium transition-colors duration-200 ${
+                                  selectedVariantId === variant.id
+                                    ? 'bg-black text-white border-black'
+                                    : 'bg-white text-black border-black'
+                                }`}
+                                onClick={() => {
+                                  setSelectedVariantId(variant.id);
+                                  setFeaturedAsset(variant.featuredAsset);
+                                }}
+                              >
                                 {variant.name}
-                              </option>
+                                <input
+                                  type="radio"
+                                  name="variantId"
+                                  value={variant.id}
+                                  checked={selectedVariantId === variant.id}
+                                  className="hidden"
+                                  readOnly
+                                />
+                              </button>
                             ))}
-                          </select>
+                          </div>
                         </div>
                       ) : (
                         <input
@@ -255,10 +263,10 @@ export default function ProductSlug() {
                         {qtyInCart ? (
                           <span className="flex items-center justify-center">
                             <CheckIcon className="w-5 h-5 mr-1" /> {qtyInCart}{' '}
-                            {t('product.inCart')}
+                            In cart
                           </span>
                         ) : (
-                          t('product.addToCart')
+                          'Add to Cart'
                         )}
                       </button>
                       {addItemToOrderError && (
