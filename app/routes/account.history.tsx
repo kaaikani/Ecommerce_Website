@@ -168,7 +168,6 @@ export default function AccountHistory() {
           <div className="fixed inset-y-0 left-0 w-80 max-w-full bg-white shadow-xl">
             <div className="flex h-full flex-col">
               <div className="flex h-16 items-center justify-between px-4 border-b">
-                <h2 className="text-lg font-semibold">Menu</h2>
                 <button
                   type="button"
                   className="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
@@ -304,7 +303,6 @@ export default function AccountHistory() {
   }) {
     const { firstName, lastName, emailAddress, phoneNumber } = activeCustomer;
     const user = { firstName, lastName, emailAddress, phoneNumber };
-
     const links = navigation.map((item) => ({
       to: item.href,
       label: item.name,
@@ -341,7 +339,6 @@ export default function AccountHistory() {
             <img src="/KK-Logo.png" alt="logo" className="w-32 h-auto" />
           </a>
         </div>
-
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           {links.map(({ to, label, icon: Icon }) => (

@@ -156,6 +156,8 @@ export default function OrderHistoryItem({
     setShowCancelDialog(false);
   };
 
+  const shipping = order.shippingWithTax ?? 0;
+
   // Show success/error messages
   const isSubmitting = fetcher.state === 'submitting';
   const actionData = fetcher.data as
@@ -236,17 +238,6 @@ export default function OrderHistoryItem({
             )}
           </div>
           <div className="flex" role="group">
-            {canCancelOrder && !hasPendingCancelRequest && (
-              <Button
-                onClick={() => setShowCancelDialog(true)}
-                className="bg-white text-red-500 border border-red-500 hover:bg-red-500 hover:text-white text-sm rounded-r-none border-r-0"
-                title="Cancel Order"
-                disabled={isSubmitting}
-              >
-                <XMarkIcon className="w-4 h-4" />
-                <span className="hidden sm:inline ml-1">Cancel</span>
-              </Button>
-            )}
             {/* <Button title={t("order.actionsMessage")} className="bg-white text-sm rounded-r-none border-r-0">
               <span className="text-xs hidden">{t("order.actions")}</span>
               <EllipsisVerticalIcon className="w-5 h-5" />
@@ -404,9 +395,19 @@ export default function OrderHistoryItem({
                 {(order.fulfillments?.length || 0) === 1 ? '' : `#${index + 1}`}
               </Button>
             ))}
+            {canCancelOrder && !hasPendingCancelRequest && (
+              <Button
+                onClick={() => setShowCancelDialog(true)}
+                className="bg-white text-red-500 border border-red-500 hover:bg-red-500 hover:text-white text-xs order-1 sm:order-none"
+                title="Cancel Order"
+                disabled={isSubmitting}
+              >
+                <span>Cancel</span>
+              </Button>
+            )}
             <Button
               onClick={() => setAreDetailsExpanded(!areDetailsExpanded)}
-              className="col-start-2"
+              className="col-start-2 order-2 sm:order-none"
             >
               <span className="text-xs">{t('order.detailedOverview')}</span>
               <ChevronRightIcon
@@ -423,89 +424,66 @@ export default function OrderHistoryItem({
               <h6 className="font-medium col-span-full">
                 {t('order.summary')}
               </h6>
-              <span>{t('order.items.subtotal')}</span>
+              <span>Subtotal</span>
               <span className="text-end">
-                {order.lines &&
-                order.lines.length > 0 &&
-                order.currencyCode &&
-                Object.values(CurrencyCode).includes(
-                  order.currencyCode as CurrencyCode,
-                )
-                  ? (() => {
-                      const itemsSubtotal = order.lines.reduce(
-                        (acc, line) =>
-                          acc + (line.discountedLinePriceWithTax || 0),
-                        0,
-                      );
-                      return (
-                        <Price
-                          priceWithTax={itemsSubtotal}
-                          currencyCode={order.currencyCode as CurrencyCode}
-                        />
-                      );
-                    })()
-                  : '--'}
-              </span>
-
-              <span>{t('order.shippingAndHandling')}</span>
-              <span className="text-end">
-                {order.shippingLines &&
-                order.shippingLines.length > 0 &&
-                order.currencyCode &&
-                Object.values(CurrencyCode).includes(
-                  order.currencyCode as CurrencyCode,
-                ) ? (
-                  <Price
-                    priceWithTax={order.shippingLines.reduce(
-                      (acc, shippingLine) => acc + shippingLine.priceWithTax,
-                      0,
-                    )}
-                    currencyCode={order.currencyCode as CurrencyCode}
-                  />
-                ) : (
-                  '--'
-                )}
-              </span>
-
-              <span>{t('order.appliedCoupons')}</span>
-              <span className="text-end text-red-600">
-                {order.discounts &&
-                order.discounts.length > 0 &&
-                order.currencyCode &&
-                Object.values(CurrencyCode).includes(
-                  order.currencyCode as CurrencyCode,
-                ) ? (
-                  <>
-                    -
+                {(() => {
+                  const subtotal = order.lines.reduce(
+                    (acc, line) => acc + (line.discountedLinePriceWithTax ?? 0),
+                    0,
+                  );
+                  return (
                     <Price
-                      priceWithTax={Math.abs(
-                        order.discounts.reduce(
-                          (acc, discount) => acc + discount.amountWithTax,
-                          0,
-                        ),
-                      )}
+                      priceWithTax={subtotal}
                       currencyCode={order.currencyCode as CurrencyCode}
                     />
-                  </>
-                ) : (
-                  '--'
-                )}
+                  );
+                })()}
               </span>
 
-              <span className="font-medium">{t('order.grandTotal')}</span>
+              <span>Shipping</span>
+              <span className="text-end">
+                <Price
+                  priceWithTax={shipping}
+                  currencyCode={order.currencyCode as CurrencyCode}
+                />
+              </span>
+
+              <span>Coupon & Discount</span>
+              <span className="text-end text-red-600">
+                {(() => {
+                  const subtotal = order.lines.reduce(
+                    (acc, line) => acc + (line.discountedLinePriceWithTax ?? 0),
+                    0,
+                  );
+                  const shippingVal = shipping;
+                  const total = order.totalWithTax ?? 0;
+                  const discount = subtotal + shippingVal - total;
+                  const hasDiscount =
+                    order.discounts &&
+                    order.discounts.length > 0 &&
+                    discount > 0;
+                  if (hasDiscount) {
+                    return (
+                      <>
+                        -
+                        <Price
+                          priceWithTax={discount}
+                          currencyCode={order.currencyCode as CurrencyCode}
+                        />
+                      </>
+                    );
+                  } else {
+                    return '--';
+                  }
+                })()}
+              </span>
+
+              <span className="font-medium">Total</span>
               <span className="font-medium text-end">
-                {order.totalWithTax != null &&
-                order.currencyCode &&
-                Object.values(CurrencyCode).includes(
-                  order.currencyCode as CurrencyCode,
-                ) ? (
-                  <Price
-                    priceWithTax={order.totalWithTax}
-                    currencyCode={order.currencyCode as CurrencyCode}
-                  />
-                ) : (
-                  '--'
-                )}
+                <Price
+                  priceWithTax={order.totalWithTax ?? 0}
+                  currencyCode={order.currencyCode as CurrencyCode}
+                />
               </span>
             </div>
           )}
