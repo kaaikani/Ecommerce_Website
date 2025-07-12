@@ -148,31 +148,29 @@ export function Header({
 
       {/* Scrollable Navigation Carousel - responsive with sorted collections */}
       <div className="bg-white border-t border-gray-200">
-        <div className="w-full">
-          <div
-            className="overflow-x-auto"
-            style={
-              {
-                msOverflowStyle: 'none',
-                scrollbarWidth: 'none',
-                WebkitScrollbar: { display: 'none' },
-              } as React.CSSProperties
-            }
-          >
-            <nav className="flex gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 min-w-max">
-              {sortedCollections.map((collection) => (
-                <Link
-                  key={collection.id}
-                  to={`/collections/${collection.slug}`}
-                  prefetch="intent"
-                  className="text-xs sm:text-sm font-medium text-black hover:text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-md hover:bg-black whitespace-nowrap flex-shrink-0 transition-colors duration-200"
-                >
-                  {collection.name}
-                </Link>
-              ))}
-            </nav>
-          </div>
-        </div>
+      <div className="w-full flex justify-center">
+  <div
+    className="overflow-x-auto"
+    style={{
+      msOverflowStyle: 'none',
+      scrollbarWidth: 'none',
+    } as React.CSSProperties}
+  >
+    <nav className="flex gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 min-w-max">
+      {sortedCollections.map((collection) => (
+        <Link
+          key={collection.id}
+          to={`/collections/${collection.slug}`}
+          prefetch="intent"
+          className="text-xs sm:text-sm font-medium text-black hover:text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-md hover:bg-black whitespace-nowrap flex-shrink-0 transition-colors duration-200"
+        >
+          {collection.name}
+        </Link>
+      ))}
+    </nav>
+  </div>
+</div>
+
       </div>
 
       {/* Leave Dialog */}

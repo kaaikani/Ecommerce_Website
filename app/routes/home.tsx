@@ -103,7 +103,7 @@ export default function home() {
 
       {/* Banner Carousel Section */}
       {banners && banners.length > 0 && (
-        <section className="mt-8 mb-8 xl:mb-5 px-2 sm:px-3 lg:px-4">
+        <section className="mt-3 mb-8 xl:mb-5 px-2 sm:px-3 lg:px-4">
           <BannerCarousel banners={banners} />
         </section>
       )}
@@ -111,22 +111,20 @@ export default function home() {
       {/* Enhanced Responsive Collections Section */}
       <section
         aria-labelledby="category-heading"
-        className="mb-15 sm:pt-3 md:pt-4 lg:pt-5 xl:pt-7 w-full max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 xl:px-4 2xl:px-0"
-      >
+  className="mb-16 sm:pt-4 md:pt-6 lg:pt-8 xl:pt-10 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12"      >
         {/* Image and Heading Container */}
-        <div className="flex flex-col text-lg items-center mb-6 sm:mb-8 md:mb-10 lg:mb-12">
+        <div className="flex flex-col text-lg font-se items-center mb-6 sm:mb-8 md:mb-10 lg:mb-12">
           <p>Discover Our Finest Selection</p>
           <h3
             id="category-heading"
-            className="text-xl font-semibold sm:text-2xl md:text-3xl lg:text-4xl  tracking-tight text-gray-900 text-center"
-          >
+className="text-4xl sm:text-5xl lg:text-5xl font-[900] w-full text-center uppercase text-green-950 mb-4"          >
             SHOP BY CATEGORY
           </h3>
         </div>
 
         {/* Responsive Grid Container with Equal Heights */}
         <div className="w-full">
-          <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6 md:gap-8 lg:gap-10 auto-rows-fr">
+          <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-6 gap-4 sm:gap-6 md:gap-8 lg:gap-10 auto-rows-fr">
             {collections.map((collection) => (
               <div
                 key={collection.id}
