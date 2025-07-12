@@ -12,6 +12,7 @@ schema:
 documents:
   - "app/**/*.{ts,tsx}"
   - "!app/generated/*"
+  - "!app/lib/hygraph.ts"
 config:
   scalars:
     Money: number

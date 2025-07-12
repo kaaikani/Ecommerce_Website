@@ -2,7 +2,6 @@ import { DocumentNode, print } from 'graphql';
 import { API_URL } from './constants';
 import { getSdk } from './generated/graphql';
 import { getSessionStorage } from './sessions';
-// import { getSessionStorage } from './sessions';
 
 export interface QueryOptions {
   request?: Request;
@@ -35,7 +34,7 @@ async function sendQuery<Response, Variables = {}>(options: {
     options.request?.headers.get('Cookie')
   );
 
-  // ✅ Priority: custom vendure-token > session vendure-token
+  // ✅ Handle vendure-token (channel token)
   const customChannelToken = options.customHeaders?.['vendure-token'];
   const sessionChannelToken = session?.get(CHANNEL_TOKEN_SESSION_KEY);
 
@@ -45,9 +44,10 @@ async function sendQuery<Response, Variables = {}>(options: {
     headers.set('vendure-token', sessionChannelToken);
   }
 
-  // if (options.customHeaders?.['vendure-token']) {
-  //   headers.set('vendure-token', options.customHeaders['vendure-token']);
-  // }
+  // ✅ Handle device medium — DEFAULT TO "Website" if not set
+  const customDeviceMedium =
+    options.customHeaders?.['x-device-medium'] || 'Website';
+  headers.set('x-device-medium', customDeviceMedium);
 
   // ✅ Authorization token from session
   const authToken = session?.get(AUTH_TOKEN_SESSION_KEY);
@@ -72,6 +72,7 @@ async function sendQuery<Response, Variables = {}>(options: {
     headers: res.headers,
   };
 }
+
 
 function requester<R, V>(
   doc: DocumentNode,
@@ -110,7 +111,6 @@ function requester<R, V>(
     return { ...response.data, _headers: headers };
   });
 }
-
 
 // ✅ Base SDK with wrapped requester
 const baseSdk = getSdk<QueryOptions, unknown>(requester);

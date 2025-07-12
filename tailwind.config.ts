@@ -12,10 +12,41 @@ export default {
         primary: colors.sky,
         secondary: colors.emerald,
       },
-      animation: {
-        dropIn: 'dropIn 0.2s ease-out',
+       animation: {
+        'fade-in': 'fade-in 0.5s linear forwards',
+         move: 'move 5s linear infinite',
+        marquee: 'marquee var(--marquee-duration) linear infinite',
+        'spin-slow': 'spin 4s linear infinite',
+        'spin-slower': 'spin 6s linear infinite',
+        'spin-reverse': 'spin-reverse 1s linear infinite',
+        'spin-reverse-slow': 'spin-reverse 4s linear infinite',
+        'spin-reverse-slower': 'spin-reverse 6s linear infinite',
       },
-      keyframes: {
+  
+
+       keyframes: {
+        'fade-in': {
+          from: {
+            opacity: '0',
+          },
+          to: {
+            opacity: '1',
+          },
+        },
+         move: {
+          '0%': { transform: 'translateX(-200px)' },
+          '100%': { transform: 'translateX(200px)' },
+        },
+        marquee: {
+          '100%': {
+            transform: 'translateY(-50%)',
+          },
+        },
+        'spin-reverse': {
+          to: {
+            transform: 'rotate(-360deg)',
+          },
+        },
         dropIn: {
           '0%': { transform: 'translateY(-100px)' },
           '100%': { transform: 'translateY(0)' },

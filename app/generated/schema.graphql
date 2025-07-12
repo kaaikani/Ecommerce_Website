@@ -2252,7 +2252,10 @@ type OrderAddress {
 
 type OrderCustomFields {
   clientRequestToCancel: Int
+  deviceMedium: String
   otherInstructions: String
+  placedAtISTFormatted: DateTime
+  razorpayStatus: String
   razorpay_order_id: String
 }
 
@@ -2264,9 +2267,12 @@ input OrderFilterParameter {
   code: StringOperators
   createdAt: DateOperators
   currencyCode: StringOperators
+  deviceMedium: StringOperators
   id: IDOperators
   orderPlacedAt: DateOperators
   otherInstructions: StringOperators
+  placedAtISTFormatted: DateOperators
+  razorpayStatus: StringOperators
   razorpay_order_id: StringOperators
   shipping: NumberOperators
   shippingWithTax: NumberOperators
@@ -2415,9 +2421,12 @@ input OrderSortParameter {
   clientRequestToCancel: SortOrder
   code: SortOrder
   createdAt: SortOrder
+  deviceMedium: SortOrder
   id: SortOrder
   orderPlacedAt: SortOrder
   otherInstructions: SortOrder
+  placedAtISTFormatted: SortOrder
+  razorpayStatus: SortOrder
   razorpay_order_id: SortOrder
   shipping: SortOrder
   shippingWithTax: SortOrder
@@ -3037,7 +3046,7 @@ type ProductVariant implements Node {
   assets: [Asset!]!
   createdAt: DateTime!
   currencyCode: CurrencyCode!
-  customFields: JSON
+  customFields: ProductVariantCustomFields
   facetValues: [FacetValue!]!
   featuredAsset: Asset
   id: ID!
@@ -3056,11 +3065,16 @@ type ProductVariant implements Node {
   updatedAt: DateTime!
 }
 
+type ProductVariantCustomFields {
+  hsnCode: String
+}
+
 input ProductVariantFilterParameter {
   _and: [ProductVariantFilterParameter!]
   _or: [ProductVariantFilterParameter!]
   createdAt: DateOperators
   currencyCode: StringOperators
+  hsnCode: StringOperators
   id: IDOperators
   languageCode: StringOperators
   name: StringOperators
@@ -3098,6 +3112,7 @@ input ProductVariantListOptions {
 
 input ProductVariantSortParameter {
   createdAt: SortOrder
+  hsnCode: SortOrder
   id: SortOrder
   name: SortOrder
   price: SortOrder
