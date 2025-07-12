@@ -696,6 +696,56 @@ export default function CheckoutPage() {
     ? couponCodes.find((c: any) => c.couponCode === appliedCouponCode)
     : null;
 
+  // Helper: get all coupon productVariantIds for the applied coupon
+  const couponProductVariantIds = (appliedCouponDetails?.conditions || [])
+    .map((condition: any) => {
+      const arg = condition.args.find(
+        (a: any) => a.name === 'productVariantIds',
+      );
+      if (arg && arg.value) {
+        try {
+          if (arg.value.startsWith('[')) {
+            return JSON.parse(arg.value);
+          } else {
+            return [arg.value];
+          }
+        } catch {
+          return [];
+        }
+      }
+      return [];
+    })
+    .flat();
+
+  // Wrap removeItem to also remove coupon if coupon product is removed
+  function handleRemoveItem(lineId: string) {
+    const line = activeOrder?.lines.find((l) => l.id === lineId);
+    const isCouponProduct =
+      line &&
+      couponProductVariantIds
+        .map(String)
+        .includes(String(line.productVariant.id));
+    console.log(
+      'Removing line:',
+      lineId,
+      'isCouponProduct:',
+      isCouponProduct,
+      'appliedCouponCode:',
+      appliedCouponCode,
+    );
+    removeItem(lineId);
+    if (isCouponProduct && appliedCouponCode) {
+      couponFetcher.submit(
+        {
+          action: 'removeCoupon',
+          couponCode: appliedCouponCode,
+        },
+        { method: 'post' },
+      );
+      setShouldRefreshAfterCouponRemoval(true);
+    }
+  }
+
   // Handle modal open with a small delay to prevent immediate close
   const handleOpenCouponModal = () => {
     setTimeout(() => {
@@ -710,8 +760,11 @@ export default function CheckoutPage() {
       couponFetcher.data?.appliedCoupon === null &&
       shouldRefreshAfterCouponRemoval
     ) {
-      // Coupon was successfully removed, refresh the page
-      window.location.reload();
+      // Coupon was successfully removed, refresh only the cart/coupon UI
+      // window.location.reload();
+      // Instead, re-fetch the active order to update the UI
+      activeOrderFetcher.load('/api/active-order');
+      setShouldRefreshAfterCouponRemoval(false);
     }
   }, [couponFetcher.data, shouldRefreshAfterCouponRemoval]);
 
@@ -789,7 +842,7 @@ export default function CheckoutPage() {
                               .join(', ')}
                           </p>
                         </div>
-                        <div className="mt-4 flex space-x-3">
+                        {/* <div className="mt-4 flex space-x-3">
                           <button
                             type="button"
                             onClick={() => {
@@ -799,7 +852,7 @@ export default function CheckoutPage() {
                           >
                             Use Another Address
                           </button>
-                        </div>
+                        </div> */}
                       </>
                     );
                   })()}
@@ -1002,7 +1055,7 @@ export default function CheckoutPage() {
                 orderLines={visibleLines}
                 currencyCode={activeOrder?.currencyCode!}
                 editable={true}
-                removeItem={removeItem}
+                removeItem={handleRemoveItem}
                 adjustOrderLine={adjustOrderLine}
               />
 
@@ -1108,7 +1161,7 @@ export default function CheckoutPage() {
               )}
 
               {/* Shipping Address Summary */}
-              {shippingAddress && (
+              {/* {shippingAddress && (
                 <div className="mt-6 pt-6 border-t border-black">
                   <h3 className="text-sm font-medium text-black mb-2">
                     Shipping Summary
@@ -1138,7 +1191,7 @@ export default function CheckoutPage() {
                     </div>
                   )}
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         </div>
