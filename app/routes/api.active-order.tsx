@@ -6,6 +6,8 @@ import {
   setCustomerForOrder,
   setOrderShippingAddress,
   setOrderShippingMethod,
+  getCouponCodeList,
+  removeCouponCode,
 } from '~/providers/orders/order';
 import { DataFunctionArgs, json } from '@remix-run/server-runtime';
 import {
@@ -97,6 +99,67 @@ export async function action({ request, params }: DataFunctionArgs) {
     }
     case 'removeItem': {
       const lineId = body.get('lineId');
+
+      // Get current order to check if we're removing a coupon product
+      const currentOrder = await getActiveOrder({ request });
+      const line = currentOrder?.lines.find((l) => l.id === lineId);
+      const appliedCouponCode = currentOrder?.couponCodes?.[0];
+
+      // Check if the item being removed is a coupon product
+      if (line && appliedCouponCode) {
+        try {
+          const couponList = await getCouponCodeList({ request });
+          const coupon = couponList.find(
+            (c) => c.couponCode === appliedCouponCode,
+          );
+
+          if (coupon) {
+            const productVariantIds: string[] = [];
+            for (const condition of coupon.conditions) {
+              const variantArg = condition.args.find(
+                (arg) => arg.name === 'productVariantIds',
+              );
+              if (variantArg && variantArg.value) {
+                try {
+                  let parsedIds: string[] | string = variantArg.value;
+                  if (variantArg.value.startsWith('[')) {
+                    parsedIds = JSON.parse(variantArg.value);
+                  } else {
+                    parsedIds = [variantArg.value];
+                  }
+                  if (Array.isArray(parsedIds)) {
+                    productVariantIds.push(
+                      ...parsedIds.map((id) => id.toString()),
+                    );
+                  } else if (typeof parsedIds === 'string') {
+                    productVariantIds.push(parsedIds);
+                  }
+                } catch (e) {
+                  console.error(
+                    'Failed to parse productVariantIds:',
+                    variantArg.value,
+                    e,
+                  );
+                }
+              }
+            }
+
+            const isCouponProduct = productVariantIds
+              .map(String)
+              .includes(String(line.productVariant.id));
+
+            if (isCouponProduct) {
+              // Remove the coupon first
+              await removeCouponCode(appliedCouponCode, { request });
+            }
+          }
+        } catch (error) {
+          console.error('Error checking/removing coupon:', error);
+          // Continue with item removal even if coupon removal fails
+        }
+      }
+
+      // Remove the item
       const result = await removeOrderLine(lineId?.toString() ?? '', {
         request,
       });
