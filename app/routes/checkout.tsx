@@ -5,6 +5,7 @@ import {
   useLoaderData,
   useOutletContext,
   useFetcher,
+  useNavigate,
 } from '@remix-run/react';
 import type { OutletContext } from '~/types';
 import {
@@ -48,8 +49,14 @@ import { Header } from '~/components/header/Header';
 import { getCollections } from '~/providers/collections/collections';
 import Footer from '~/components/footer/Footer';
 import { CouponModal } from '~/components/couponcode/CouponModal';
+import { Price } from '~/components/products/Price';
+import {
+  OrderDetailFragment,
+  CurrencyCode,
+  ActiveOrderQuery,
+} from '~/generated/graphql';
+import { TrashIcon } from '@heroicons/react/24/outline';
 
-// Add this interface after the imports
 interface CouponFetcherData {
   success?: boolean;
   message?: string;
@@ -64,9 +71,8 @@ export async function loader({ request }: DataFunctionArgs) {
   );
   const activeOrder = await getActiveOrder({ request });
   const collections = await getCollections(request, { take: 20 });
-  const couponCodes = await getCouponCodeList({ request }); // Fetch coupons
+  const couponCodes = await getCouponCodeList({ request });
 
-  // Check if there is an active order; if not, redirect to homepage
   if (
     !session ||
     !activeOrder ||
@@ -74,6 +80,66 @@ export async function loader({ request }: DataFunctionArgs) {
     activeOrder.lines.length === 0
   ) {
     return redirect('/');
+  }
+
+  if (activeOrder?.couponCodes && activeOrder.couponCodes.length > 0) {
+    const appliedCouponCode = activeOrder.couponCodes[0];
+    const appliedCouponDetails = couponCodes.find(
+      (c: any) => c.couponCode === appliedCouponCode,
+    );
+
+    if (appliedCouponDetails) {
+      const couponProductVariantIds: string[] = [];
+      for (const condition of appliedCouponDetails.conditions) {
+        const variantArg = condition.args.find(
+          (arg: any) => arg.name === 'productVariantIds',
+        );
+        if (variantArg && variantArg.value) {
+          try {
+            let parsedIds: string[] | string = variantArg.value;
+            if (variantArg.value.startsWith('[')) {
+              parsedIds = JSON.parse(variantArg.value);
+            } else {
+              parsedIds = [variantArg.value];
+            }
+            if (Array.isArray(parsedIds)) {
+              couponProductVariantIds.push(
+                ...parsedIds.map((id) => id.toString()),
+              );
+            } else if (typeof parsedIds === 'string') {
+              couponProductVariantIds.push(parsedIds);
+            }
+          } catch (e) {
+            console.error(
+              'Failed to parse productVariantIds:',
+              variantArg.value,
+              e,
+            );
+          }
+        }
+      }
+
+      const allItemsAreCouponItems = activeOrder.lines.every((line) =>
+        couponProductVariantIds.includes(line.productVariant.id),
+      );
+
+      if (allItemsAreCouponItems && activeOrder.lines.length > 0) {
+        console.log(
+          'All remaining items are coupon items, removing coupon:',
+          appliedCouponCode,
+        );
+        try {
+          if (couponProductVariantIds.length > 0) {
+            await removeCouponProductFromCart(appliedCouponCode, { request });
+          }
+          await removeCouponCode(appliedCouponCode, { request });
+          console.log('Coupon removed successfully');
+          return redirect('/');
+        } catch (error) {
+          console.error('Failed to remove coupon:', error);
+        }
+      }
+    }
   }
 
   const { availableCountries } = await getAvailableCountries({ request });
@@ -137,7 +203,7 @@ export async function loader({ request }: DataFunctionArgs) {
     brainTreeKey,
     brainTreeError,
     orderInstructions,
-    couponCodes, // Include coupons in the loader data
+    couponCodes,
   });
 }
 
@@ -145,11 +211,9 @@ export async function action({ request }: DataFunctionArgs) {
   const body = await request.formData();
   const action = body.get('action');
 
-  // Get active order to include amount in metadata
-  const activeOrder = await getActiveOrder({ request });
+  let activeOrder = await getActiveOrder({ request });
 
   if (action === 'setOrderCustomer' || action === 'setCheckoutShipping') {
-    // Handle customer and shipping data
     return json({ success: true });
   }
 
@@ -189,7 +253,6 @@ export async function action({ request }: DataFunctionArgs) {
       );
     }
 
-    // Check if another coupon is already applied
     if (activeOrder?.couponCodes && activeOrder.couponCodes.length > 0) {
       console.error(
         `Another coupon already applied: ${activeOrder.couponCodes}`,
@@ -204,7 +267,6 @@ export async function action({ request }: DataFunctionArgs) {
       );
     }
 
-    // Check for minimum order amount condition
     const minAmountCondition = coupon.conditions.find(
       (c: any) =>
         c.code === 'minimum_order_amount' ||
@@ -237,7 +299,6 @@ export async function action({ request }: DataFunctionArgs) {
       }
     }
 
-    // Check for productVariantIds condition
     let hasProductVariant = false;
     const productVariantIds: string[] = [];
 
@@ -308,14 +369,12 @@ export async function action({ request }: DataFunctionArgs) {
     const cartItems = activeOrder?.lines ?? [];
     console.log('Current cart items:', cartItems);
 
-    // Add products to cart if the coupon has productVariantIds
     if (hasProductVariant && productVariantIds.length > 0) {
       console.log(`Calling addCouponProductToCart for ${couponCode}`);
       try {
         const addResult = await addCouponProductToCart(couponCode, { request });
         console.log('addCouponProductToCart result:', addResult);
       } catch (error) {
-        // If product addition fails, remove the coupon to maintain consistency
         console.error('Failed to add products, removing coupon:', couponCode);
         await removeCouponCode(couponCode, { request });
         const errorMessage =
@@ -378,7 +437,6 @@ export async function action({ request }: DataFunctionArgs) {
       );
     }
 
-    // Check for productVariantIds condition
     let hasProductVariant = false;
     const productVariantIds: string[] = [];
 
@@ -418,7 +476,6 @@ export async function action({ request }: DataFunctionArgs) {
       }
     }
 
-    // Adjust quantities of associated product variants, if applicable
     if (hasProductVariant) {
       console.log(`Adjusting coupon product quantities for: ${couponCode}`);
       try {
@@ -430,7 +487,6 @@ export async function action({ request }: DataFunctionArgs) {
         console.error(
           `Failed to adjust product quantities in cart: ${errorMessage}`,
         );
-        // Proceed with coupon removal even if adjustment fails
       }
     } else {
       console.log(
@@ -438,7 +494,6 @@ export async function action({ request }: DataFunctionArgs) {
       );
     }
 
-    // Remove the coupon code
     console.log(`Removing coupon: ${couponCode}`);
     const result = await removeCouponCode(couponCode, { request });
     console.log('removeCouponCode result:', result);
@@ -485,11 +540,9 @@ export async function action({ request }: DataFunctionArgs) {
       }
     }
 
-    // Create metadata object based on payment method
     let metadata = {};
     if (paymentMethodCode === 'online' && paymentNonce) {
       try {
-        // For Razorpay payments, parse the JSON metadata
         const paymentData = JSON.parse(paymentNonce as string);
         metadata = {
           method: 'online',
@@ -505,7 +558,6 @@ export async function action({ request }: DataFunctionArgs) {
         metadata = { nonce: paymentNonce };
       }
     } else if (paymentMethodCode === 'offline') {
-      // For offline payments, include basic metadata with amount
       metadata = {
         method: 'offline',
         amount: Number(((activeOrder?.totalWithTax || 0) / 100).toFixed(2)),
@@ -548,11 +600,14 @@ export default function CheckoutPage() {
     activeOrder,
     eligiblePaymentMethods,
     orderInstructions,
-    couponCodes, // Add couponCodes to destructured loader data
+    couponCodes,
   } = useLoaderData<typeof loader>();
 
-  const { activeOrderFetcher, removeItem, adjustOrderLine } =
-    useOutletContext<OutletContext>();
+  const {
+    activeOrderFetcher,
+    removeItem: originalRemoveItem,
+    adjustOrderLine: originalAdjustOrderLine,
+  } = useOutletContext<OutletContext>();
   const [customerFormChanged, setCustomerFormChanged] = useState(false);
   const [addressFormChanged, setAddressFormChanged] = useState(false);
   const [selectedAddressIndex, setSelectedAddressIndex] = useState(0);
@@ -560,19 +615,13 @@ export default function CheckoutPage() {
     null,
   );
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
-
-  // Move the showAll state to the main component level
   const [showAllCartItems, setShowAllCartItems] = useState(false);
-
-  // Add this new state after the existing useState declarations
   const [shouldRefreshAfterCouponRemoval, setShouldRefreshAfterCouponRemoval] =
     useState(false);
+  const [isNavigatingToHome, setIsNavigatingToHome] = useState(false);
 
-  // Replace this line:
-  // const couponFetcher = useFetcher()
-  // With this:
   const couponFetcher = useFetcher<CouponFetcherData>();
-
+  const navigate = useNavigate();
   const { t } = useTranslation();
 
   const { customer, shippingAddress } = activeOrder ?? {};
@@ -654,7 +703,6 @@ export default function CheckoutPage() {
 
   const paymentError = getPaymentError(error);
 
-  // Auto-select default shipping address on component mount
   useEffect(() => {
     if (
       isSignedIn &&
@@ -684,19 +732,16 @@ export default function CheckoutPage() {
     shippingAddress?.streetLine1,
   ]);
 
-  // Check if a shipping method is selected
   const isShippingMethodSelected =
     !!activeOrder?.shippingLines?.[0]?.shippingMethod;
 
   const [open, setOpen] = useState(false);
 
-  // Get applied coupon details
   const appliedCouponCode = activeOrder?.couponCodes?.[0];
   const appliedCouponDetails = appliedCouponCode
     ? couponCodes.find((c: any) => c.couponCode === appliedCouponCode)
     : null;
 
-  // Helper: get all coupon productVariantIds for the applied coupon
   const couponProductVariantIds = (appliedCouponDetails?.conditions || [])
     .map((condition: any) => {
       const arg = condition.args.find(
@@ -717,7 +762,6 @@ export default function CheckoutPage() {
     })
     .flat();
 
-  // Wrap removeItem to also remove coupon if coupon product is removed
   function handleRemoveItem(lineId: string) {
     const line = activeOrder?.lines.find((l) => l.id === lineId);
     const isCouponProduct =
@@ -733,7 +777,16 @@ export default function CheckoutPage() {
       'appliedCouponCode:',
       appliedCouponCode,
     );
-    removeItem(lineId);
+
+    // Check if this is the last item in the cart
+    const isLastItem = activeOrder?.lines.length === 1;
+
+    if (isLastItem) {
+      setIsNavigatingToHome(true);
+    }
+
+    originalRemoveItem(lineId);
+
     if (isCouponProduct && appliedCouponCode) {
       couponFetcher.submit(
         {
@@ -746,31 +799,90 @@ export default function CheckoutPage() {
     }
   }
 
-  // Handle modal open with a small delay to prevent immediate close
+  function handleAdjustOrderLine(lineId: string, quantity: number) {
+    // Check if this adjustment will make the cart empty
+    const line = activeOrder?.lines.find((l) => l.id === lineId);
+    const isLastItem = activeOrder?.lines.length === 1;
+    const willBeEmpty = isLastItem && quantity <= 0;
+
+    if (willBeEmpty) {
+      setIsNavigatingToHome(true);
+    }
+
+    originalAdjustOrderLine(lineId, quantity);
+  }
+
   const handleOpenCouponModal = () => {
     setTimeout(() => {
       setIsCouponModalOpen(true);
     }, 50);
   };
 
-  // Replace the existing useEffect for coupon removal refresh with:
   useEffect(() => {
     if (
       couponFetcher.data?.success &&
       couponFetcher.data?.appliedCoupon === null &&
       shouldRefreshAfterCouponRemoval
     ) {
-      // Coupon was successfully removed, refresh only the cart/coupon UI
-      // window.location.reload();
-      // Instead, re-fetch the active order to update the UI
       activeOrderFetcher.load('/api/active-order');
       setShouldRefreshAfterCouponRemoval(false);
     }
-  }, [couponFetcher.data, shouldRefreshAfterCouponRemoval]);
+  }, [couponFetcher.data, shouldRefreshAfterCouponRemoval, activeOrderFetcher]);
 
-  // Get cart items for the view more/less functionality
+  // Monitor cart state and redirect if empty
+  useEffect(() => {
+    if (activeOrder && activeOrder.lines.length === 0 && isNavigatingToHome) {
+      // Wait a bit longer to ensure the cart state is fully updated
+      const timer = setTimeout(() => {
+        navigate('/');
+        setIsNavigatingToHome(false);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [activeOrder?.lines.length, isNavigatingToHome, navigate]);
+
+  // Fallback: Monitor cart state for any empty cart and redirect
+  useEffect(() => {
+    if (
+      (!activeOrder || activeOrder.lines.length === 0) &&
+      !isNavigatingToHome
+    ) {
+      // This handles cases where cart becomes empty due to other actions
+      const timer = setTimeout(() => {
+        navigate('/');
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [activeOrder, isNavigatingToHome, navigate]);
+
   const allLines = activeOrder?.lines ?? [];
   const visibleLines = showAllCartItems ? allLines : allLines.slice(0, 3);
+
+  // Don't render if we're navigating to home
+  if (isNavigatingToHome) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-600">Redirecting to home...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if there's no active order or cart is empty
+  if (!activeOrder || activeOrder.lines.length === 0) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-600">Redirecting to home...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-50">
@@ -783,12 +895,10 @@ export default function CheckoutPage() {
       <div className="lg:max-w-7xl max-w-2xl mx-auto pt-8 pb-24 px-4 sm:px-6 lg:px-8">
         <div className="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16">
           <div>
-            {/* Customer Information */}
             <div>
               <h2 className="text-lg font-medium text-black">Details Title</h2>
             </div>
 
-            {/* Shipping Address */}
             <Form
               method="post"
               action="/api/active-order"
@@ -796,9 +906,7 @@ export default function CheckoutPage() {
               onChange={() => setAddressFormChanged(true)}
             >
               <input type="hidden" name="action" value="setCheckoutShipping" />
-              <div className="mt-10">
-                {/* <h2 className="text-lg font-medium text-gray-900">{t("checkout.shippingTitle")}</h2> */}
-              </div>
+              <div className="mt-10"></div>
 
               {isSignedIn && activeCustomer.addresses?.length ? (
                 <div className="mt-4 bg-white border rounded-lg shadow-sm p-4">
@@ -842,21 +950,9 @@ export default function CheckoutPage() {
                               .join(', ')}
                           </p>
                         </div>
-                        {/* <div className="mt-4 flex space-x-3">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAddressFormChanged(true);
-                            }}
-                            className="text-sm text-black font-medium"
-                          >
-                            Use Another Address
-                          </button>
-                        </div> */}
                       </>
                     );
                   })()}
-                  {/* Show address selector or form if user clicked "Use another address" */}
                   {addressFormChanged && (
                     <div className="mt-6 pt-6 border-t border-black">
                       <h3 className="text-sm font-medium text-black mb-4">
@@ -889,7 +985,6 @@ export default function CheckoutPage() {
               />
             )}
 
-            {/* Shipping Method */}
             <div className="mt-10 border-t border-black pt-10">
               <ShippingMethodSelector
                 eligibleShippingMethods={eligibleShippingMethods}
@@ -901,7 +996,6 @@ export default function CheckoutPage() {
               />
             </div>
 
-            {/* Payment Methods */}
             <div className="mt-10 border-t border-black pt-10">
               <h2 className="text-lg font-medium text-black mb-6">
                 Payment Method
@@ -1034,7 +1128,6 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            {/* Show message if no shipping methods are available */}
             {eligibleShippingMethods.length === 0 && (
               <div className="mt-10 border-t border-black pt-10">
                 <p className="text-sm text-red-800">
@@ -1044,22 +1137,19 @@ export default function CheckoutPage() {
             )}
           </div>
 
-          {/* Order Summary */}
           <div className="mt-10 lg:mt-0">
             <h2 className="text-lg font-medium text-black mb-6">Summary</h2>
             <div className="bg-white p-6 rounded-lg shadow-sm border">
               <CartTotals order={activeOrder as any} />
 
-              {/* Cart Contents with View More - Fixed Version */}
               <CartContents
                 orderLines={visibleLines}
                 currencyCode={activeOrder?.currencyCode!}
                 editable={true}
                 removeItem={handleRemoveItem}
-                adjustOrderLine={adjustOrderLine}
+                adjustOrderLine={handleAdjustOrderLine}
               />
 
-              {/* View More/Less buttons */}
               {allLines.length > 3 && !showAllCartItems && (
                 <div className="flex justify-center mt-2">
                   <button
@@ -1095,7 +1185,6 @@ export default function CheckoutPage() {
                 </div>
               )}
 
-              {/* Applied Coupon Display */}
               {appliedCouponCode && appliedCouponDetails && (
                 <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                   <div className="flex items-center justify-between">
@@ -1147,7 +1236,6 @@ export default function CheckoutPage() {
                 </div>
               )}
 
-              {/* Apply Coupon Button */}
               {!appliedCouponCode && (
                 <div className="mt-4">
                   <button
@@ -1159,49 +1247,15 @@ export default function CheckoutPage() {
                   </button>
                 </div>
               )}
-
-              {/* Shipping Address Summary */}
-              {/* {shippingAddress && (
-                <div className="mt-6 pt-6 border-t border-black">
-                  <h3 className="text-sm font-medium text-black mb-2">
-                    Shipping Summary
-                  </h3>
-                  <div className="text-sm text-black">
-                    <p>{shippingAddress.fullName}</p>
-                    <p>{shippingAddress.streetLine1}</p>
-                    {shippingAddress.streetLine2 && (
-                      <p>{shippingAddress.streetLine2}</p>
-                    )}
-                    <p>
-                      {shippingAddress.city}, {shippingAddress.province}{' '}
-                      {shippingAddress.postalCode}
-                    </p>
-                    <p>{shippingAddress.countryCode}</p>
-                  </div>
-                  {activeOrder?.shippingLines?.[0]?.shippingMethod && (
-                    <div className="mt-4">
-                      <h3 className="text-sm font-medium text-black mb-2">
-                        Shipping method
-                      </h3>
-                      <p className="text-sm text-black">
-                        {activeOrder.shippingLines[0].shippingMethod.name} -{' '}
-                        {activeOrder.currencyCode}
-                        {activeOrder.shippingLines[0].priceWithTax}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )} */}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Coupon Modal */}
       <CouponModal
         isOpen={isCouponModalOpen}
         onClose={() => setIsCouponModalOpen(false)}
-        coupons={couponCodes} // Pass the fetched coupons
+        coupons={couponCodes}
         activeOrder={activeOrder as any}
         appliedCoupon={activeOrder?.couponCodes?.[0] || null}
       />

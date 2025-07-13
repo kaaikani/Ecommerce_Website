@@ -8,6 +8,7 @@ import {
   setOrderShippingMethod,
   getCouponCodeList,
   removeCouponCode,
+  removeCouponProductFromCart,
 } from '~/providers/orders/order';
 import { DataFunctionArgs, json } from '@remix-run/server-runtime';
 import {
@@ -36,6 +37,7 @@ export async function action({ request, params }: DataFunctionArgs) {
     errorCode: ErrorCode.NoActiveOrderError,
     message: '',
   };
+
   switch (formAction) {
     case 'setCheckoutShipping':
       if (shippingFormDataIsValid(body)) {
@@ -165,6 +167,87 @@ export async function action({ request, params }: DataFunctionArgs) {
       });
       if (result.removeOrderLine.__typename === 'Order') {
         activeOrder = result.removeOrderLine;
+
+        // After removing the item, check if only coupon items remain
+        const updatedOrder = await getActiveOrder({ request });
+        const appliedCouponCode = updatedOrder?.couponCodes?.[0];
+
+        if (
+          appliedCouponCode &&
+          updatedOrder?.lines &&
+          updatedOrder.lines.length > 0
+        ) {
+          try {
+            const couponList = await getCouponCodeList({ request });
+            const coupon = couponList.find(
+              (c) => c.couponCode === appliedCouponCode,
+            );
+
+            if (coupon) {
+              const productVariantIds: string[] = [];
+              for (const condition of coupon.conditions) {
+                const variantArg = condition.args.find(
+                  (arg) => arg.name === 'productVariantIds',
+                );
+                if (variantArg && variantArg.value) {
+                  try {
+                    let parsedIds: string[] | string = variantArg.value;
+                    if (variantArg.value.startsWith('[')) {
+                      parsedIds = JSON.parse(variantArg.value);
+                    } else {
+                      parsedIds = [variantArg.value];
+                    }
+                    if (Array.isArray(parsedIds)) {
+                      productVariantIds.push(
+                        ...parsedIds.map((id) => id.toString()),
+                      );
+                    } else if (typeof parsedIds === 'string') {
+                      productVariantIds.push(parsedIds);
+                    }
+                  } catch (e) {
+                    console.error(
+                      'Failed to parse productVariantIds:',
+                      variantArg.value,
+                      e,
+                    );
+                  }
+                }
+              }
+
+              // Check if all remaining items are coupon items
+              const allItemsAreCouponItems = updatedOrder.lines.every((line) =>
+                productVariantIds.includes(line.productVariant.id),
+              );
+
+              // If all items are coupon items, remove the coupon
+              if (allItemsAreCouponItems) {
+                console.log(
+                  'All remaining items are coupon items, removing coupon:',
+                  appliedCouponCode,
+                );
+                try {
+                  // Remove coupon products first
+                  if (productVariantIds.length > 0) {
+                    await removeCouponProductFromCart(appliedCouponCode, {
+                      request,
+                    });
+                  }
+                  // Remove the coupon code
+                  await removeCouponCode(appliedCouponCode, { request });
+                  console.log('Coupon removed successfully');
+
+                  // Get the final updated order after coupon removal
+                  const finalOrder = await getActiveOrder({ request });
+                  activeOrder = finalOrder ? finalOrder : undefined;
+                } catch (error) {
+                  console.error('Failed to remove coupon:', error);
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error checking coupon items:', error);
+          }
+        }
       } else {
         error = result.removeOrderLine;
       }
@@ -179,6 +262,111 @@ export async function action({ request, params }: DataFunctionArgs) {
         });
         if (result.adjustOrderLine.__typename === 'Order') {
           activeOrder = result.adjustOrderLine;
+
+          // After adjusting the item, check if only coupon items remain or if order total is below minimum
+          const updatedOrder = await getActiveOrder({ request });
+          const appliedCouponCode = updatedOrder?.couponCodes?.[0];
+
+          if (
+            appliedCouponCode &&
+            updatedOrder?.lines &&
+            updatedOrder.lines.length > 0
+          ) {
+            try {
+              const couponList = await getCouponCodeList({ request });
+              const coupon = couponList.find(
+                (c) => c.couponCode === appliedCouponCode,
+              );
+
+              if (coupon) {
+                const productVariantIds: string[] = [];
+                for (const condition of coupon.conditions) {
+                  const variantArg = condition.args.find(
+                    (arg) => arg.name === 'productVariantIds',
+                  );
+                  if (variantArg && variantArg.value) {
+                    try {
+                      let parsedIds: string[] | string = variantArg.value;
+                      if (variantArg.value.startsWith('[')) {
+                        parsedIds = JSON.parse(variantArg.value);
+                      } else {
+                        parsedIds = [variantArg.value];
+                      }
+                      if (Array.isArray(parsedIds)) {
+                        productVariantIds.push(
+                          ...parsedIds.map((id) => id.toString()),
+                        );
+                      } else if (typeof parsedIds === 'string') {
+                        productVariantIds.push(parsedIds);
+                      }
+                    } catch (e) {
+                      console.error(
+                        'Failed to parse productVariantIds:',
+                        variantArg.value,
+                        e,
+                      );
+                    }
+                  }
+                }
+
+                // Check if all remaining items are coupon items
+                const allItemsAreCouponItems = updatedOrder.lines.every(
+                  (line) => productVariantIds.includes(line.productVariant.id),
+                );
+
+                // Check for minimum order amount condition
+                const minAmountCondition = coupon.conditions.find(
+                  (c: any) =>
+                    c.code === 'minimum_order_amount' ||
+                    c.code === 'minimumOrderAmount' ||
+                    c.code === 'minimumAmount',
+                );
+
+                const totalWithTaxPaise = updatedOrder?.totalWithTax ?? 0;
+                let shouldRemoveCoupon = allItemsAreCouponItems;
+
+                if (minAmountCondition && !shouldRemoveCoupon) {
+                  const amountArg =
+                    minAmountCondition.args.find(
+                      (a: any) => a.name === 'amount',
+                    ) ?? minAmountCondition.args[0];
+                  const minAmountPaise =
+                    Number.parseInt(amountArg.value, 10) || 0;
+
+                  if (totalWithTaxPaise < minAmountPaise) {
+                    shouldRemoveCoupon = true;
+                    console.log(
+                      `Order total ${totalWithTaxPaise} is below minimum ${minAmountPaise}, removing coupon: ${appliedCouponCode}`,
+                    );
+                  }
+                }
+
+                // If all items are coupon items or order total is below minimum, remove the coupon
+                if (shouldRemoveCoupon) {
+                  console.log('Removing coupon:', appliedCouponCode);
+                  try {
+                    // Remove coupon products first
+                    if (productVariantIds.length > 0) {
+                      await removeCouponProductFromCart(appliedCouponCode, {
+                        request,
+                      });
+                    }
+                    // Remove the coupon code
+                    await removeCouponCode(appliedCouponCode, { request });
+                    console.log('Coupon removed successfully');
+
+                    // Get the final updated order after coupon removal
+                    const finalOrder = await getActiveOrder({ request });
+                    activeOrder = finalOrder ? finalOrder : undefined;
+                  } catch (error) {
+                    console.error('Failed to remove coupon:', error);
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('Error checking coupon items:', error);
+            }
+          }
         } else {
           error = result.adjustOrderLine;
         }
@@ -204,10 +392,12 @@ export async function action({ request, params }: DataFunctionArgs) {
       break;
     }
     case 'addPaymentToOrder': {
+      // Handle payment addition (not implemented in provided code)
     }
     default:
     // Don't do anything
   }
+
   let headers: ResponseInit['headers'] = {};
   const sessionStorage = await getSessionStorage();
   const session = await sessionStorage.getSession(
@@ -217,8 +407,11 @@ export async function action({ request, params }: DataFunctionArgs) {
   headers = {
     'Set-Cookie': await sessionStorage.commitSession(session),
   };
+  // Get the final active order if none was set during the action
+  const finalActiveOrder = activeOrder || (await getActiveOrder({ request }));
+
   return json(
-    { activeOrder: activeOrder || (await getActiveOrder({ request })) },
+    { activeOrder: finalActiveOrder || undefined },
     {
       headers,
     },
