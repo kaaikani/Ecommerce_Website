@@ -6,9 +6,13 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { CartContents } from './CartContents';
 import { Link, useLocation } from '@remix-run/react';
 import { Price } from '~/components/products/Price';
-import type { CartLoaderData } from '~/routes/api.active-order';
-import { CurrencyCode } from '~/generated/graphql';
+import { CurrencyCode, OrderDetailFragment } from '~/generated/graphql';
 import { useTranslation } from 'react-i18next';
+
+// Define CartLoaderData explicitly to match /api/active-order.ts loader
+export interface CartLoaderData {
+  activeOrder?: OrderDetailFragment | null;
+}
 
 export function CartTray({
   open,
@@ -48,7 +52,6 @@ export function CartTray({
             <Dialog.Overlay className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
           </Transition.Child>
 
-          {/* Updated container for responsive full-screen on mobile */}
           <div className="fixed inset-y-0 right-0 pl-0 sm:pl-10 max-w-full flex">
             <Transition.Child
               as={Fragment}
@@ -59,7 +62,6 @@ export function CartTray({
               leaveFrom="translate-x-0"
               leaveTo="translate-x-full"
             >
-              {/* Full screen on mobile, max-width on larger screens */}
               <div className="w-screen sm:max-w-md">
                 <div className="h-full flex flex-col bg-white shadow-xl overflow-y-scroll">
                   <div className="flex-1 py-6 overflow-y-auto px-4 sm:px-6">
@@ -85,11 +87,11 @@ export function CartTray({
                       {activeOrder?.totalQuantity ? (
                         <CartContents
                           orderLines={activeOrder?.lines ?? []}
-                          currencyCode={currencyCode!}
+                          currencyCode={currencyCode}
                           editable={editable}
                           removeItem={removeItem}
                           adjustOrderLine={adjustOrderLine}
-                        ></CartContents>
+                        />
                       ) : (
                         <div className="flex items-center justify-center h-48 text-xl text-gray-400">
                           {t('cart.empty')}
