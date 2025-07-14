@@ -15,6 +15,7 @@ import { useEffect, useState } from "react"
 import React from "react"
 import ToastNotification from "~/components/ToastNotification"
 import { Button } from "~/components/Button"
+import { getActiveCustomer } from "~/providers/customer/customer"
 
 interface RegisterValidationErrors {
   form?: string
@@ -27,8 +28,16 @@ interface RegisterValidationErrors {
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const channels = await getChannelList({ request })
+   const activeCustomer = await getActiveCustomer({ request });
+
+  if (activeCustomer.activeCustomer?.id) {
+    // If logged in, redirect to /home
+    return redirect('/home');
+  }
   return json({ channels })
 }
+
+
 
 export async function action({ request }: ActionFunctionArgs) {
   const body = await request.formData()

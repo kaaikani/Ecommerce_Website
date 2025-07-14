@@ -7,6 +7,20 @@ import { PrimaryFeatures } from '~/components/landingPage/PrimaryFeatures'
 import { SecondaryFeatures } from '~/components/landingPage/SecondaryFeatures'
 import Stats from '~/components/landingPage/Stats'
 import { Testimonial } from '~/components/landingPage/Testimonial'
+import { json, redirect, type LoaderFunctionArgs } from '@remix-run/node';
+import { getActiveCustomer } from '~/providers/customer/customer';
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const activeCustomer = await getActiveCustomer({ request });
+
+  if (activeCustomer.activeCustomer?.id) {
+    // If logged in, redirect to /home
+    return redirect('/home');
+  }
+
+  // Else, allow the landing page to load
+  return json({});
+}
 
 const index = () => {
   return (

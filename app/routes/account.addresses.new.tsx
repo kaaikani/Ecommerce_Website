@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -71,6 +72,10 @@ export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const t = await getFixedT(request);
 
+  // Get the redirectTo query parameter from the request URL
+  const url = new URL(request.url);
+  const redirectTo = url.searchParams.get('redirectTo') || '/account/addresses';
+
   const addressData = {
     fullName: formData.get('fullName') as string,
     streetLine1: formData.get('streetLine1') as string,
@@ -89,7 +94,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const result = await createCustomerAddress(addressData, { request });
 
     if (result && result.__typename === 'Address') {
-      return redirect('/account/addresses');
+      return redirect(redirectTo); // Redirect to the page specified in redirectTo
     } else {
       return json<ErrorResult>(
         {
@@ -129,7 +134,7 @@ export default function NewAddress() {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6">
       <div className="relative max-h-full w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-xl">
         <button
-          onClick={() => navigate('/account/addresses')}
+          onClick={() => navigate(-1)}
           className="absolute right-4 top-4 z-10 rounded-full p-2 text-gray-400 hover:text-gray-600"
         >
           <svg

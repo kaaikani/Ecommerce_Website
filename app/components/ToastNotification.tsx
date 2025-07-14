@@ -45,18 +45,21 @@ export default function ToastNotification({
     <Transition
       show={show}
       appear
+
       enter="transition ease-out duration-300"
-      enterFrom="opacity-0 translate-y-2"
+      enterFrom="opacity-0 -translate-y-4"
       enterTo="opacity-100 translate-y-0"
       leave="transition ease-in duration-200"
       leaveFrom="opacity-100 translate-y-0"
-      leaveTo="opacity-0 translate-y-2"
+      leaveTo="opacity-0 -translate-y-4"
     >
       <div
-        className={`fixed bottom-6 right-6 z-[9999] pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg ${bgColor} shadow-lg ring-1 ${borderColor} ring-opacity-5`}
+        className={`fixed top-6 right-6 z-[9999] pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg ${bgColor} shadow-lg ring-1 ${borderColor} ring-opacity-5`}
       >
         <div className="p-4">
           <div className="flex items-start">
+
+
             <div className="flex-shrink-0">
               <Icon aria-hidden="true" className={`h-6 w-6 ${iconColor}`} />
             </div>

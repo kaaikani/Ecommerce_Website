@@ -9,6 +9,8 @@ import { getChannelsByCustomerPhonenumber, resendPhoneOtp, sendPhoneOtp } from "
 import { authenticate } from "~/providers/account/account"
 import { getSessionStorage } from "~/sessions"
 import ToastNotification from "~/components/ToastNotification"
+import {  type LoaderFunctionArgs } from '@remix-run/node';
+import { getActiveCustomer } from '~/providers/customer/customer';
 
 // ✅ Hook to detect client (needed for disabling button before hydration)
 function useIsClient() {
@@ -17,6 +19,18 @@ function useIsClient() {
     setIsClient(true)
   }, [])
   return isClient
+}
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const activeCustomer = await getActiveCustomer({ request });
+
+  if (activeCustomer.activeCustomer?.id) {
+    // If logged in, redirect to /home
+    return redirect('/home');
+  }
+
+  // Else, allow the landing page to load
+  return json({});
 }
 
 export async function action({ request }: ActionFunctionArgs) {

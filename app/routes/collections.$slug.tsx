@@ -166,16 +166,17 @@ export default function CollectionSlug() {
 
             {/* Simple Responsive Grid - 2 cols mobile, 3 cols tablet+ */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-              {collection.children
+              {collection.children.slice()
                 .sort((a, b) => {
                   // Extract the last number from the slug
                   const getLastNumber = (slug: string) => {
                     const matches = slug.match(/(\d+)(?!.*\d)/); // last number in string
                     return matches ? parseInt(matches[1], 10) : Infinity;
                   };
-                  const numA = getLastNumber(a.slug);
-                  const numB = getLastNumber(b.slug);
-                  return numA - numB;
+                  // const numA = getLastNumber(a.slug);
+                  // const numB = getLastNumber(b.slug);
+                  // return numA - numB;
+                  return getLastNumber(a.slug) - getLastNumber(b.slug);
                 })
                 .map((child) => (
                   <div key={child.id} className="aspect-square">
