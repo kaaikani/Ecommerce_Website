@@ -19,6 +19,8 @@ import {
   DataFunctionArgs,
   json,
   LinksFunction,
+  LoaderFunctionArgs,
+  redirect,
 } from '@remix-run/server-runtime';
 import { getCollections } from '~/providers/collections/collections';
 import { activeChannel } from '~/providers/channel/channel';
@@ -72,15 +74,34 @@ export type RootLoaderData = {
   locale: string;
 };
 
-export async function loader({ request, params, context }: DataFunctionArgs) {
+export async function loader({ request }: LoaderFunctionArgs) {
+  const url = new URL(request.url);
+  const pathname = url.pathname;
+
+  // List of public routes that do NOT require authentication
+  const publicPaths = ['/', '/sign-in', '/sign-up', '/forgot-password'];
+  const isPublic = publicPaths.includes(pathname);
+
+  // Get active customer
+  const activeCustomer = await getActiveCustomer({ request });
+
+  // Redirect to /sign-in if the user is not logged in and path is not public
+  if (!activeCustomer.activeCustomer?.id && !isPublic) {
+    return redirect('/sign-in');
+  }
+
+  // Get top-level collections
   const collections = await getCollections(request, { take: 20 });
   const topLevelCollections = collections.filter(
-    (collection) => collection.parent?.name === '__root_collection__',
+    (collection) => collection.parent?.name === '__root_collection__'
   );
-  const activeCustomer = await getActiveCustomer({ request });
+
+  // Get i18n locale
   const locale = await getI18NextServer().then((i18next) =>
-    i18next.getLocale(request),
+    i18next.getLocale(request)
   );
+
+  // Prepare loader data
   const loaderData: RootLoaderData = {
     activeCustomer,
     activeChannel: await activeChannel({ request }),
@@ -90,7 +111,6 @@ export async function loader({ request, params, context }: DataFunctionArgs) {
 
   return json(loaderData, { headers: activeCustomer._headers });
 }
-
 export default function App() {
   const [open, setOpen] = useState(false);
   const loaderData = useLoaderData<RootLoaderData>();

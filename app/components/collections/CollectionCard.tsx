@@ -24,23 +24,16 @@ export function CollectionCard({
       to={`/collections/${collection.slug}`}
       prefetch="intent"
       key={collection.id}
-      className="relative isolate flex flex-col justify-end overflow-hidden rounded-2xl bg-gray-100 px-6 pb-6 pt-48 sm:pt-56 lg:pt-64 shadow-md hover:shadow-lg transition-shadow duration-200 group"
-    >
-      {/* Background image */}
-      <img
-        src={imageUrl}
-        alt={collection.name}
-        className="absolute inset-0 -z-10 h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-300"
-      />
-
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-      <div className="absolute inset-0 -z-10 ring-1 ring-inset ring-black/10 rounded-2xl" />
-
-      {/* Title */}
-      <h3 className="text-xl font-bold text-white drop-shadow-sm">
-        {collection.name}
-      </h3>
+           className="flex flex-col items-center text-center group"
+>
+       <div className="w-full aspect-square overflow-hidden rounded-xl bg-white shadow-sm group-hover:shadow-md transition-shadow duration-200">
+        <img
+          src={imageUrl || "/placeholder.svg"}
+          alt={collection.name}
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+      </div>
+      <h3 className="mt-2 text-lg font-medium text-gray-700 group-hover:text-gray-900">{collection.name}</h3>
     </Link>
   );
 }

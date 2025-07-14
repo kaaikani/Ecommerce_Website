@@ -124,8 +124,9 @@ className="text-4xl sm:text-5xl lg:text-5xl font-[900] w-full text-center upperc
 
         {/* Responsive Grid Container with Equal Heights */}
         <div className="w-full">
-          <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-6 gap-4 sm:gap-6 md:gap-8 lg:gap-10 auto-rows-fr">
-            {collections.map((collection) => (
+<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5  gap-6">
+  
+              {collections.map((collection) => (
               <div
                 key={collection.id}
                 className="w-full h-full min-h-[180px] xs:min-h-[200px] sm:min-h-[240px] md:min-h-[280px] lg:min-h-[320px]"

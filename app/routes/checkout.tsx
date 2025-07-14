@@ -37,7 +37,7 @@ import { ShippingMethodSelector } from '~/components/checkout/ShippingMethodSele
 import { ShippingAddressSelector } from '~/components/checkout/ShippingAddressSelector';
 import { getActiveOrder } from '~/providers/orders/order';
 import { useTranslation } from 'react-i18next';
-import { ErrorCode, type ErrorResult } from '~/generated/graphql';
+import { ErrorCode, OrderAddress, type ErrorResult } from '~/generated/graphql';
 import { CartContents } from '~/components/cart/CartContents';
 import { CartTotals } from '~/components/cart/CartTotals';
 import { Link } from '@remix-run/react';
@@ -338,11 +338,9 @@ export async function action({ request }: DataFunctionArgs) {
     return json({
       success: true,
       message: hasProductVariant
-        ? `Coupon "${couponCode}" applied and ${
-            productVariantIds.length
-          } product${
-            productVariantIds.length > 1 ? 's' : ''
-          } added to your order!`
+        ? `Coupon "${couponCode}" applied and ${productVariantIds.length
+        } product${productVariantIds.length > 1 ? 's' : ''
+        } added to your order!`
         : `Coupon "${couponCode}" applied to your order!`,
       orderTotal: order.totalWithTax,
       appliedCoupon: couponCode,
@@ -448,9 +446,8 @@ export async function action({ request }: DataFunctionArgs) {
       return json({
         success: true,
         message: hasProductVariant
-          ? `Coupon removed and ${productVariantIds.length} product${
-              productVariantIds.length > 1 ? 's' : ''
-            } quantity adjusted in your order.`
+          ? `Coupon removed and ${productVariantIds.length} product${productVariantIds.length > 1 ? 's' : ''
+          } quantity adjusted in your order.`
           : 'Coupon removed from your order.',
         orderTotal: order.totalWithTax,
         appliedCoupon: null,
@@ -871,13 +868,16 @@ export default function CheckoutPage() {
                   )}
                 </div>
               ) : (
-                <AddressForm
-                  availableCountries={
-                    activeOrder ? availableCountries : undefined
-                  }
-                  address={shippingAddress}
-                  defaultFullName={defaultFullName}
-                />
+                <div className="mt-4 bg-white border rounded-lg shadow-sm p-4 text-black">
+                  <p className="mb-4">You have no saved address yet.</p>
+                  <Link
+                    to="/account/addresses/new?redirectTo=/checkout"
+                    className="inline-block bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700 text-sm font-medium"
+                  >
+                    Add Address
+                  </Link>
+                </div>
+
               )}
             </Form>
 
@@ -913,22 +913,20 @@ export default function CheckoutPage() {
                       <button
                         type="button"
                         onClick={() => setPaymentMode('online')}
-                        className={`flex-1 py-3 px-4 rounded-md text-base font-medium transition-colors duration-200 ${
-                          paymentMode === 'online'
+                        className={`flex-1 py-3 px-4 rounded-md text-base font-medium transition-colors duration-200 ${paymentMode === 'online'
                             ? 'bg-black text-white'
                             : 'bg-white text-black border border-black hover:bg-gray-100'
-                        }`}
+                          }`}
                       >
                         Online Payment
                       </button>
                       <button
                         type="button"
                         onClick={() => setPaymentMode('offline')}
-                        className={`flex-1 py-3 px-4 rounded-md text-base font-medium transition-colors duration-200 ${
-                          paymentMode === 'offline'
+                        className={`flex-1 py-3 px-4 rounded-md text-base font-medium transition-colors duration-200 ${paymentMode === 'offline'
                             ? 'bg-black text-white'
                             : 'bg-white text-black border border-black hover:bg-gray-100'
-                        }`}
+                          }`}
                       >
                         Cash on Delivery
                       </button>
@@ -962,9 +960,8 @@ export default function CheckoutPage() {
                                     activeOrder?.currencyCode ?? 'INR'
                                   }
                                   customerEmail={customer?.emailAddress ?? ''}
-                                  customerName={`${customer?.firstName ?? ''} ${
-                                    customer?.lastName ?? ''
-                                  }`.trim()}
+                                  customerName={`${customer?.firstName ?? ''} ${customer?.lastName ?? ''
+                                    }`.trim()}
                                   customerPhone={
                                     shippingAddress?.phoneNumber ?? ''
                                   }
@@ -1015,14 +1012,14 @@ export default function CheckoutPage() {
                       {!eligiblePaymentMethods.find(
                         (m) => m.code === paymentMode,
                       ) && (
-                        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                          <p className="text-sm text-yellow-800">
-                            {paymentMode === 'online'
-                              ? 'Online payment is not available. Please contact support if you need to pay online.'
-                              : 'Offline payment is not available. Please contact support for assistance.'}
-                          </p>
-                        </div>
-                      )}
+                          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <p className="text-sm text-yellow-800">
+                              {paymentMode === 'online'
+                                ? 'Online payment is not available. Please contact support if you need to pay online.'
+                                : 'Offline payment is not available. Please contact support for assistance.'}
+                            </p>
+                          </div>
+                        )}
                     </>
                   )}
                 </div>

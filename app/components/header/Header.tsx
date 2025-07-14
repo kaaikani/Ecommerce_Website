@@ -84,7 +84,7 @@ export function Header({
           >
             <img
               src="/KaaiKani White.png"
-              className="w-20"
+             className="w-20 lg:w-24 xl:w-28"
               alt="KaaiKani Logo"
             />
           </Link>

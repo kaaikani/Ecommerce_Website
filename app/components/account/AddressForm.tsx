@@ -1,13 +1,70 @@
 import { AvailableCountriesQuery, OrderAddress } from '~/generated/graphql';
 import { useTranslation } from 'react-i18next';
+import { json, LoaderFunctionArgs, redirect } from '@remix-run/server-runtime';
+import { getActiveCustomerDetails } from '~/providers/customer/customer';
+import { getSessionStorage } from '~/sessions';
+import { getChannelsByCustomerPhonenumber } from '~/providers/customPlugins/customPlugin';
+import { getChannelPostalcodes } from '~/lib/hygraph';
+
+type ActiveCustomerFormType =
+  | {
+      firstName?: string;
+      lastName?: string;
+      phoneNumber?: string;
+    }
+  | undefined;
+
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const { activeCustomer } = await getActiveCustomerDetails({ request });
+
+  if (!activeCustomer) {
+    const sessionStorage = await getSessionStorage();
+    const session = await sessionStorage.getSession(
+      request.headers.get('Cookie'),
+    );
+
+    session.unset('authToken');
+    session.unset('channelToken');
+
+    return redirect('/sign-in', {
+      headers: {
+        'Set-Cookie': await sessionStorage.commitSession(session),
+      },
+    });
+  }
+
+  const transformedActiveCustomer: ActiveCustomerFormType = {
+    firstName: activeCustomer.firstName,
+    lastName: activeCustomer.lastName,
+    phoneNumber: activeCustomer.phoneNumber ?? undefined,
+  };
+
+  const phoneNumber = transformedActiveCustomer.phoneNumber;
+  let channelCode = '';
+  if (phoneNumber) {
+    const channels = await getChannelsByCustomerPhonenumber(phoneNumber);
+    channelCode = channels[0]?.code || '';
+  }
+
+  const channelPostalcodes = await getChannelPostalcodes();
+
+  return json({
+    activeCustomer: transformedActiveCustomer,
+    channelCode,
+    channelPostalcodes,
+  });
+}
 
 export function AddressForm({
   address,
   defaultFullName,
+  defaultPhoneNumber,
   availableCountries,
 }: {
   address?: OrderAddress | null;
   defaultFullName?: string;
+  defaultPhoneNumber?: string;
   availableCountries?: AvailableCountriesQuery['availableCountries'];
 }) {
   const { t } = useTranslation();
@@ -170,6 +227,7 @@ export function AddressForm({
         </div>
       </div>
 
+    
       <div className="sm:col-span-2">
         <label
           htmlFor="phoneNumber"
@@ -182,7 +240,7 @@ export function AddressForm({
             type="text"
             name="phoneNumber"
             id="phoneNumber"
-            defaultValue={address?.phoneNumber ?? ''}
+            defaultValue={address?.phoneNumber ?? defaultPhoneNumber ?? ''}
             autoComplete="tel"
             className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
           />

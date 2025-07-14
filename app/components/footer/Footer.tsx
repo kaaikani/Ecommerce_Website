@@ -1,6 +1,7 @@
 import type React from 'react';
 import type { RootLoaderData } from '~/root';
 import { useTranslation } from 'react-i18next';
+import { Link } from '@remix-run/react';
 
 const navigation = {
   social: [
@@ -77,24 +78,26 @@ export default function Footer({
   const { t } = useTranslation();
 
   return (
-    <footer className="mt-20 bg-black" aria-labelledby="footer-heading">
+   <footer className="bg-black" aria-labelledby="footer-heading">
       <div className="w-full px-3 pb-5 sm:px-6 lg:px-3">
-        <div className="mt-5 border-t border-white/10 pt-6 sm:mt-10 lg:mt-15">
+        <div className="mt-5 border-t border-white/10 pt-6">
+
+
           <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0 w-full">
             {/* Contact and About Links - visible on all views, horizontal on desktop */}
             <div className="flex flex-wrap justify-center items-center space-x-8 order-1 md:order-1">
-              <a
-                href="/contact"
-                className="text-white hover:text-gray-400 transition-colors duration-200 text-sm font-medium whitespace-nowrap"
+             <Link
+                to="/privacy-and-policy"
+                className="text-white transition-colors duration-200 text-xs"
               >
-                Contact Us
-              </a>
-              <a
-                href="/about"
-                className="text-white hover:text-gray-400 transition-colors duration-200 text-sm font-medium"
+                Privacy & Policy
+              </Link>
+              <Link
+                to="/terms-and-conditions"
+                className="text-white transition-colors duration-200 text-xs"
               >
-                About Us
-              </a>
+                T&C
+              </Link>
             </div>
 
             {/* Copyright Text - always centered */}
@@ -108,6 +111,8 @@ export default function Footer({
                 <a
                   key={item.name}
                   href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-white hover:text-gray-400 transition-colors duration-200"
                 >
                   <span className="sr-only">{item.name}</span>
