@@ -21,7 +21,7 @@ export function AppStoreLink({
       <img
         src="/playstore.png"
         alt="Get it on Google Play"
-        className="h-10"
+        className="h-12"
       />
     </a>
   )

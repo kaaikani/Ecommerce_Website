@@ -532,7 +532,7 @@ export default function SignUpPage() {
             </signUpFetcher.Form>
           )}
         </div>
-        <div className="pb-20" />
+        
       </div>
 
       {/* Desktop Left Panel */}

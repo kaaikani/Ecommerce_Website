@@ -433,7 +433,7 @@ export default function SignInPage() {
             </loginFetcher.Form>
           )}
         </div>
-        <div className="pb-20" />
+        
       </div>
 
       {/* Desktop Left Panel */}

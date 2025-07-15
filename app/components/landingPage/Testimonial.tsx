@@ -27,12 +27,17 @@ const testimonials = [
 
 export function Testimonial() {
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-      <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-8">
+    <div className="w-full border-t border-gray-200 bg-gray-100 py-10 sm:py-20">
+<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ">
+      <h2 className="text-4xl sm:text-5xl lg:text-5xl font-[900] w-full text-center uppercase text-green-950 mb-4" >
         What Our Customers Say....
       </h2>
 
-      <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+       <p className="mt-2 text-lg text-gray-600  sm:text-center">
+               At Kaaikani, Real voices, real stories — because trust is earned, not claimed.
+          </p>
+
+      <div className="mt-10 grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {testimonials.map((testimonial, idx) => (
           <a
             key={idx}
@@ -69,5 +74,7 @@ export function Testimonial() {
         ))}
       </div>
     </div>
+    </div>
+    
   );
 }

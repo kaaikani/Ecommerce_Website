@@ -43,7 +43,7 @@ export function Header({
     if (typeof window !== 'undefined') {
       fetchAndActivate(remoteConfig)
         .then(() => {
-          const shouldLeave = getBoolean(remoteConfig, 'is_app_leavingz');
+          const shouldLeave = getBoolean(remoteConfig, 'is_app_leaving');
           const message = getString(remoteConfig, 'leave_dialog_message');
           setIsAppLeaving(shouldLeave);
           setLeaveMessage(message || 'We are currently closed.');
@@ -76,7 +76,7 @@ export function Header({
         'bg-black text-white',
       )}
     >
-      <div className="w-full px-4 py-2 sm:py-4 bg-[#3C3D37]">
+      <div className="w-full px-4 py-3 sm:py-4 bg-[#3C3D37]">
         <div className="flex items-center justify-between gap-2 sm:gap-4 lg:gap-8">
           <Link
             to="/home"

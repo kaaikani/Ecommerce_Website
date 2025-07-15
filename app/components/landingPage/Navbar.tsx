@@ -8,7 +8,7 @@ import { useLocation, useNavigate } from "@remix-run/react";
 const navigation = [
   { name: "Features", href: "#features" },
   { name: "Essentials", href: "#Essentials" },
-  { name: "Marketplace", href: "#marketplace" },
+  { name: "Testimonials", href: "#Testimonials" },
 ];
 
 export default function Navbar() {

@@ -1,20 +1,16 @@
 export const APP_META_TITLE = 'Kaaikani Ungal Veeduvarai';
-export const APP_META_DESCRIPTION =
-  '';
+export const APP_META_DESCRIPTION = '';
+
 export const DEMO_API_URL = 'http://localhost:80/shop-api';
-export let API_URL =
-  typeof process !== 'undefined'
-    ? process.env.VENDURE_API_URL ?? DEMO_API_URL
+
+export let API_URL: string =
+  typeof process !== 'undefined' && process.env?.VENDURE_API_URL
+    ? process.env.VENDURE_API_URL
     : DEMO_API_URL;
 
 /**
- * This function is used when running in Cloudflare Pages in order to set the API URL
- * based on an environment variable. Env vars work differently in CF Pages and are not available
- * on the `process` object (which does not exist). Instead, it needs to be accessed from the loader
- * context, and if defined we use it here to set the API_URL var which will be used by the
- * GraphQL calls.
- *
- * See https://developers.cloudflare.com/workers/platform/environment-variables/#environmental-variables-with-module-workers
+ * Used in environments like Cloudflare Workers/Pages where `process.env` is not available.
+ * Call this from a Remix loader using the context/env.
  */
 export function setApiUrl(apiUrl: string) {
   API_URL = apiUrl;

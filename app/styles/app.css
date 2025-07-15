@@ -33,6 +33,11 @@
 5. Use the user's configured `sans` font-feature-settings by default.
 */
 
+
+.animate-marquee {
+  animation: marquee 20s linear infinite;
+}
+
 html {
   line-height: 1.5;
   /* 1 */
