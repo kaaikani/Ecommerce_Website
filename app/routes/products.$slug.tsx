@@ -140,7 +140,7 @@ export default function ProductSlug() {
     if (typeof window !== 'undefined') {
       fetchAndActivate(remoteConfig)
         .then(() => {
-          const shouldLeave = getBoolean(remoteConfig, 'is_app_leavingz');
+          const shouldLeave = getBoolean(remoteConfig, 'is_app_leaving');
           const message = getString(remoteConfig, 'leave_dialog_message');
           const title = getString(remoteConfig, 'leave_dialog_title');
           setIsAppLeaving(shouldLeave);

@@ -16,6 +16,7 @@ export default {
         'fade-in': 'fade-in 0.5s linear forwards',
          move: 'move 5s linear infinite',
         marquee: 'marquee var(--marquee-duration) linear infinite',
+        'marquee-x': 'marquee-x 20s linear infinite', 
         'spin-slow': 'spin 4s linear infinite',
         'spin-slower': 'spin 6s linear infinite',
         'spin-reverse': 'spin-reverse 1s linear infinite',
@@ -41,6 +42,11 @@ export default {
           '100%': {
             transform: 'translateY(-50%)',
           },
+          
+        },
+        'marquee-x': {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-100%)' }, // ✅ X-axis
         },
         'spin-reverse': {
           to: {
