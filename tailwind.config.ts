@@ -14,7 +14,7 @@ export default {
       },
        animation: {
         'fade-in': 'fade-in 0.5s linear forwards',
-         move: 'move 5s linear infinite',
+                 move: 'move 5s linear infinite',
         marquee: 'marquee var(--marquee-duration) linear infinite',
         'marquee-x': 'marquee-x 20s linear infinite', 
         'spin-slow': 'spin 4s linear infinite',
@@ -43,6 +43,15 @@ export default {
             transform: 'translateY(-50%)',
           },
           
+          
+        },
+         glow: {
+          "0%, 100%": {
+            boxShadow: "0 0 12px 2px rgba(253, 224, 71, 0.6)",
+          },
+          "50%": {
+            boxShadow: "0 0 20px 4px rgba(253, 224, 71, 1)",
+          },
         },
         'marquee-x': {
           '0%': { transform: 'translateX(0%)' },

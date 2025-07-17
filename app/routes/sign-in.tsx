@@ -316,7 +316,7 @@ export default function SignInPage() {
   }, [resendOtpFetcher.data])
 
   return (
-    <div className="min-h-screen flex flex-col lg:grid lg:grid-cols-3 rounded-xl">
+    <div className="sm:min-h-screen flex flex-col lg:grid lg:grid-cols-3 rounded-xl">
       {/* Toast Notification - Positioned at the top right */}
       <div className="fixed m-5 top-0 right-0 w-full max-w-sm z-50">
         <ToastNotification
