@@ -4,7 +4,7 @@ interface MarqueeProps {
 
 export function Marquee({ text }: MarqueeProps) {
   return (
-    <div className="relative w-full overflow-hidden bg-lime-400">
+    <div className="relative w-full overflow-hidden bg-[#BFFF00]">
       {/* Borders are on outer container for full visibility */}
       <div className="border-y-8 border-black">
         {/* Marquee content wrapper */}

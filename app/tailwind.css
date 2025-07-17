@@ -1,5 +1,5 @@
 @tailwind base;
-/* @tailwind components; */
+@tailwind components;
 @tailwind utilities;
 
 @layer base {
@@ -24,5 +24,21 @@
 
   .text-inherit {
     color: inherit;
+  }
+}
+
+
+@layer components {
+  .badge-border {
+    @apply relative rounded-[24px] p-[2px] overflow-hidden;
+  }
+
+  .badge-border::before {
+    content: "";
+    @apply absolute inset-0 rounded-[24px];
+    background: linear-gradient(270deg, #fde047, #facc15, #fde047);
+    background-size: 600% 600%;
+    animation: move 4s linear infinite;
+    z-index: 0;
   }
 }

@@ -33,6 +33,7 @@ import {
   HandThumbUpIcon,
 } from '@heroicons/react/24/solid'
 import { ChevronLeft, Search, ShoppingCart } from 'lucide-react'
+import BadgeButton from './BadgeButton'
 
 const MotionAppScreenHeader = motion(AppScreen.Header)
 const MotionAppScreenBody = motion(AppScreen.Body)
@@ -573,10 +574,12 @@ export function PrimaryFeatures() {
     <section
       id="features"
       aria-label="Features for investing all your money"
-      className="bg-black py-20 sm:py-32"
+      className="scroll-mt-16 bg-black py-5 sm:py-12"
     >
       <Container>
+        
         <div className="mx-auto max-w-2xl lg:mx-0 lg:max-w-3xl">
+           <BadgeButton />
           <h2 className="text-3xl font-medium tracking-tight text-white">
            From our farms to your kitchen — only at  <span className='text-red-700'>Kaaikani.</span>
           </h2>
@@ -586,6 +589,8 @@ export function PrimaryFeatures() {
     vegetables, we make grocery shopping effortless. If others won't deliver
     freshness the way you deserve — Kaaikani will.
           </p>
+          
+
         </div>
       </Container>
       <div className="mt-16 md:hidden">
