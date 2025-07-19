@@ -990,7 +990,6 @@ export default function CheckoutPage() {
                 onChange={submitSelectedShippingMethod}
               />
             </div>
-            {/* Payment section only if there is at least one address */}
             {isSignedIn && activeCustomer.addresses?.length ? (
               <div className="mt-10 border-t border-black pt-10">
                 <h2 className="text-lg font-medium text-black mb-6">

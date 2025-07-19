@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -19,11 +18,12 @@ import { getChannelPostalcodes } from '~/lib/hygraph';
 import { getSessionStorage } from '~/sessions';
 import { getChannelsByCustomerPhonenumber } from '~/providers/customPlugins/customPlugin';
 
+// Define the expected activeCustomer type for CustomerAddressForm
 type ActiveCustomerFormType =
   | {
-      firstName?: string;
-      lastName?: string;
-      phoneNumber?: string;
+      firstName?: string | undefined;
+      lastName?: string | undefined;
+      phoneNumber?: string | undefined;
     }
   | undefined;
 
@@ -46,12 +46,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
   }
 
+  // Transform activeCustomer to match CustomerAddressForm prop type
   const transformedActiveCustomer: ActiveCustomerFormType = {
     firstName: activeCustomer.firstName,
     lastName: activeCustomer.lastName,
     phoneNumber: activeCustomer.phoneNumber ?? undefined,
   };
 
+  // Fetch channel data using the customer's phone number
   const phoneNumber = transformedActiveCustomer.phoneNumber;
   let channelCode = '';
   if (phoneNumber) {
@@ -59,6 +61,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     channelCode = channels[0]?.code || '';
   }
 
+  // Fetch Hygraph channel postalcodes
   const channelPostalcodes = await getChannelPostalcodes();
 
   return json({
@@ -71,10 +74,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const t = await getFixedT(request);
-
-  // Get the redirectTo query parameter from the request URL
-  const url = new URL(request.url);
-  const redirectTo = url.searchParams.get('redirectTo') || '/account/addresses';
 
   const addressData = {
     fullName: formData.get('fullName') as string,
@@ -94,7 +93,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const result = await createCustomerAddress(addressData, { request });
 
     if (result && result.__typename === 'Address') {
-      return redirect(redirectTo); // Redirect to the page specified in redirectTo
+      return redirect('/account/addresses');
     } else {
       return json<ErrorResult>(
         {
@@ -131,10 +130,10 @@ export default function NewAddress() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6">
-      <div className="relative max-h-full w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-lg bg-white shadow-xl">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/account/addresses')}
           className="absolute right-4 top-4 z-10 rounded-full p-2 text-gray-400 hover:text-gray-600"
         >
           <svg
