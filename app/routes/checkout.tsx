@@ -48,6 +48,7 @@ import { Header } from '~/components/header/Header';
 import { getCollections } from '~/providers/collections/collections';
 import Footer from '~/components/footer/Footer';
 import { CouponModal } from '~/components/couponcode/CouponModal';
+import ToastNotification from '~/components/ToastNotification';
 
 interface CouponFetcherData {
   success?: boolean;
@@ -617,6 +618,7 @@ export default function CheckoutPage() {
   const [shouldRefreshAfterCouponRemoval, setShouldRefreshAfterCouponRemoval] =
     useState(false);
   const [isNavigatingToHome, setIsNavigatingToHome] = useState(false);
+  const [showAddressToast, setShowAddressToast] = useState(false);
 
   const couponFetcher = useFetcher<CouponFetcherData>();
   const navigate = useNavigate();
@@ -961,9 +963,6 @@ export default function CheckoutPage() {
               ) : (
                 <div className="mt-4 bg-white border rounded-lg shadow-sm p-4 text-black">
                   <p className="mb-4">You have no saved address yet.</p>
-                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-sm">
-                    Address is required to place an order.
-                  </div>
                   <Link
                     to="/account/addresses/new?redirectTo=/checkout"
                     className="inline-block bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700 text-sm font-medium"
@@ -987,7 +986,13 @@ export default function CheckoutPage() {
                 shippingMethodId={
                   activeOrder?.shippingLines[0]?.shippingMethod.id ?? ''
                 }
-                onChange={submitSelectedShippingMethod}
+                onChange={(value?: string) => {
+                  if (!isSignedIn || !activeCustomer.addresses?.length) {
+                    setShowAddressToast(true);
+                    return;
+                  }
+                  submitSelectedShippingMethod(value);
+                }}
               />
             </div>
             {isSignedIn && activeCustomer.addresses?.length ? (
@@ -1245,6 +1250,13 @@ export default function CheckoutPage() {
         coupons={couponCodes}
         activeOrder={activeOrder as any}
         appliedCoupon={activeOrder?.couponCodes?.[0] || null}
+      />
+      <ToastNotification
+        show={showAddressToast}
+        type="error"
+        title="Address Required"
+        message="Address is required to place an order."
+        onClose={() => setShowAddressToast(false)}
       />
       <Footer collections={collections} />
     </div>

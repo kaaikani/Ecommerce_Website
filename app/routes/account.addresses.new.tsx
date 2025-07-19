@@ -7,8 +7,10 @@ import {
   type ActionFunctionArgs,
 } from '@remix-run/server-runtime';
 import { useLoaderData, useNavigate, useSubmit } from '@remix-run/react';
-import { useRef } from 'react';
-import CustomerAddressForm from '~/components/account/CustomerAddressForm';
+import { useEffect, useRef } from 'react';
+import CustomerAddressForm, {
+  validator,
+} from '~/components/account/CustomerAddressForm';
 import { createCustomerAddress } from '~/providers/account/account';
 import { getActiveCustomerDetails } from '~/providers/customer/customer';
 import { getFixedT } from '~/i18next.server';
@@ -17,6 +19,7 @@ import { ErrorCode } from '~/generated/graphql';
 import { getChannelPostalcodes } from '~/lib/hygraph';
 import { getSessionStorage } from '~/sessions';
 import { getChannelsByCustomerPhonenumber } from '~/providers/customPlugins/customPlugin';
+import { validationError } from 'remix-validated-form';
 
 // Define the expected activeCustomer type for CustomerAddressForm
 type ActiveCustomerFormType =
@@ -46,14 +49,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
   }
 
-  // Transform activeCustomer to match CustomerAddressForm prop type
   const transformedActiveCustomer: ActiveCustomerFormType = {
     firstName: activeCustomer.firstName,
     lastName: activeCustomer.lastName,
     phoneNumber: activeCustomer.phoneNumber ?? undefined,
   };
 
-  // Fetch channel data using the customer's phone number
   const phoneNumber = transformedActiveCustomer.phoneNumber;
   let channelCode = '';
   if (phoneNumber) {
@@ -61,7 +62,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
     channelCode = channels[0]?.code || '';
   }
 
-  // Fetch Hygraph channel postalcodes
   const channelPostalcodes = await getChannelPostalcodes();
 
   return json({
@@ -73,18 +73,25 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
+  const result = await validator.validate(formData);
+
+  if (result.error) {
+    return validationError(result.error);
+  }
+
+  const data = result.data;
   const t = await getFixedT(request);
 
   const addressData = {
-    fullName: formData.get('fullName') as string,
-    streetLine1: formData.get('streetLine1') as string,
-    streetLine2: (formData.get('streetLine2') as string) || undefined,
-    city: formData.get('city') as string,
-    postalCode: formData.get('postalCode') as string,
-    phoneNumber: formData.get('phone') as string,
-    company: (formData.get('company') as string) || undefined,
-    defaultShippingAddress: formData.get('defaultShippingAddress') === 'true',
-    defaultBillingAddress: formData.get('defaultBillingAddress') === 'true',
+    fullName: data.fullName,
+    streetLine1: data.streetLine1,
+    streetLine2: data.streetLine2 || undefined,
+    city: data.city,
+    postalCode: data.postalCode,
+    phoneNumber: data.phone,
+    company: data.company || undefined,
+    defaultShippingAddress: data.defaultShippingAddress === 'true',
+    defaultBillingAddress: data.defaultBillingAddress === 'true',
     countryCode: 'IN',
     province: '',
   };
@@ -122,43 +129,56 @@ export default function NewAddress() {
   const submit = useSubmit();
   const formRef = useRef<HTMLFormElement>(null);
 
-  const handleSubmit = () => {
-    if (formRef.current) {
-      console.log('Submitting form with data:', new FormData(formRef.current));
-      submit(formRef.current, { method: 'post' });
+  // ⛔ Prevent page scroll while modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (formRef.current && !formRef.current.checkValidity()) {
+      e?.preventDefault();
+      formRef.current.reportValidity();
+      return;
     }
+    submit(formRef.current, { method: 'post' });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-lg bg-white shadow-xl">
-        <button
-          onClick={() => navigate('/account/addresses')}
-          className="absolute right-4 top-4 z-10 rounded-full p-2 text-gray-400 hover:text-gray-600"
-        >
-          <svg
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+      <div className="relative w-full max-w-2xl rounded-lg bg-white shadow-xl">
+        {/* Scrollable body inside modal */}
+        <div className="relative max-h-[90vh] overflow-y-auto p-6">
+          <button
+            onClick={() => navigate('/account/addresses')}
+            className="absolute right-4 top-4 z-10 rounded-full p-2 text-gray-400 hover:text-gray-600"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
 
-        <CustomerAddressForm
-          formRef={formRef}
-          submit={handleSubmit}
-          isEditing={false}
-          activeCustomer={activeCustomer}
-          channelCode={channelCode}
-          channelPostalcodes={channelPostalcodes}
-        />
+          <CustomerAddressForm
+            formRef={formRef}
+            submit={handleSubmit}
+            isEditing={false}
+            activeCustomer={activeCustomer}
+            channelCode={channelCode}
+            channelPostalcodes={channelPostalcodes}
+          />
+        </div>
       </div>
     </div>
   );

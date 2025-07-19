@@ -23,8 +23,10 @@ export const validator = withZod(
     city: z.string().min(1, { message: 'City is required' }),
     postalCode: z.string().min(1, { message: 'Pincode is required' }),
     streetLine1: z.string().min(1, { message: 'Address is required' }),
-    streetLine2: z.string().optional(),
-    phone: z.string().min(1, { message: 'Phone number is required' }),
+    streetLine2: z.string().min(1, { message: 'Address is required' }), // <-- Make required
+    phone: z
+      .string()
+      .regex(/^\d{10}$/, { message: 'Phone number must be exactly 10 digits' }),
     company: z.string().optional(),
     province: z.string().optional(), // ✅ Add this
     countryCode: z.string().optional(), // ✅ And this
@@ -65,6 +67,7 @@ const ModernInput = ({
   type = 'text',
   defaultValue,
   readOnly = false,
+  ...rest
 }: {
   label: string;
   name: string;
@@ -73,6 +76,7 @@ const ModernInput = ({
   type?: string;
   defaultValue?: string;
   readOnly?: boolean;
+  [key: string]: any;
 }) => (
   <LabelInputContainer>
     <label htmlFor={name} className="text-sm font-medium text-neutral-800">
@@ -86,6 +90,7 @@ const ModernInput = ({
       autoComplete={autoComplete}
       defaultValue={defaultValue}
       readOnly={readOnly}
+      {...rest}
       className="block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm placeholder-neutral-400 shadow-sm transition-all duration-200 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/20"
     />
   </LabelInputContainer>
@@ -335,6 +340,7 @@ export default function CustomerAddressForm({
               <div className="md:col-span-2">
                 <ModernInput
                   label="Address"
+                  required // <-- Make required in UI
                   name="streetLine2"
                   autoComplete="address-line2"
                 />
@@ -359,6 +365,9 @@ export default function CustomerAddressForm({
               name="phone"
               required
               type="tel"
+              pattern="[0-9]{10}"
+              inputMode="numeric"
+              maxLength={10}
               autoComplete="tel"
               defaultValue={
                 isEditing
