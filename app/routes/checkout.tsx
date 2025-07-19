@@ -799,10 +799,13 @@ export default function CheckoutPage() {
               ) : (
                 <div className="mt-4 bg-white border rounded-lg shadow-sm p-4 text-black">
                   <p className="mb-4">You have no saved address yet.</p>
+                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-sm">
+                    Address is required to place an order.
+                  </div>
                   <Link
                     to="/account/addresses/new?redirectTo=/checkout"
                     className="inline-block bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700 text-sm font-medium"
-                  >
+                  > 
                     Add Address
                   </Link>
                 </div>
@@ -819,113 +822,116 @@ export default function CheckoutPage() {
                 onChange={submitSelectedShippingMethod}
               />
             </div>
-            <div className="mt-10 border-t border-black pt-10">
-              <h2 className="text-lg font-medium text-black mb-6">Payment Method</h2>
-              <div className="flex flex-col items-center divide-black divide-y space-y-6">
-                <div className="w-full">
-                  {isShippingMethodSelected && (
-                    <div className="flex space-x-4 mb-6">
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMode("online")}
-                        className={`flex-1 py-3 px-4 rounded-md text-base font-medium transition-colors duration-200 ${
-                          paymentMode === "online"
-                            ? "bg-black text-white"
-                            : "bg-white text-black border border-black hover:bg-gray-100"
-                        }`}
-                      >
-                        Online Payment
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMode("offline")}
-                        className={`flex-1 py-3 px-4 rounded-md text-base font-medium transition-colors duration-200 ${
-                          paymentMode === "offline"
-                            ? "bg-black text-white"
-                            : "bg-white text-black border border-black hover:bg-gray-100"
-                        }`}
-                      >
-                        Cash on Delivery
-                      </button>
-                    </div>
-                  )}
-                </div>
-                <div className="py-6 w-full">
-                  <h3 className="text-base font-medium text-black mb-4">Review</h3>
-                  {isShippingMethodSelected && paymentMode && (
-                    <>
-                      {eligiblePaymentMethods
-                        .filter((method) => method.code === paymentMode)
-                        .map((method) => (
-                          <div key={method.id}>
-                            {method.code === "online" ? (
-                              <>
-                                <p className="text-sm text-black mb-4">
-                                  By clicking the Place Order button, you confirm that you have read, understand and
-                                  accept our Terms of Use, Terms of Sale and Returns Policy and acknowledge that you
-                                  have read Medusa Store's Privacy Policy.
-                                </p>
-                                <RazorpayPayments
-                                  orderCode={activeOrder?.code ?? ""}
-                                  amount={activeOrder?.totalWithTax ?? 0}
-                                  currencyCode={activeOrder?.currencyCode ?? "INR"}
-                                  customerEmail={customer?.emailAddress ?? ""}
-                                  customerName={`${customer?.firstName ?? ""} ${customer?.lastName ?? ""}`.trim()}
-                                  customerPhone={shippingAddress?.phoneNumber ?? ""}
-                                />
-                              </>
-                            ) : method.code === "offline" ? (
-                              <Form method="post">
-                                <input type="hidden" name="paymentMethodCode" value="offline" />
-                                <input
-                                  type="hidden"
-                                  name="paymentNonce"
-                                  value={JSON.stringify({
-                                    method: "offline",
-                                    status: "pending",
-                                    amount: activeOrder?.totalWithTax || 0,
-                                    currencyCode: activeOrder?.currencyCode || "INR",
-                                    orderCode: activeOrder?.code || "",
-                                  })}
-                                />
-                                <div className="w-full">
+            {/* Payment section only if there is at least one address */}
+            {(isSignedIn && activeCustomer.addresses?.length) ? (
+              <div className="mt-10 border-t border-black pt-10">
+                <h2 className="text-lg font-medium text-black mb-6">Payment Method</h2>
+                <div className="flex flex-col items-center divide-black divide-y space-y-6">
+                  <div className="w-full">
+                    {isShippingMethodSelected && (
+                      <div className="flex space-x-4 mb-6">
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMode("online")}
+                          className={`flex-1 py-3 px-4 rounded-md text-base font-medium transition-colors duration-200 ${
+                            paymentMode === "online"
+                              ? "bg-black text-white"
+                              : "bg-white text-black border border-black hover:bg-gray-100"
+                          }`}
+                        >
+                          Online Payment
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMode("offline")}
+                          className={`flex-1 py-3 px-4 rounded-md text-base font-medium transition-colors duration-200 ${
+                            paymentMode === "offline"
+                              ? "bg-black text-white"
+                              : "bg-white text-black border border-black hover:bg-gray-100"
+                          }`}
+                        >
+                          Cash on Delivery
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="py-6 w-full">
+                    <h3 className="text-base font-medium text-black mb-4">Review</h3>
+                    {isShippingMethodSelected && paymentMode && (
+                      <>
+                        {eligiblePaymentMethods
+                          .filter((method) => method.code === paymentMode)
+                          .map((method) => (
+                            <div key={method.id}>
+                              {method.code === "online" ? (
+                                <>
                                   <p className="text-sm text-black mb-4">
                                     By clicking the Place Order button, you confirm that you have read, understand and
                                     accept our Terms of Use, Terms of Sale and Returns Policy and acknowledge that you
                                     have read Medusa Store's Privacy Policy.
                                   </p>
-                                  <button
-                                    type="submit"
-                                    className="w-full bg-black border hover:bg-white hover:text-black hover:border-black rounded-md py-3 px-4 text-base font-medium text-white"
-                                  >
-                                    Place Order
-                                  </button>
-                                </div>
-                              </Form>
-                            ) : (
-                              <div className="text-sm text-black">Payment method "{method.code}" not supported</div>
-                            )}
+                                  <RazorpayPayments
+                                    orderCode={activeOrder?.code ?? ""}
+                                    amount={activeOrder?.totalWithTax ?? 0}
+                                    currencyCode={activeOrder?.currencyCode ?? "INR"}
+                                    customerEmail={customer?.emailAddress ?? ""}
+                                    customerName={`${customer?.firstName ?? ""} ${customer?.lastName ?? ""}`.trim()}
+                                    customerPhone={shippingAddress?.phoneNumber ?? ""}
+                                  />
+                                </>
+                              ) : method.code === "offline" ? (
+                                <Form method="post">
+                                  <input type="hidden" name="paymentMethodCode" value="offline" />
+                                  <input
+                                    type="hidden"
+                                    name="paymentNonce"
+                                    value={JSON.stringify({
+                                      method: "offline",
+                                      status: "pending",
+                                      amount: activeOrder?.totalWithTax || 0,
+                                      currencyCode: activeOrder?.currencyCode || "INR",
+                                      orderCode: activeOrder?.code || "",
+                                    })}
+                                  />
+                                  <div className="w-full">
+                                    <p className="text-sm text-black mb-4">
+                                      By clicking the Place Order button, you confirm that you have read, understand and
+                                      accept our Terms of Use, Terms of Sale and Returns Policy and acknowledge that you
+                                      have read Medusa Store's Privacy Policy.
+                                    </p>
+                                    <button
+                                      type="submit"
+                                      className="w-full bg-black border hover:bg-white hover:text-black hover:border-black rounded-md py-3 px-4 text-base font-medium text-white"
+                                    >
+                                      Place Order
+                                    </button>
+                                  </div>
+                                </Form>
+                              ) : (
+                                <div className="text-sm text-black">Payment method "{method.code}" not supported</div>
+                              )}
+                            </div>
+                          ))}
+                        {!eligiblePaymentMethods.find((m) => m.code === paymentMode) && (
+                          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <p className="text-sm text-yellow-800">
+                              {paymentMode === "online"
+                                ? "Online payment is not available. Please contact support if you need to pay online."
+                                : "Offline payment is not available. Please contact support for assistance."}
+                            </p>
                           </div>
-                        ))}
-                      {!eligiblePaymentMethods.find((m) => m.code === paymentMode) && (
-                        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                          <p className="text-sm text-yellow-800">
-                            {paymentMode === "online"
-                              ? "Online payment is not available. Please contact support if you need to pay online."
-                              : "Offline payment is not available. Please contact support for assistance."}
-                          </p>
-                        </div>
-                      )}
-                    </>
-                  )}
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
+                {paymentError && (
+                  <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-800">{paymentError}</p>
+                  </div>
+                )}
               </div>
-              {paymentError && (
-                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-sm text-red-800">{paymentError}</p>
-                </div>
-              )}
-            </div>
+            ) : null}
             {eligibleShippingMethods.length === 0 && (
               <div className="mt-10 border-t border-black pt-10">
                 <p className="text-sm text-red-800">No shipping methods available. Please contact support.</p>

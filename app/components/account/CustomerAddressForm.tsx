@@ -156,6 +156,19 @@ export const PostalCodeSelect = ({
 
   const handleChange = (newValue: string) => {
     setValue(newValue);
+    // Create and dispatch a synthetic input event to update the form field
+    const syntheticEvent = {
+      target: {
+        name: "postalCode",
+        value: newValue,
+      },
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    // Get the onChange handler from getInputProps and call it
+    const inputProps = getInputProps();
+    if (inputProps.onChange) {
+      inputProps.onChange(syntheticEvent);
+    }
   };
 
   return (
@@ -184,7 +197,13 @@ export const PostalCodeSelect = ({
         </SelectContent>
       </Select>
 
-      <input type="hidden" {...getInputProps()} value={value} />
+      {/* Remove the conflicting hidden input with getInputProps() and value */}
+      <input 
+        type="hidden" 
+        name="postalCode"
+        value={value}
+        readOnly
+      />
 
       {error && <span className="text-sm text-red-500">{error}</span>}
     </div>
