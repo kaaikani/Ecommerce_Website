@@ -83,7 +83,7 @@ export default function EditAddressCard({
           {
             'border-primary': isActive,
             'border-gray-200': !isActive,
-          }
+          },
         )}
       >
         <div className="flex justify-between gap-4">
@@ -96,7 +96,9 @@ export default function EditAddressCard({
                 {address.streetLine1}
                 {address.streetLine2 && `, ${address.streetLine2}`}
               </p>
-              <p>{address.postalCode}, {address.city}</p>
+              <p>
+                {address.postalCode}, {address.city}
+              </p>
               <p>
                 {address.province && `${address.province}, `}
                 {address.country?.code?.toUpperCase()}
@@ -105,12 +107,14 @@ export default function EditAddressCard({
           </div>
 
           {/* Default Labels */}
-          {(address.defaultShippingAddress || address.defaultBillingAddress) && (
+          {(address.defaultShippingAddress ||
+            address.defaultBillingAddress) && (
             <div className="text-end text-xs uppercase text-gray-400 font-semibold leading-tight">
               <p className="text-sm text-gray-500">{t('common.default')}</p>
               <p className="mt-1">
                 {address.defaultShippingAddress && t('common.shipping')}
-                {address.defaultShippingAddress && address.defaultBillingAddress && <br />}
+                {address.defaultShippingAddress &&
+                  address.defaultBillingAddress && <br />}
                 {address.defaultBillingAddress && t('common.billing')}
               </p>
             </div>
@@ -147,7 +151,8 @@ export default function EditAddressCard({
           </div>
 
           {/* Shipping/Billing buttons if not already default */}
-          {(!address.defaultShippingAddress || !address.defaultBillingAddress) && (
+          {(!address.defaultShippingAddress ||
+            !address.defaultBillingAddress) && (
             <div className="flex gap-4 mt-2 sm:mt-0">
               {!address.defaultShippingAddress && (
                 <setShipping.Form method="post">

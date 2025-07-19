@@ -39,7 +39,7 @@ export default function CheckoutConfirmation() {
   const [retries, setRetries] = useState(1);
   const [showAllItems, setShowAllItems] = useState(false);
   const { t } = useTranslation();
-  const { activeOrder } = useActiveOrder();
+  const { activeOrder, refresh } = useActiveOrder();
 
   const orderNotFound = !order && !error;
   const orderErrored = !order && error;
@@ -161,6 +161,15 @@ export default function CheckoutConfirmation() {
     }
   }, [order, orderErrored, orderNotFound]);
 
+  // Add useEffect to refresh cart after payment
+  useEffect(() => {
+    if (order && !orderErrored && !orderNotFound) {
+      refresh();
+    }
+    // Only run when order is loaded
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order]);
+
   if (orderNotFound || (orderErrored && retriesExhausted)) {
     return (
       <>
@@ -196,7 +205,6 @@ export default function CheckoutConfirmation() {
   const displayedLines = showAllItems ? order!.lines : order!.lines.slice(0, 3);
 
   return (
-
     <>
       <Header
         onCartIconClick={() => {}}
@@ -204,7 +212,6 @@ export default function CheckoutConfirmation() {
         isSignedIn={true}
         collections={collections}
       />
-
 
       <main className="min-h-screen bg-white py-10 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto shadow-lg">

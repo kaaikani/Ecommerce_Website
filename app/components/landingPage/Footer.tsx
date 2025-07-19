@@ -1,9 +1,13 @@
-"use client"
+'use client';
 
-import { Link } from "@remix-run/react"
-import { ArrowUpRight, Mail, Phone } from "lucide-react"
-import { Marquee } from "./marquee"
-import { AppStoreLink } from "./AppStoreLink"
+import { Link } from '@remix-run/react';
+import { ArrowUpRight, Mail, Phone } from 'lucide-react';
+import { Marquee } from './marquee';
+import { AppStoreLink } from './AppStoreLink';
+import { ExternalLink as ExternalLinkIcon } from 'lucide-react';
+import { useLocation, useNavigate } from '@remix-run/react';
+import { useCallback } from 'react';
+
 const navigation = {
   social: [
     {
@@ -71,145 +75,158 @@ const navigation = {
   ],
 } as const;
 
+const companyNavigation = [
+  { name: 'Features', href: '#features', external: false },
+  { name: 'Essentials', href: '#Essentials', external: false },
+  { name: 'Testimonials', href: '#Testimonials', external: false },
+];
+
 export default function Footer() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleNavClick = useCallback(
+    (
+      e: React.MouseEvent<HTMLAnchorElement>,
+      item: { href: string; external?: boolean },
+    ) => {
+      if (item.external) return; // Let anchor tag handle external links
+      e.preventDefault();
+      const isHomePage = location.pathname === '/';
+      if (isHomePage && item.href.startsWith('#')) {
+        const element = document.querySelector(item.href);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      } else {
+        navigate(item.href);
+      }
+    },
+    [location, navigate],
+  );
+
   return (
     <footer className="bg-black/95 text-white">
       {/* 🔁 Marquee */}
       <Link to="/sign-in">
-      <Marquee text="Login to avail more offers." />
+        <Marquee text="Login to avail more offers." />
       </Link>
-      
-
       {/* 📦 Main content container */}
-      <div className="max-w-7xl mx-auto px-4 py-12 md:py-16 lg:py-20 grid grid-cols-1 lg:grid-cols-5 gap-10">
-        
+      <div className="mx-auto px-4 py-12 md:py-16 lg:py-20 grid grid-cols-1 lg:grid-cols-3 gap-5 items-center text-center">
         {/* 🟩 Logo + App Store (left) */}
-        <div className="lg:col-span-2 flex flex-col justify-between items-center lg:items-start text-center lg:text-left space-y-8">
+        <div className="flex flex-col justify-between items-center text-center">
           <img
             src="/KaaiKani White.png"
             alt="KaaiKani Logo"
-            className="w-56 md:w-64 lg:w-80"
+            className="w-36 md:w-44 lg:w-50"
           />
-<div className="items-start">
- <AppStoreLink />
-</div>
-         
+          <div className="items-center flex flex-col space-y-2">
+            <img
+              src="/PlaystoreKK.png"
+              alt="Download App QR Code"
+              className="w-24 h-24 mx-auto mb-2"
+            />
+            <AppStoreLink />
+          </div>
         </div>
-
         {/* 🟨 Links + Contact (right) */}
-        <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-10 lg:mt-0 text-center sm:text-left">
-          
-         
-
-          {/* 📜 Policies */}
-          <div>
-            <h3 className="text-sm font-semibold uppercase text-gray-300 mb-2">Policies</h3>
-            <ul className="text-sm text-gray-400 space-y-1">
-              <li>
-                <Link to="/terms-and-conditions" className=" text-lg hover:underline">
-                  Terms & Conditions
-                </Link>
-              </li>
-              <li>
-                <Link to="/privacy-and-policy" className="text-lg hover:underline">
-                  Privacy Policy
-                </Link>
-              </li>
-            </ul>
+        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-8  lg:mt-0 text-center sm:text-left">
+          {/* Company Section */}
+          <div className="g:col-span-3 w-full flex flex-col items-center text-center space-y-4">
+            <h3 className="text-lg font-semibold uppercase text-gray-300 tracking-wide">
+              Company
+            </h3>
+            {companyNavigation.map((item) => (
+              <a
+                key={item.name}
+                href={item.href}
+                target={item.external ? '_blank' : undefined}
+                rel={item.external ? 'noopener noreferrer' : undefined}
+                onClick={(e) => handleNavClick(e, item)}
+                className="flex items-center rounded-lg px-3 text-sm"
+              >
+                {item.name}
+                {item.external && <ExternalLinkIcon className="h-5 w-5 " />}
+              </a>
+            ))}
           </div>
 
-           {/* 📞 Contact */}
-           <div className="w-full flex flex-col items-center text-center space-y-4">
-      <h3 className="text-sm font-semibold uppercase text-gray-300 tracking-wide">
-        Contact
-      </h3>
+          {/* 📞 Contact */}
+          <div className="g:col-span-3 w-full flex flex-col items-center text-center space-y-4">
+            <h3 className="text-lg font-semibold uppercase text-gray-300 tracking-wide">
+              Contact
+            </h3>
 
-      <div className="flex items-center space-x-2">
-        <Phone className="h-5 w-5 text-green-400" />
-        <a
-          href="tel:18003094983"
-          className="text-sm text-gray-100 hover:text-white transition"
-        >
-          1800 309 4983
-        </a>
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <Mail className="h-5 w-5 text-blue-400" />
-        <a
-          href="mailto:kaaikanionline@gmail.com"
-          className="text-sm text-gray-100 hover:text-white transition"
-        >
-          kaaikanionline@gmail.com
-        </a>
-      </div>
-
-      <div className="text-sm text-gray-400">
-        <p>Monday to Sunday</p>
-        <p>7:00 AM – 9:30 PM</p>
-      </div>
-    </div>
-
-       
-
-          
-          <div className="flex flex-col items-center sm:items-start lg:items-end justify-between">
-            
-            <div className="flex flex-col items-center sm:items-start lg:items-end space-y-2">
-
-              <ArrowUpRight className="w-8 h-8 text-white" />
-              <p className="text-lg font-semibold">Talk to us.</p>
+            <div className="flex items-center space-x-2">
+              <Phone className="h-5 w-5 text-green-400" />
+              <a
+                href="tel:18003094983"
+                className="text-sm text-gray-100 hover:text-white transition"
+              >
+                1800 309 4983
+              </a>
             </div>
-            <p className="text-xs text-gray-400 mt-4 lg:mt-auto">© KaaiKani 2025</p>
-          </div>
 
+            <div className="flex items-center space-x-2">
+              <Mail className="h-5 w-5 text-blue-400" />
+              <a
+                href="mailto:kaaikanionline@gmail.com"
+                className="text-sm text-gray-100 hover:text-white transition"
+              >
+                kaaikanionline@gmail.com
+              </a>
+            </div>
+
+            <div className="text-sm text-gray-400">
+              <p>Monday to Sunday</p>
+              <p>7:00 AM – 9:30 PM</p>
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="w-full px-3 pb-5 sm:px-6 lg:px-3">
-              <div className="mt-5 border-t border-white/10 pt-6">
-      
-      
-                <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0 w-full">
-                  {/* Contact and About Links - visible on all views, horizontal on desktop */}
-                  <div className="flex flex-wrap justify-center items-center space-x-8 order-1 md:order-1">
-                   <Link
-                      to="/privacy-and-policy"
-                      className="text-white transition-colors duration-200 text-xs"
-                    >
-                      Privacy & Policy
-                    </Link>
-                    <Link
-                      to="/terms-and-conditions"
-                      className="text-white transition-colors duration-200 text-xs"
-                    >
-                      T&C
-                    </Link>
-                  </div>
-      
-                  {/* Copyright Text - always centered */}
-                  <p className="text-center text-xs leading-4 text-white order-2 ">
-                    &copy; 2025 KaaiKani, Inc. All rights reserved.
-                  </p>
-      
-                  {/* Social Media Icons - right on desktop, bottom on mobile */}
-                  <div className="flex justify-center md:justify-end space-x-6 order-3 w-full md:w-auto">
-                    {navigation.social.map((item) => (
-                      <a
-                        key={item.name}
-                        href={item.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-white hover:text-gray-400 transition-colors duration-200"
-                      >
-                        <span className="sr-only">{item.name}</span>
-                        <item.icon aria-hidden="true" className="h-8 w-6" />
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              </div>
+        <div className="mt-5 border-t border-white/10">
+          <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0 w-full">
+            {/* Contact and About Links - visible on all views, horizontal on desktop */}
+            <div className="flex flex-wrap justify-center items-center space-x-8 order-1 md:order-1 px-2">
+              <Link
+                to="/privacy-and-policy"
+                className="text-white transition-colors duration-200 text-xs"
+              >
+                Privacy & Policy
+              </Link>
+              <Link
+                to="/terms-and-conditions"
+                className="text-white transition-colors duration-200 text-xs"
+              >
+                T&C
+              </Link>
             </div>
+
+            {/* Copyright Text - always centered */}
+            <p className="text-center text-xs leading-4 text-white order-2 ">
+              &copy; 2025 KaaiKani, Inc. All rights reserved.
+            </p>
+
+            {/* Social Media Icons - right on desktop, bottom on mobile */}
+            <div className="flex justify-center md:justify-end space-x-6 order-3 w-full md:w-auto">
+              {navigation.social.map((item) => (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white hover:text-gray-400 transition-colors duration-200"
+                >
+                  <span className="sr-only">{item.name}</span>
+                  <item.icon aria-hidden="true" className="h-8 w-6" />
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </footer>
-  )
+  );
 }

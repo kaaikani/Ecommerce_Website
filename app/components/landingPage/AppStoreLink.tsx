@@ -1,9 +1,9 @@
-import clsx from 'clsx'
+import clsx from 'clsx';
 
 export function AppStoreLink({
   color = 'black',
 }: {
-  color?: 'black' | 'white'
+  color?: 'black' | 'white';
 }) {
   return (
     <a
@@ -15,14 +15,10 @@ export function AppStoreLink({
         'rounded-lg transition-colors inline-block',
         color === 'black'
           ? 'bg-gray-800 text-white hover:bg-gray-900'
-          : 'bg-white text-gray-900 hover:bg-gray-50'
+          : 'bg-white text-gray-900 hover:bg-gray-50',
       )}
     >
-      <img
-        src="/playstore.png"
-        alt="Get it on Google Play"
-        className="h-12"
-      />
+      <img src="/playstore.png" alt="Get it on Google Play" className="h-10" />
     </a>
-  )
+  );
 }
