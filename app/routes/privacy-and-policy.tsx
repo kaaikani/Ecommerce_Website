@@ -6,6 +6,7 @@ import { Header } from '~/components/header/Header';
 import Footer from '~/components/footer/Footer';
 import { useActiveOrder } from '~/utils/use-active-order';
 import { useState, useEffect } from 'react';
+import Navbar from '~/components/landingPage/Navbar';
 
 export async function loader({ request }: { request: Request }) {
   const collections = await getCollections(request, { take: 20 });
@@ -29,12 +30,16 @@ export default function PrivacyAndPolicy() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header
-        onCartIconClick={() => setOpen(!open)}
-        cartQuantity={activeOrder?.totalQuantity ?? 0}
-        isSignedIn={isSignedIn}
-        collections={collections}
-      />
+      {isSignedIn ? (
+        <Header
+          onCartIconClick={() => setOpen(!open)}
+          cartQuantity={activeOrder?.totalQuantity ?? 0}
+          isSignedIn={isSignedIn}
+          collections={collections}
+        />
+      ) : (
+        <Navbar />
+      )}
       <main className="flex-1 px-4 py-12 sm:py-16">
         <div className="bg-white rounded-lg shadow-md p-8">
           <h1 className="text-3xl font-bold mb-6 text-center text-black">
