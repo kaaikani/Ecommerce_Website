@@ -218,7 +218,7 @@ function PreppedScreen(props: ScreenProps) {
       <img
         src="/Hero-Cut.png" // <-- Replace with actual path or imported image
         alt="Prepped Screen Preview"
-        className="w-[300px] md:w-[400px] shadow-xl rounded-2xl"
+        className="w-[300px] md:w-[300px] shadow-xl rounded-2xl"
       />
     </div>
   );
@@ -327,7 +327,7 @@ function StocksScreen(props: ScreenProps) {
       <img
         src="/Hero-Offer.png" // <-- Replace with actual path or imported image
         alt="Prepped Screen Preview"
-        className="w-[300px] md:w-[400px] shadow-xl rounded-2xl"
+        className="w-[300px] md:w-[300px] shadow-xl rounded-2xl"
       />
     </div>
   );
@@ -389,7 +389,7 @@ function InvestScreen(props: ScreenProps) {
       <img
         src="/Hero-Happy.png" // <-- Replace with actual path or imported image
         alt="Prepped Screen Preview"
-        className="w-[300px] md:w-[400px] shadow-xl rounded-2xl"
+        className="w-[300px] md:w-[300px] shadow-xl rounded-2xl"
       />
     </div>
   );
@@ -455,30 +455,33 @@ function FeaturesDesktop() {
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             <CircleBackground color="#22c55e" className="animate-spin-slower" />
           </div>
-          {/* <PhoneFrame className="z-10 mx-auto w-full max-w-[366px]">
-      
-        </PhoneFrame> */}
-          <Tab.Panels as={Fragment}>
-            <AnimatePresence
-              initial={false}
-              custom={{ isForwards, changeCount }}
-            >
-              {features.map((feature, featureIndex) =>
-                selectedIndex === featureIndex ? (
-                  <Tab.Panel
-                    static
-                    key={feature.name + changeCount}
-                    className="col-start-1 row-start-1 flex focus:outline-offset-[32px] ui-not-focus-visible:outline-none"
-                  >
-                    <feature.screen
-                      animated
-                      custom={{ isForwards, changeCount }}
-                    />
-                  </Tab.Panel>
-                ) : null,
-              )}
-            </AnimatePresence>
-          </Tab.Panels>
+
+          {/* ⚠️ Fix container height to prevent layout shift */}
+          <div className="relative h-[600px]">
+            {' '}
+            {/* Set appropriate height */}
+            <Tab.Panels as={Fragment}>
+              <AnimatePresence
+                initial={false}
+                custom={{ isForwards, changeCount }}
+              >
+                {features.map((feature, featureIndex) =>
+                  selectedIndex === featureIndex ? (
+                    <Tab.Panel
+                      static
+                      key={feature.name + changeCount}
+                      className="absolute inset-0 flex focus:outline-offset-[32px] ui-not-focus-visible:outline-none"
+                    >
+                      <feature.screen
+                        animated
+                        custom={{ isForwards, changeCount }}
+                      />
+                    </Tab.Panel>
+                  ) : null,
+                )}
+              </AnimatePresence>
+            </Tab.Panels>
+          </div>
         </div>
       </Tab.Group>
     </div>

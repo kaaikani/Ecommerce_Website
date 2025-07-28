@@ -143,7 +143,7 @@ export default function Footer() {
                 target={item.external ? '_blank' : undefined}
                 rel={item.external ? 'noopener noreferrer' : undefined}
                 onClick={(e) => handleNavClick(e, item)}
-                className="flex items-center rounded-lg px-3 text-sm"
+                className="flex items-center rounded-lg px-3 text-sm hover:text-gray-300"
               >
                 {item.name}
                 {item.external && <ExternalLinkIcon className="h-5 w-5 " />}
@@ -187,7 +187,7 @@ export default function Footer() {
 
       <div className="w-full px-3 pb-5 sm:px-6 lg:px-3">
         <div className="mt-5 border-t border-white/10">
-          <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0 w-full">
+          <div className="flex mt-5 flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0 w-full">
             {/* Contact and About Links - visible on all views, horizontal on desktop */}
             <div className="flex flex-wrap justify-center items-center space-x-8 order-1 md:order-1 px-2">
               <Link

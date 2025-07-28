@@ -81,7 +81,7 @@ export default function Navbar() {
                 to="/sign-up"
                 className="px-4 py-2 text-sm font-semibold text-black bg-white rounded-full shadow-sm transition-all duration-100 ease-in hover:bg-white/90 active:scale-95"
               >
-                Get Started
+                Register Now
               </Link>
             </div>
           </div>
@@ -161,7 +161,7 @@ export default function Navbar() {
                   href="/get-started"
                   className="block w-full rounded-full px-6 py-2.5 text-center text-sm font-semibold transition-all duration-200 bg-black text-white hover:bg-gray-800"
                 >
-                  Get Started
+                  Register Now
                 </a>
               </div>
             </div>
