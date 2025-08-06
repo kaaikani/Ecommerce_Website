@@ -92,9 +92,17 @@ export function getCouponCodeList(options: QueryOptions) {
           value: arg.value,
         })),
       })),
+      actions: c.actions.map((action) => ({
+        code: action.code,
+        args: action.args.map((arg) => ({
+          name: arg.name,
+          value: arg.value,
+        })),
+      })),
     })),
   );
 }
+
 export async function addCouponProductToCart(
   couponCode: string,
   options: QueryOptions,
@@ -202,6 +210,7 @@ export async function addCouponProductToCart(
     throw new Error(`Failed to add products to cart: ${errorMessage}`);
   }
 }
+
 export async function removeCouponProductFromCart(
   couponCode: string,
   options: QueryOptions,
@@ -318,6 +327,7 @@ export async function removeCouponProductFromCart(
     );
   }
 }
+
 gql`
   mutation setCustomerForOrder($input: CreateCustomerInput!) {
     setCustomerForOrder(input: $input) {
@@ -414,6 +424,10 @@ gql`
     totalQuantity
     subTotal
     subTotalWithTax
+    surcharges {
+      id
+      price
+    }
     taxSummary {
       description
       taxRate
@@ -508,6 +522,13 @@ gql`
         startsAt
         updatedAt
         conditions {
+          code
+          args {
+            name
+            value
+          }
+        }
+        actions {
           code
           args {
             name

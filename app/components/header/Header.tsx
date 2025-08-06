@@ -20,25 +20,47 @@ import {
 } from '~/firebase/firebase';
 import { Dialog } from '@headlessui/react';
 
+// Coin Icon Component
+const CoinIcon = ({ points }: { points: number | null }) => {
+  return (
+    <div className="relative flex items-center gap-1">
+      <svg
+        className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400"
+        fill="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-12c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" />
+      </svg>
+      <span className="text-xs sm:text-sm text-white">
+        {points !== null ? points : '0'} Points
+      </span>
+    </div>
+  );
+};
+
 export function Header({
   onCartIconClick,
   cartQuantity,
   isSignedIn,
   collections,
+  loyaltyPoints,
 }: {
   onCartIconClick: () => void;
   cartQuantity: number;
   isSignedIn: boolean;
   collections: { id: string; slug: string; name: string }[];
+  loyaltyPoints: number | null;
 }) {
   const isScrollingUp = useScrollingUp();
   const { t } = useTranslation();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isAppLeavingz, setIsAppLeaving] = useState(false);
+  const [isAppLeaving, setIsAppLeaving] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [leaveMessage, setLeaveMessage] = useState('We are currently closed.');
-  const [LeaveDialogtitle, Dialogtitle] = useState('Sorry for incovninece.');
-  // Fetch Remote Config values once
+  // loyaltyPoints is now passed as a prop
+
+  // Fetch Remote Config values
   useEffect(() => {
     if (typeof window !== 'undefined') {
       fetchAndActivate(remoteConfig)
@@ -51,6 +73,8 @@ export function Header({
         .catch((err) => console.error('Remote Config fetch failed:', err));
     }
   }, []);
+
+  // loyaltyPoints is now passed as a prop from loader/parent
 
   // Sort collections
   const sortedCollections = useMemo(() => {
@@ -84,16 +108,14 @@ export function Header({
           >
             <img
               src="/KaaiKani White.png"
-             className="w-20 lg:w-24 xl:w-28"
+              className="w-20 lg:w-24 xl:w-28"
               alt="KaaiKani Logo"
             />
           </Link>
-
           {/* Desktop Search */}
           <div className="hidden md:flex flex-1 justify-center max-w-4xl mx-4">
             <SearchBar />
           </div>
-
           {/* Icons */}
           <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
             <Link
@@ -105,7 +127,6 @@ export function Header({
                 {isSignedIn ? 'My Account' : 'Log In'}
               </span>
             </Link>
-
             {/* Mobile search */}
             <button
               className="md:hidden p-1.5 bg-white/10 hover:bg-white/20 rounded-full"
@@ -114,12 +135,17 @@ export function Header({
             >
               <MagnifyingGlassIcon className="w-5 h-5" />
             </button>
-
+            {/* Loyalty Points Coin Icon */}
+            {isSignedIn && (
+              <div className="p-1.5 bg-white/10 rounded-full">
+                <CoinIcon points={loyaltyPoints} />
+              </div>
+            )}
             {/* Cart Icon */}
             <button
               className="relative p-1.5 sm:p-2 bg-white/10 hover:bg-white/20 rounded-full"
               onClick={(e) => {
-                if (isAppLeavingz) {
+                if (isAppLeaving) {
                   e.preventDefault();
                   setShowLeaveDialog(true);
                 } else {
@@ -137,7 +163,6 @@ export function Header({
             </button>
           </div>
         </div>
-
         {/* Mobile Search Bar */}
         {isSearchOpen && (
           <div className="md:hidden mt-3 pb-1">
@@ -145,34 +170,33 @@ export function Header({
           </div>
         )}
       </div>
-
-      {/* Scrollable Navigation Carousel - responsive with sorted collections */}
+      {/* Scrollable Navigation Carousel */}
       <div className="bg-white border-t border-gray-200">
-      <div className="w-full flex justify-center">
-  <div
-    className="overflow-x-auto"
-    style={{
-      msOverflowStyle: 'none',
-      scrollbarWidth: 'none',
-    } as React.CSSProperties}
-  >
-    <nav className="flex gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 min-w-max">
-      {sortedCollections.map((collection) => (
-        <Link
-          key={collection.id}
-          to={`/collections/${collection.slug}`}
-          prefetch="intent"
-          className="text-xs sm:text-sm font-medium text-black hover:text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-md hover:bg-black whitespace-nowrap flex-shrink-0 transition-colors duration-200"
-        >
-          {collection.name}
-        </Link>
-      ))}
-    </nav>
-  </div>
-</div>
-
+        <div className="w-full flex justify-center">
+          <div
+            className="overflow-x-auto"
+            style={
+              {
+                msOverflowStyle: 'none',
+                scrollbarWidth: 'none',
+              } as React.CSSProperties
+            }
+          >
+            <nav className="flex gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 min-w-max">
+              {sortedCollections.map((collection) => (
+                <Link
+                  key={collection.id}
+                  to={`/collections/${collection.slug}`}
+                  prefetch="intent"
+                  className="text-xs sm:text-sm font-medium text-black hover:text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-md hover:bg-black whitespace-nowrap flex-shrink-0 transition-colors duration-200"
+                >
+                  {collection.name}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </div>
       </div>
-
       {/* Leave Dialog */}
       {showLeaveDialog && (
         <Dialog

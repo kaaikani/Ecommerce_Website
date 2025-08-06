@@ -14,8 +14,11 @@ export function getActiveCustomerAddresses(options: QueryOptions) {
   return sdk.activeCustomerAddresses(undefined, options);
 }
 
-export function getActiveCustomerOrderList(orderListOptions: OrderListOptions, options: QueryOptions) {
-  return sdk.activeCustomerOrderList({orderListOptions}, options);
+export function getActiveCustomerOrderList(
+  orderListOptions: OrderListOptions,
+  options: QueryOptions,
+) {
+  return sdk.activeCustomerOrderList({ orderListOptions }, options);
 }
 
 gql`
@@ -24,6 +27,9 @@ gql`
       id
       firstName
       lastName
+      customFields {
+        loyaltyPointsAvailable
+      }
     }
   }
 `;
@@ -71,10 +77,9 @@ gql`
   query activeCustomerOrderList($orderListOptions: OrderListOptions) {
     activeCustomer {
       orders(options: $orderListOptions) {
-    
         totalItems
         items {
-        id
+          id
           code
           state
           orderPlacedAt
@@ -97,10 +102,10 @@ gql`
           fulfillments {
             trackingCode
           }
-            customFields {
-    clientRequestToCancel
-    otherInstructions
-  }
+          customFields {
+            clientRequestToCancel
+            otherInstructions
+          }
           lines {
             quantity
             discountedLinePriceWithTax

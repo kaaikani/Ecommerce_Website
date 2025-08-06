@@ -50,6 +50,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
       collections,
       activeCustomer,
       banners,
+      loyaltyPoints:
+        activeCustomer.activeCustomer?.customFields?.loyaltyPointsAvailable ??
+        null,
     },
     {
       headers: {},
@@ -58,7 +61,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export default function home() {
-  const { collections, banners } = useLoaderData<typeof loader>();
+  const { collections, banners, loyaltyPoints } =
+    useLoaderData<typeof loader>();
   const loaderData = useLoaderData<RootLoaderData>();
   const { activeCustomer } = loaderData;
 
@@ -91,6 +95,7 @@ export default function home() {
         cartQuantity={activeOrder?.totalQuantity ?? 0}
         isSignedIn={isSignedIn}
         collections={collections}
+        loyaltyPoints={loyaltyPoints}
       />
 
       <CartTray
@@ -111,22 +116,23 @@ export default function home() {
       {/* Enhanced Responsive Collections Section */}
       <section
         aria-labelledby="category-heading"
-  className="mb-16 sm:pt-4 md:pt-6 lg:pt-8 xl:pt-10 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12"      >
+        className="mb-16 sm:pt-4 md:pt-6 lg:pt-8 xl:pt-10 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12"
+      >
         {/* Image and Heading Container */}
         <div className="flex flex-col text-lg font-se items-center mb-6 sm:mb-8 md:mb-10 lg:mb-12">
           <p>Discover Our Finest Selection</p>
           <h3
             id="category-heading"
-className="text-4xl sm:text-5xl lg:text-5xl font-[900] w-full text-center uppercase text-green-950 mb-4"          >
+            className="text-4xl sm:text-5xl lg:text-5xl font-[900] w-full text-center uppercase text-green-950 mb-4"
+          >
             SHOP BY CATEGORY
           </h3>
         </div>
 
         {/* Responsive Grid Container with Equal Heights */}
         <div className="w-full">
-<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5  gap-6">
-  
-              {collections.map((collection) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5  gap-6">
+            {collections.map((collection) => (
               <div
                 key={collection.id}
                 className="w-full h-full min-h-[180px] xs:min-h-[200px] sm:min-h-[240px] md:min-h-[280px] lg:min-h-[320px]"

@@ -100,7 +100,7 @@ export function CartTray({
                     </div>
                   </div>
 
-                  {activeOrder?.totalQuantity && editable && (
+                  {(activeOrder?.totalQuantity ?? 0) > 0 && editable && (
                     <div className="border-t border-gray-200 py-6 px-4 sm:px-6">
                       <div className="flex justify-between text-base font-medium text-gray-900">
                         <p>{t('common.subtotal')}</p>

@@ -75,6 +75,8 @@ export async function loader({ params, request, context }: DataFunctionArgs) {
   );
   const channelToken = session.get(CHANNEL_TOKEN_SESSION_KEY);
   const activeCustomer = await getActiveCustomer({ request });
+  const loyaltyPoints =
+    activeCustomer.activeCustomer?.customFields?.loyaltyPointsAvailable ?? null;
 
   return {
     term,
@@ -86,6 +88,7 @@ export async function loader({ params, request, context }: DataFunctionArgs) {
     appliedPaginationPage,
     collections,
     activeCustomer,
+    loyaltyPoints,
   };
 }
 
@@ -98,6 +101,7 @@ export default function CollectionSlug() {
     facetValueIds,
     collections,
     activeCustomer,
+    loyaltyPoints,
   } = loaderData;
 
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -139,6 +143,7 @@ export default function CollectionSlug() {
         cartQuantity={activeOrder?.totalQuantity ?? 0}
         isSignedIn={isSignedIn}
         collections={collections}
+        loyaltyPoints={loyaltyPoints}
       />
 
       <CartTray
@@ -166,7 +171,8 @@ export default function CollectionSlug() {
 
             {/* Simple Responsive Grid - 2 cols mobile, 3 cols tablet+ */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-              {collection.children.slice()
+              {collection.children
+                .slice()
                 .sort((a, b) => {
                   // Extract the last number from the slug
                   const getLastNumber = (slug: string) => {

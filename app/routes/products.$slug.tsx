@@ -61,8 +61,10 @@ export async function loader({ params, request }: DataFunctionArgs) {
   const collections = await getCollections(request, { take: 20 });
   const activeCustomer = await getActiveCustomer({ request });
 
+  const loyaltyPoints =
+    activeCustomer.activeCustomer?.customFields?.loyaltyPointsAvailable ?? null;
   return json(
-    { product: product!, error, collections, activeCustomer },
+    { product: product!, error, collections, activeCustomer, loyaltyPoints },
     {
       headers: {
         'Set-Cookie': await sessionStorage.commitSession(session),
@@ -74,7 +76,7 @@ export async function loader({ params, request }: DataFunctionArgs) {
 export const shouldRevalidate: ShouldRevalidateFunction = () => true;
 
 export default function ProductSlug() {
-  const { product, error, collections, activeCustomer } =
+  const { product, error, collections, activeCustomer, loyaltyPoints } =
     useLoaderData<typeof loader>();
   const { activeOrderFetcher } = useOutletContext<{
     activeOrderFetcher: FetcherWithComponents<CartLoaderData>;
@@ -158,6 +160,7 @@ export default function ProductSlug() {
         cartQuantity={activeOrder?.totalQuantity ?? 0}
         isSignedIn={isSignedIn}
         collections={collections}
+        loyaltyPoints={loyaltyPoints}
       />
       <CartTray
         open={open}
