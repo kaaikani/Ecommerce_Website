@@ -1,53 +1,66 @@
 import gql from 'graphql-tag';
 import {
-  CheckUniquePhoneQuery, CustomBanner, CustomBannersQuery, GetChannelListQuery, GetChannelsByCustomerEmailQuery,
-  GetChannelsByCustomerEmailQueryVariables, GetChannelsByCustomerPhonenumberQuery, GetPasswordResetTokenQuery, RequestPasswordResetMutation, RequestPasswordResetMutationVariables, ResetPasswordMutation, SendPhoneOtpMutation, SendPhoneOtpMutationVariables,
- CancelOrderOnClientRequestMutation,
-  OtherInstructionsMutation
+  CheckUniquePhoneQuery,
+  CustomBanner,
+  CustomBannersQuery,
+  GetChannelListQuery,
+  GetChannelsByCustomerEmailQuery,
+  GetChannelsByCustomerEmailQueryVariables,
+  GetChannelsByCustomerPhonenumberQuery,
+  GetPasswordResetTokenQuery,
+  RequestPasswordResetMutation,
+  RequestPasswordResetMutationVariables,
+  ResetPasswordMutation,
+  SendPhoneOtpMutation,
+  SendPhoneOtpMutationVariables,
+  CancelOrderOnClientRequestMutation,
+  RemoveLoyaltyPointsFromActiveOrderMutation,
+  OtherInstructionsMutation,
+  ApplyLoyaltyPointsMutation,
+  LoyaltyPointsConfig,
 } from '~/generated/graphql';
 import { QueryOptions, sdk, WithHeaders } from '~/graphqlWrapper';
 
-export async function getChannelList(p0: { request: Request; }): Promise<WithHeaders<GetChannelListQuery['getChannelList']>> {
+export async function getChannelList(p0: {
+  request: Request;
+}): Promise<WithHeaders<GetChannelListQuery['getChannelList']>> {
   return sdk.getChannelList().then((res) => {
     const data = res.getChannelList;
-
-
     const result = Object.assign([...data], { _headers: res._headers });
     return result;
   });
 }
 
 gql`
- query getChannelList{
-  getChannelList {
-    id
-    token
-    code
+  query getChannelList {
+    getChannelList {
+      id
+      token
+      code
+    }
   }
- }
 `;
 
 export async function getChannelsByCustomerEmail(
-  email: string
-): Promise<WithHeaders<GetChannelsByCustomerEmailQuery['getChannelsByCustomerEmail']>> {
-  const response = await sdk.GetChannelsByCustomerEmail({ email }); // 👈 lowercase "g"
+  email: string,
+): Promise<
+  WithHeaders<GetChannelsByCustomerEmailQuery['getChannelsByCustomerEmail']>
+> {
+  const response = await sdk.GetChannelsByCustomerEmail({ email });
   const result = Object.assign([...response.getChannelsByCustomerEmail], {
     _headers: response._headers,
   });
   return result;
 }
 
-
-
-
-export async function getPasswordResetToken(email: string, p0: { request: Request; customHeaders: { 'vendure-token': string; }; }): Promise<WithHeaders<string>> {
-  // Create a Headers instance and append the custom header
+export async function getPasswordResetToken(
+  email: string,
+  p0: { request: Request; customHeaders: { 'vendure-token': string } },
+): Promise<WithHeaders<string>> {
   const headers = new Headers();
   headers.append('vendure-token', p0.customHeaders['vendure-token']);
-
-  // Pass the headers instance inside the QueryOptions
   const queryOptions: QueryOptions = {
-    headers: headers,  // Pass the Headers object
+    headers: headers,
   };
 
   return sdk.GetPasswordResetToken({}, queryOptions).then((res) => {
@@ -58,19 +71,15 @@ export async function getPasswordResetToken(email: string, p0: { request: Reques
   });
 }
 
-
-
-
 export async function requestPasswordReset(
-  email: string
+  email: string,
 ): Promise<WithHeaders<RequestPasswordResetMutation['requestPasswordReset']>> {
   const response = await sdk.RequestPasswordReset({ email });
   const { requestPasswordReset, _headers } = response;
 
   if (!requestPasswordReset) {
-    // If it's null or undefined, return it with headers but explicitly typed
     return {
-      __typename: 'NativeAuthStrategyError', // or some fallback typename if your schema expects it
+      __typename: 'NativeAuthStrategyError',
       _headers,
     } as WithHeaders<RequestPasswordResetMutation['requestPasswordReset']>;
   }
@@ -81,10 +90,11 @@ export async function requestPasswordReset(
   };
 }
 
-
-
 export async function resetPassword(
-  token: string, password: string, p0: { request: Request; customHeaders: { 'vendure-token': string; }; }): Promise<WithHeaders<any>> {
+  token: string,
+  password: string,
+  p0: { request: Request; customHeaders: { 'vendure-token': string } },
+): Promise<WithHeaders<any>> {
   const response = await sdk.ResetPassword({
     token,
     password,
@@ -105,11 +115,13 @@ export async function resetPassword(
   };
 }
 
-export async function sendPhoneOtp(phoneNumber: string): Promise<string | false> {
+export async function sendPhoneOtp(
+  phoneNumber: string,
+): Promise<string | false> {
   try {
     const response = await sdk.SendPhoneOtp({ phoneNumber });
     const otp = response.sendPhoneOtp;
-    console.log('Generated OTP:', otp); // 👈 Log OTP to console
+    console.log('Generated OTP:', otp);
     return otp || false;
   } catch (error) {
     console.error('Error in sendPhoneOtp:', error);
@@ -117,8 +129,9 @@ export async function sendPhoneOtp(phoneNumber: string): Promise<string | false>
   }
 }
 
-
-export async function resendPhoneOtp(phoneNumber: string): Promise<string | false> {
+export async function resendPhoneOtp(
+  phoneNumber: string,
+): Promise<string | false> {
   try {
     const response = await sdk.resendPhoneOtp({ phoneNumber });
     return response.resendPhoneOtp || false;
@@ -129,7 +142,7 @@ export async function resendPhoneOtp(phoneNumber: string): Promise<string | fals
 }
 
 export async function checkUniquePhone(
-  phone: string
+  phone: string,
 ): Promise<WithHeaders<CheckUniquePhoneQuery['checkUniquePhone']>> {
   const response = await sdk.CheckUniquePhone({ phoneNumber: phone });
 
@@ -140,11 +153,8 @@ export async function checkUniquePhone(
   return result;
 }
 
-
-
-
 gql`
-query GetChannelsByCustomerEmail($email: String!) {
+  query GetChannelsByCustomerEmail($email: String!) {
     getChannelsByCustomerEmail(email: $email) {
       id
       code
@@ -152,22 +162,20 @@ query GetChannelsByCustomerEmail($email: String!) {
       defaultCurrencyCode
     }
   }
-    `;
+`;
 
 gql`
-    query GetPasswordResetToken {
-      getPasswordResetToken
-    }
-  `;
-
+  query GetPasswordResetToken {
+    getPasswordResetToken
+  }
+`;
 
 gql`
-mutation RequestPasswordReset($email: String!){
-    requestPasswordReset(emailAddress: $email){
-        __typename
+  mutation RequestPasswordReset($email: String!) {
+    requestPasswordReset(emailAddress: $email) {
+      __typename
     }
-}
-
+  }
 `;
 
 gql`
@@ -190,7 +198,7 @@ gql`
     errorCode
     message
     __typename
-}
+  }
 `;
 
 gql`
@@ -200,23 +208,28 @@ gql`
 `;
 
 gql`
-mutation resendPhoneOtp($phoneNumber: String!){
-  resendPhoneOtp(phoneNumber: $phoneNumber)
-}
+  mutation resendPhoneOtp($phoneNumber: String!) {
+    resendPhoneOtp(phoneNumber: $phoneNumber)
+  }
 `;
 
 export async function getChannelsByCustomerPhonenumber(
-  phoneNumber: string
-): Promise<WithHeaders<GetChannelsByCustomerPhonenumberQuery['getChannelsByCustomerPhoneNumber']>> {
+  phoneNumber: string,
+): Promise<
+  WithHeaders<
+    GetChannelsByCustomerPhonenumberQuery['getChannelsByCustomerPhoneNumber']
+  >
+> {
   const response = await sdk.getChannelsByCustomerPhonenumber({ phoneNumber });
   const result = Object.assign([...response.getChannelsByCustomerPhoneNumber], {
     _headers: response._headers,
   });
   return result;
 }
+
 gql`
-    query getChannelsByCustomerPhonenumber($phoneNumber: String!){
-    getChannelsByCustomerPhoneNumber(phoneNumber:$phoneNumber) {
+  query getChannelsByCustomerPhonenumber($phoneNumber: String!) {
+    getChannelsByCustomerPhoneNumber(phoneNumber: $phoneNumber) {
       id
       code
       token
@@ -226,62 +239,57 @@ gql`
 `;
 
 gql`
-query CheckUniquePhone($phoneNumber: String!){
-    checkUniquePhone(phone:$phoneNumber)
-}
+  query CheckUniquePhone($phoneNumber: String!) {
+    checkUniquePhone(phone: $phoneNumber)
+  }
 `;
-
 
 export async function getCustomBanners(
   request: Request,
   channelToken?: string,
-): Promise<{ data: CustomBannersQuery["customBanners"]; headers: any } | false> {
+): Promise<
+  { data: CustomBannersQuery['customBanners']; headers: any } | false
+> {
   try {
-    // Create custom headers with the channel token if provided
-    const customHeaders: Record<string, string> = {}
+    const customHeaders: Record<string, string> = {};
     if (channelToken) {
-      customHeaders["vendure-token"] = channelToken
+      customHeaders['vendure-token'] = channelToken;
     }
 
-    // Pass the request and custom headers to ensure the channel token is used
     const response = await sdk.customBanners(
-      {}, // No parameters needed for the query
+      {},
       {
         request,
-        customHeaders, // Pass the channel token in headers
+        customHeaders,
       },
-    )
+    );
 
     return {
       data: response.customBanners,
       headers: response._headers,
-    }
+    };
   } catch (error) {
-    console.error("Error in getCustomBanners:", error)
-    return false
+    console.error('Error in getCustomBanners:', error);
+    return false;
   }
 }
 
-
-
-
 gql`
-query customBanners{
+  query customBanners {
     customBanners {
+      id
+      assets {
         id
-        assets {
-            id
-            name
-            source
-        }
-        channels {
-            id
-            code
-        }
+        name
+        source
+      }
+      channels {
+        id
+        code
+      }
     }
-}
+  }
 `;
-
 
 export async function getRazorpayOrderId(
   orderId: number | string,
@@ -298,9 +306,9 @@ export async function getRazorpayOrderId(
   | false
 > {
   try {
-    const customHeaders: Record<string, string> = {}
+    const customHeaders: Record<string, string> = {};
     if (channelToken) {
-      customHeaders['vendure-token'] = channelToken
+      customHeaders['vendure-token'] = channelToken;
     }
 
     const response = await sdk.generateRazorpayOrderId(
@@ -309,9 +317,9 @@ export async function getRazorpayOrderId(
         request,
         customHeaders,
       },
-    )
+    );
 
-    const result = response.generateRazorpayOrderId
+    const result = response.generateRazorpayOrderId;
 
     if ('razorpayOrderId' in result) {
       return {
@@ -319,45 +327,46 @@ export async function getRazorpayOrderId(
         keyId: result.keyId,
         keySecret: result.keySecret,
         headers: response._headers,
-      }
+      };
     } else if ('message' in result) {
       return {
         message: result.message ?? 'Unknown error',
         headers: response._headers,
-      }
+      };
     }
 
-    return false
+    return false;
   } catch (error) {
-    console.error('Error in getRazorpayOrderId:', error)
-    return false
+    console.error('Error in getRazorpayOrderId:', error);
+    return false;
   }
 }
-
 
 gql`
-mutation generateRazorpayOrderId($orderId: ID!) {
-  generateRazorpayOrderId(orderId: $orderId) {
-    ... on RazorpayOrderIdSuccess {
-      razorpayOrderId
-      keyId
-      keySecret
-    }
-    ... on RazorpayOrderIdGenerationError {
-      message
+  mutation generateRazorpayOrderId($orderId: ID!) {
+    generateRazorpayOrderId(orderId: $orderId) {
+      ... on RazorpayOrderIdSuccess {
+        razorpayOrderId
+        keyId
+        keySecret
+      }
+      ... on RazorpayOrderIdGenerationError {
+        message
+      }
     }
   }
-}
-`
+`;
 
 export async function cancelOrderOnClientRequest(
   orderId: string,
   value: number,
-  options?: { request: Request; customHeaders?: Record<string, string> }
-): Promise<WithHeaders<CancelOrderOnClientRequestMutation['cancelOrderOnClientRequest']>> {
+  options?: { request: Request; customHeaders?: Record<string, string> },
+): Promise<
+  WithHeaders<CancelOrderOnClientRequestMutation['cancelOrderOnClientRequest']>
+> {
   const response = await sdk.CancelOrderOnClientRequest(
     { orderId, value },
-    options
+    options,
   );
 
   return Object.assign(response.cancelOrderOnClientRequest, {
@@ -366,9 +375,9 @@ export async function cancelOrderOnClientRequest(
 }
 
 gql`
- mutation CancelOrderOnClientRequest($orderId: ID!, $value: Int!) {
+  mutation CancelOrderOnClientRequest($orderId: ID!, $value: Int!) {
     cancelOrderOnClientRequest(orderId: $orderId, value: $value) {
-              ...Cart
+      ...Cart
     }
   }
 
@@ -379,50 +388,50 @@ gql`
     active
     couponCodes
     promotions {
-        couponCode
-        name
-        enabled
-        actions {
-            args {
-                value
-                name
-            }
-            code
+      couponCode
+      name
+      enabled
+      actions {
+        args {
+          value
+          name
         }
-        conditions {
-            code
-            args {
-                name
-                value
-            }
+        code
+      }
+      conditions {
+        code
+        args {
+          name
+          value
         }
+      }
     }
     lines {
-        id
-        customFields
-        featuredAsset {
-            ...Asset
-            __typename
-        }
-        unitPrice
-        unitPriceWithTax
-        quantity
-        linePriceWithTax
-        discountedLinePriceWithTax
-        productVariant {
-            id
-            name
-            __typename
-        }
-        discounts {
-            amount
-            amountWithTax
-            description
-            adjustmentSource
-            type
-            __typename
-        }
+      id
+      customFields
+      featuredAsset {
+        ...Asset
         __typename
+      }
+      unitPrice
+      unitPriceWithTax
+      quantity
+      linePriceWithTax
+      discountedLinePriceWithTax
+      productVariant {
+        id
+        name
+        __typename
+      }
+      discounts {
+        amount
+        amountWithTax
+        description
+        adjustmentSource
+        type
+        __typename
+      }
+      __typename
     }
     totalQuantity
     subTotal
@@ -432,60 +441,57 @@ gql`
     shipping
     shippingWithTax
     shippingLines {
-        priceWithTax
-        shippingMethod {
-            id
-            code
-            name
-            description
-            __typename
-        }
+      priceWithTax
+      shippingMethod {
+        id
+        code
+        name
+        description
         __typename
+      }
+      __typename
     }
     discounts {
-        amount
-        amountWithTax
-        description
-        adjustmentSource
-        type
-        __typename
+      amount
+      amountWithTax
+      description
+      adjustmentSource
+      type
+      __typename
     }
     customFields {
-        clientRequestToCancel
+      clientRequestToCancel
     }
     __typename
-}
+  }
 
-fragment Asset on Asset {
+  fragment Asset on Asset {
     id
     width
     height
     name
     preview
     focalPoint {
-        x
-        y
-        __typename
+      x
+      y
+      __typename
     }
     __typename
-}
-`
-
+  }
+`;
 
 export async function otherInstructions(
   orderId: string,
   value: string,
-  options?: { request: Request; customHeaders?: Record<string, string> }
+  options?: { request: Request; customHeaders?: Record<string, string> },
 ): Promise<WithHeaders<OtherInstructionsMutation['otherInstructions']>> {
-  const response = await sdk.OtherInstructions(
-    { orderId, value },
-    options
-  );
+  const response = await sdk.OtherInstructions({ orderId, value }, options);
 
   return Object.assign(response.otherInstructions, {
     _headers: response._headers,
   });
 }
+
 gql`
   mutation OtherInstructions($orderId: ID!, $value: String!) {
     otherInstructions(orderId: $orderId, value: $value) {
@@ -495,5 +501,115 @@ gql`
       }
     }
   }
-`
+`;
 
+export async function applyLoyaltyPoints(
+  amount: number,
+  options?: { request: Request; customHeaders?: Record<string, string> },
+): Promise<
+  WithHeaders<ApplyLoyaltyPointsMutation['applyLoyaltyPointsToActiveOrder']>
+> {
+  const response = await sdk.ApplyLoyaltyPoints({ amount }, options);
+
+  return Object.assign(response.applyLoyaltyPointsToActiveOrder, {
+    _headers: response._headers,
+  });
+}
+
+gql`
+  mutation ApplyLoyaltyPoints($amount: Int!) {
+    applyLoyaltyPointsToActiveOrder(amount: $amount) {
+      id
+      createdAt
+      orderPlacedAt
+      discounts {
+        amountWithTax
+      }
+      customFields {
+        razorpay_order_id
+        otherInstructions
+        loyaltyPointsEarned
+      }
+    }
+  }
+`;
+
+export async function removeLoyaltyPoints(options?: {
+  request: Request;
+  customHeaders?: Record<string, string>;
+}): Promise<
+  | (RemoveLoyaltyPointsFromActiveOrderMutation['removeLoyaltyPointsFromActiveOrder'] & {
+      _headers: Headers;
+    })
+  | { __typename: 'Error'; message: string; _headers: Headers }
+> {
+  const response = await sdk.RemoveLoyaltyPointsFromActiveOrder(
+    undefined,
+    options,
+  );
+
+  const { removeLoyaltyPointsFromActiveOrder, _headers } = response;
+
+  if (!removeLoyaltyPointsFromActiveOrder) {
+    return {
+      __typename: 'Error',
+      message: 'removeLoyaltyPointsFromActiveOrder returned null or undefined',
+      _headers,
+    };
+  }
+
+  return {
+    ...removeLoyaltyPointsFromActiveOrder,
+    _headers,
+  };
+}
+
+gql`
+  mutation RemoveLoyaltyPointsFromActiveOrder {
+    removeLoyaltyPointsFromActiveOrder {
+      id
+      totalWithTax
+      discounts {
+        amountWithTax
+      }
+    }
+  }
+`;
+
+export async function getLoyaltyPointsConfig(options?: {
+  request: Request;
+  customHeaders?: Record<string, string>;
+}): Promise<WithHeaders<LoyaltyPointsConfig> | undefined> {
+  const response = await sdk.LoyaltyPointsConfig(undefined, options);
+  if (!response || !response.loyaltyPointsConfig) {
+    return undefined;
+  }
+  return {
+    ...response.loyaltyPointsConfig,
+    _headers: response._headers,
+  };
+}
+
+gql`
+  query LoyaltyPointsConfig {
+    loyaltyPointsConfig {
+      id
+      createdAt
+      updatedAt
+      rupeesPerPoint
+      pointsPerRupee
+      channels {
+        id
+        code
+        token
+        availableCurrencyCodes
+        createdAt
+        currencyCode
+        defaultCurrencyCode
+        defaultLanguageCode
+        pricesIncludeTax
+        updatedAt
+      }
+    }
+  }
+`;

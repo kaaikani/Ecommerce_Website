@@ -32,7 +32,10 @@ import {
 } from '~/providers/orders/order';
 import { shippingFormDataIsValid } from '~/utils/validation';
 import { getSessionStorage } from '~/sessions';
-import { getActiveCustomerAddresses } from '~/providers/customer/customer';
+import {
+  getActiveCustomerAddresses,
+  getActiveCustomer,
+} from '~/providers/customer/customer';
 import { ShippingMethodSelector } from '~/components/checkout/ShippingMethodSelector';
 import { ShippingAddressSelector } from '~/components/checkout/ShippingAddressSelector';
 import { getActiveOrder } from '~/providers/orders/order';
@@ -40,10 +43,16 @@ import { useTranslation } from 'react-i18next';
 import { ErrorCode, type ErrorResult } from '~/generated/graphql';
 import { CartContents } from '~/components/cart/CartContents';
 import { CartTotals } from '~/components/cart/CartTotals';
+import { ApplyLoyaltyPoints } from '~/components/cart/ApplyLoyaltyPoints';
 import { Link } from '@remix-run/react';
 import { RazorpayPayments } from '~/components/checkout/razorpay/RazorpayPayments';
 import { OrderInstructions } from '~/components/checkout/OrderInstructions';
-import { otherInstructions } from '~/providers/customPlugins/customPlugin';
+import {
+  otherInstructions,
+  applyLoyaltyPoints,
+  removeLoyaltyPoints,
+  getLoyaltyPointsConfig,
+} from '~/providers/customPlugins/customPlugin';
 import { Header } from '~/components/header/Header';
 import { getCollections } from '~/providers/collections/collections';
 import Footer from '~/components/footer/Footer';
@@ -75,7 +84,11 @@ export async function loader({ request }: DataFunctionArgs) {
     return redirect('/');
   }
 
-  // FIXED: Modified the coupon removal logic to be less aggressive
+  // Fetch loyalty points configuration
+  const loyaltyConfig = await getLoyaltyPointsConfig({ request });
+  const pointsPerRupee = loyaltyConfig?.pointsPerRupee ?? 100; // Fallback to 100 if undefined
+
+  // Coupon removal logic
   if (activeOrder?.couponCodes && activeOrder.couponCodes.length > 0) {
     const appliedCouponCode = activeOrder.couponCodes[0];
     const appliedCouponDetails = couponCodes.find(
@@ -113,9 +126,6 @@ export async function loader({ request }: DataFunctionArgs) {
         }
       }
 
-      // FIXED: Only remove coupon if there are NO coupon products in the cart
-      // This prevents the issue where applying a coupon to a single coupon product
-      // would immediately remove the coupon and redirect
       const hasCouponProducts = activeOrder.lines.some((line) =>
         couponProductVariantIds.includes(line.productVariant.id),
       );
@@ -124,8 +134,6 @@ export async function loader({ request }: DataFunctionArgs) {
         (line) => !couponProductVariantIds.includes(line.productVariant.id),
       );
 
-      // Only remove coupon if there are no coupon products left in the cart
-      // AND there are other products (meaning coupon products were removed)
       if (
         !hasCouponProducts &&
         hasNonCouponProducts &&
@@ -138,7 +146,6 @@ export async function loader({ request }: DataFunctionArgs) {
         try {
           await removeCouponCode(appliedCouponCode, { request });
           console.log('Coupon removed successfully');
-          // Don't redirect here, just continue with the updated order
         } catch (error) {
           console.error('Failed to remove coupon:', error);
         }
@@ -151,6 +158,18 @@ export async function loader({ request }: DataFunctionArgs) {
     request,
   });
   const { activeCustomer } = await getActiveCustomerAddresses({ request });
+
+  // Fetch loyalty points for signed-in user
+  let loyaltyPoints = null;
+  try {
+    const activeCustomerResponse = await getActiveCustomer({ request });
+    loyaltyPoints =
+      activeCustomerResponse.activeCustomer?.customFields
+        ?.loyaltyPointsAvailable ?? null;
+  } catch (err) {
+    loyaltyPoints = null;
+  }
+
   const { eligiblePaymentMethods } = await getEligiblePaymentMethods({
     request,
   });
@@ -160,21 +179,37 @@ export async function loader({ request }: DataFunctionArgs) {
   let stripePaymentIntent: string | undefined;
   let stripePublishableKey: string | undefined;
   let stripeError: string | undefined;
+  let brainTreeKey: string | undefined;
+  let brainTreeError: string | undefined;
   if (eligiblePaymentMethods.find((method) => method.code.includes('stripe'))) {
     try {
       const stripePaymentIntentResult = await createStripePaymentIntent({
         request,
       });
+      const intentDataRaw = stripePaymentIntentResult.createStripePaymentIntent;
+      let intentData: Record<string, any> = {};
+      if (
+        intentDataRaw &&
+        typeof intentDataRaw === 'object' &&
+        !Array.isArray(intentDataRaw)
+      ) {
+        intentData = intentDataRaw as Record<string, any>;
+      }
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Stripe intentData keys:', Object.keys(intentData));
+      }
       stripePaymentIntent =
-        stripePaymentIntentResult.createStripePaymentIntent ?? undefined;
-      stripePublishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
+        intentData['paymentIntent'] ?? intentData['clientSecret'] ?? '';
+      stripePublishableKey =
+        intentData['publishableKey'] ??
+        intentData['stripePublishableKey'] ??
+        '';
+      stripeError =
+        intentData['error'] ?? intentData['stripeError'] ?? undefined;
     } catch (e: any) {
       stripeError = e.message;
     }
   }
-
-  let brainTreeKey: string | undefined;
-  let brainTreeError: string | undefined;
   if (
     eligiblePaymentMethods.find((method) => method.code.includes('braintree'))
   ) {
@@ -206,6 +241,8 @@ export async function loader({ request }: DataFunctionArgs) {
     brainTreeError,
     orderInstructions,
     couponCodes,
+    loyaltyPoints,
+    pointsPerRupee, // Added pointsPerRupee to loader response
   });
 }
 
@@ -213,6 +250,61 @@ export async function action({ request }: DataFunctionArgs) {
   const body = await request.formData();
   const action = body.get('action');
   const activeOrder = await getActiveOrder({ request });
+
+  if (action === 'applyLoyaltyPoints') {
+    const amount = Number(body.get('amount'));
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return json(
+        { success: false, error: 'Invalid points amount.' },
+        { status: 400 },
+      );
+    }
+    try {
+      const result = await applyLoyaltyPoints(amount, { request });
+      if (result && result.id) {
+        return json({ success: true });
+      } else {
+        return json(
+          { success: false, error: 'Failed to apply loyalty points.' },
+          { status: 400 },
+        );
+      }
+    } catch (e: any) {
+      return json(
+        {
+          success: false,
+          error: e?.message || 'Error applying loyalty points.',
+        },
+        { status: 400 },
+      );
+    }
+  }
+
+  if (action === 'removeLoyaltyPoints') {
+    try {
+      const result = await removeLoyaltyPoints({ request });
+      if (result && result.__typename === 'Order' && result.id) {
+        return json({ success: true });
+      } else {
+        return json(
+          {
+            success: false,
+            error:
+              (result as any)?.message || 'Failed to remove loyalty points.',
+          },
+          { status: 400 },
+        );
+      }
+    } catch (e: any) {
+      return json(
+        {
+          success: false,
+          error: e?.message || 'Error removing loyalty points.',
+        },
+        { status: 400 },
+      );
+    }
+  }
 
   if (action === 'setOrderCustomer' || action === 'setCheckoutShipping') {
     return json({ success: true });
@@ -589,6 +681,7 @@ export async function action({ request }: DataFunctionArgs) {
 }
 
 export default function CheckoutPage() {
+  const loaderData = useLoaderData<typeof loader>();
   const {
     collections,
     availableCountries,
@@ -599,7 +692,9 @@ export default function CheckoutPage() {
     eligiblePaymentMethods,
     orderInstructions,
     couponCodes,
-  } = useLoaderData<typeof loader>();
+    loyaltyPoints,
+    pointsPerRupee, // Added to destructuring
+  } = loaderData;
 
   const {
     activeOrderFetcher,
@@ -777,7 +872,6 @@ export default function CheckoutPage() {
       appliedCouponCode,
     );
 
-    // Check if this is the last item in the cart
     const isLastItem = activeOrder?.lines.length === 1;
     if (isLastItem) {
       setIsNavigatingToHome(true);
@@ -798,8 +892,6 @@ export default function CheckoutPage() {
   }
 
   function handleAdjustOrderLine(lineId: string, quantity: number) {
-    // Check if this adjustment will make the cart empty
-    const line = activeOrder?.lines.find((l) => l.id === lineId);
     const isLastItem = activeOrder?.lines.length === 1;
     const willBeEmpty = isLastItem && quantity <= 0;
 
@@ -827,10 +919,8 @@ export default function CheckoutPage() {
     }
   }, [couponFetcher.data, shouldRefreshAfterCouponRemoval, activeOrderFetcher]);
 
-  // Monitor cart state and redirect if empty
   useEffect(() => {
     if (activeOrder && activeOrder.lines.length === 0 && isNavigatingToHome) {
-      // Wait a bit longer to ensure the cart state is fully updated
       const timer = setTimeout(() => {
         navigate('/');
         setIsNavigatingToHome(false);
@@ -839,13 +929,11 @@ export default function CheckoutPage() {
     }
   }, [activeOrder, isNavigatingToHome, navigate]);
 
-  // Fallback: Monitor cart state for any empty cart and redirect
   useEffect(() => {
     if (
       (!activeOrder || activeOrder.lines.length === 0) &&
       !isNavigatingToHome
     ) {
-      // This handles cases where cart becomes empty due to other actions
       const timer = setTimeout(() => {
         navigate('/');
       }, 1000);
@@ -856,7 +944,6 @@ export default function CheckoutPage() {
   const allLines = activeOrder?.lines ?? [];
   const visibleLines = showAllCartItems ? allLines : allLines.slice(0, 3);
 
-  // Don't render if we're navigating to home
   if (isNavigatingToHome) {
     return (
       <div className="bg-gray-50 min-h-screen flex items-center justify-center">
@@ -868,7 +955,6 @@ export default function CheckoutPage() {
     );
   }
 
-  // Don't render if there's no active order or cart is empty
   if (!activeOrder || activeOrder.lines.length === 0) {
     return (
       <div className="bg-gray-50 min-h-screen flex items-center justify-center">
@@ -887,6 +973,7 @@ export default function CheckoutPage() {
         cartQuantity={activeOrder?.totalQuantity ?? 0}
         isSignedIn={isSignedIn}
         collections={collections}
+        loyaltyPoints={loyaltyPoints}
       />
       <div className="lg:max-w-7xl max-w-2xl mx-auto pt-8 pb-24 px-4 sm:px-6 lg:px-8">
         <div className="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16">
@@ -1138,6 +1225,13 @@ export default function CheckoutPage() {
           <div className="mt-10 lg:mt-0">
             <h2 className="text-lg font-medium text-black mb-6">Summary</h2>
             <div className="bg-white p-6 rounded-lg shadow-sm border">
+              {loyaltyPoints && activeOrder?.id ? (
+                <ApplyLoyaltyPoints
+                  availablePoints={loyaltyPoints}
+                  orderId={activeOrder.id}
+                  pointsPerRupee={pointsPerRupee} // Added pointsPerRupee prop
+                />
+              ) : null}
               <CartTotals order={activeOrder as any} />
               <CartContents
                 orderLines={visibleLines}
