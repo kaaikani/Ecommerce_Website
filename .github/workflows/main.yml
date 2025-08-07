@@ -18,8 +18,7 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            sudo su root
-            sudo cd /home/ubuntu/Ecommerce_Website
+            cd /home/ubuntu/Ecommerce_Website
             sudo git reset --hard HEAD
             sudo git clean -fd
             sudo git pull origin main      
