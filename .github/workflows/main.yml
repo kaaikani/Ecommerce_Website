@@ -26,7 +26,7 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "."
-          target: "/home/ubuntu/Websit/Remix_Storefront"
+          target: "/home/ubuntu/Websit/Ecommerce_Website"
 
       - name: Run deploy script in EC2
         uses: appleboy/ssh-action@v0.1.10
@@ -35,7 +35,7 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /home/ubuntu/Websit/Remix_Storefront
-            git pull origin Remix_StoreFront
+            cd /home/ubuntu/Websit/Ecommerce_Website
+            git pull origin Ecommerce_Website
             npm install
             pm2 restart all
