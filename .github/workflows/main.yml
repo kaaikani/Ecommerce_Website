@@ -1,41 +1,37 @@
-name: Deploy Remix App to EC2
+name: Deploy to EC2 via SSH
 
 on:
   push:
     branches:
-      - main
+      - main 
 
 jobs:
   deploy:
-    name: Build & Deploy to EC2
+    name: 🚀 Deploy via SSH
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: 📦 Checkout Repository
         uses: actions/checkout@v3
 
-      - name: SSH Agent Setup
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Upload files to EC2
-        uses: appleboy/scp-action@v0.1.4
+      - name: 📤 Copy files via SCP
+        uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.REMOTE_HOST }}
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "."
+          port: ${{ secrets.REMOTE_PORT || 22 }}
+          source: "."  
           target: "/home/ubuntu/Websit/Ecommerce_Website"
 
-      - name: SSH and Restart PM2 App
-        uses: appleboy/ssh-action@v0.1.10
+      - name: 🧨 Run deploy script on server
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.REMOTE_HOST }}
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.REMOTE_PORT || 22 }}
           script: |
-            cd /home/ubuntu/Websit/Ecommerce_Website
-            npm install
-            pm2 restart web || pm2 start ./startup.sh --name web
-            pm2 save
+            cd /home/ubuntu/app
+            chmod +x deploy.sh
+            ./deploy.sh
