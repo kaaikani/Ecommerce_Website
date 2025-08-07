@@ -1,4 +1,4 @@
-name: RemixSite
+name: Deploy Remix App to EC2
 
 on:
   push:
@@ -8,18 +8,18 @@ on:
 jobs:
   deploy:
     name: Build & Deploy to EC2
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: SSH setup
+      - name: SSH Agent Setup
         uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy files to EC2
+      - name: Upload files to EC2
         uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.REMOTE_HOST }}
@@ -27,8 +27,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "."
           target: "/home/ubuntu/Websit/Ecommerce_Website"
-          
-      - name: Run deploy script in EC2
+
+      - name: SSH and Restart PM2 App
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.REMOTE_HOST }}
@@ -37,6 +37,5 @@ jobs:
           script: |
             cd /home/ubuntu/Websit/Ecommerce_Website
             npm install
-            pm2 restart web || pm2 start npm --name="web" -- start
+            pm2 restart web || pm2 start ./startup.sh --name web
             pm2 save
-
