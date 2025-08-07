@@ -6,7 +6,7 @@ const Stats = () => {
       <div id="Testimonials" className="scroll-mt-32 mx-auto my-12 max-w-7xl px-6 sm:mt-28 lg:px-8">
         <div className="mx-auto lg:mx-0 sm:text-center justify-center">
           <h2 className="text-4xl sm:text-5xl lg:text-5xl font-[900] w-full text-center uppercase text-green-950 mb-4"  >
-            Delivering Freshness, One Order at a Time
+            Deliverin
           </h2>
           <p className="mt-6 text-base leading-7 text-gray-600">
             At Kaaikani, we take pride in bringing fresh fruits and vegetables straight from farms to homes. 
