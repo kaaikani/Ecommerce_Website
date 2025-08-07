@@ -32,6 +32,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.REMOTE_PORT || 22 }}
           script: |
-            cd /home/ubuntu/app
+            cd /home/ubuntu/Websit/Ecommerce_Website
             chmod +x deploy.sh
             ./deploy.sh
+
