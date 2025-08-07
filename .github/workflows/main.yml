@@ -19,9 +19,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             sudo su root
-            sudo cd /home/ubuntu/Websit/Ecommerce_Website
+            sudo cd /home/ubuntu/Ecommerce_Website
             sudo git reset --hard HEAD
             sudo git clean -fd
-            sudo git pull origin main       # or Ecommerce_Website if that’s the actual branch
+            sudo git pull origin main      
             sudo npm install
             sudo pm2 restart all
