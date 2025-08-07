@@ -23,4 +23,12 @@ jobs:
             sudo git clean -fd
             sudo git pull origin main      
             sudo npm install
-            sudo pm2 restart all
+
+            # Check if PM2 process 'web' exists
+            if pm2 describe web > /dev/null 2>&1; then
+              echo "🔁 PM2 process 'web' exists. Restarting..."
+              sudo pm2 restart web
+            else
+              echo "▶️ PM2 process 'web' not found. Starting..."
+              sudo pm2 start ./startup.sh --name "web" -- start
+            fi
