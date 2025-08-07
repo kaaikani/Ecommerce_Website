@@ -3,7 +3,7 @@ name: RemixSite
 on:
   push:
     branches:
-      - Remix_StoreFront
+      - Remix_Storefront
 
 jobs:
   deploy:
