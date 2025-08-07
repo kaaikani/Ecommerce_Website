@@ -27,7 +27,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "."
           target: "/home/ubuntu/Website/Ecommerce_Website"
-
+          
       - name: Run deploy script in EC2
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -37,4 +37,6 @@ jobs:
           script: |
             cd /home/ubuntu/Website/Ecommerce_Website
             npm install
-            pm2 restart all
+            pm2 restart web || pm2 start npm --name="web" -- start
+            pm2 save
+
