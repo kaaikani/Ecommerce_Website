@@ -125,7 +125,7 @@ export default function home() {
             id="category-heading"
             className="text-4xl sm:text-5xl lg:text-5xl font-[900] w-full text-center uppercase text-green-950 mb-4"
           >
-            SHOP BY CAT
+            SHOP  CAT
           </h3>
         </div>
 

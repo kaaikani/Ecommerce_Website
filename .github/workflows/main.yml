@@ -1,38 +1,26 @@
-name: Deploy to EC2 via SSH
+name: RemixSite
 
 on:
   push:
     branches:
-      - main 
+      - main
 
 jobs:
   deploy:
-    name: 🚀 Deploy via SSH
+    name: Build & Deploy to EC2
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📦 Checkout Repository
-        uses: actions/checkout@v3
-
-      - name: 📤 Copy files via SCP
-        uses: appleboy/scp-action@master
+      - name: Run deploy script on EC2
+        uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.REMOTE_HOST }}
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.REMOTE_PORT || 22 }}
-          source: "."  
-          target: "/home/ubuntu/Websit/Ecommerce_Website"
-
-      - name: 🧨 Run deploy script on server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.REMOTE_PORT || 22 }}
           script: |
             cd /home/ubuntu/Websit/Ecommerce_Website
-            chmod +x deploy.sh
-            ./deploy.sh
-
+            git reset --hard HEAD
+            git clean -fd
+            git pull origin main       # or Ecommerce_Website if that’s the actual branch
+            npm install
+            pm2 restart all
