@@ -32,7 +32,7 @@ remoteConfig.settings = {
 
 // ✅ Default fallback values for config keys
 remoteConfig.defaultConfig = {
-  is_app_leaving: false,
+  is_app_leavingz: false,
   leave_dialog_title: 'Sorry for inconvenience',
   leave_dialog_message: 'We are currently closed.',
 };
