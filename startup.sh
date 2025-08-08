@@ -1,5 +1,5 @@
 #!/bin/bash
 
-fuser -k 80/tcp
+fuser -k 8002/tcp
 
 npm run dev
