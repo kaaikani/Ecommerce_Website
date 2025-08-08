@@ -9,7 +9,7 @@ import {
 
 // ✅ Firebase configuration (from Firebase Console)
 const firebaseConfig = {
-  apiKey: 'AIzaSyA_Wc9zKgjxrK4v13i3DScrrGGEEz8mGVg',
+  apiKey: 'god-AIzaSyA_Wc9zKgjxrK4v13i3DScrrGGEEz8mGVg',
   authDomain: 'push-notification-5d56d.firebaseapp.com',
   projectId: 'push-notification-5d56d',
   storageBucket: 'push-notification-5d56d.appspot.com',
